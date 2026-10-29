@@ -405,6 +405,7 @@ function filterChats() {
 // ──────────────────────────────────────────────────────────────
 
 function selectChat(chatId, isUserTap = false) {
+  if (activeChatId === chatId && !isUserTap) return;
   activeChatId = chatId;
   lastAdminMsgSig = '';
   lastAdminTypingSig = '';
@@ -429,8 +430,24 @@ function selectChat(chatId, isUserTap = false) {
   }
   document.getElementById('adminMessageInput').placeholder = `Reply as Raoprime to ${clientName}...`;
 
+  // Immediately clear old messages and display smooth loading placeholder
+  const container = document.getElementById('adminMessagesList');
+  if (container) {
+    container.innerHTML = `
+      <div class="flex items-center justify-center h-48 text-slate-500 text-xs">
+        <div class="flex items-center gap-2">
+          <div class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></div>
+          <span>Loading ${escapeHtml(clientName)}'s conversation...</span>
+        </div>
+      </div>`;
+  }
+
   filterChats();
-  triggerActiveMsgsPoll();
+
+  // Reset poll lock and trigger immediate fetch
+  if (activeMsgsPollTimer) clearTimeout(activeMsgsPollTimer);
+  isPollingActiveMsgs = false;
+  loadActiveMessages();
 
   // On mobile: switch views only if explicitly tapped
   if (window.innerWidth < 768 && isUserTap) {
@@ -495,12 +512,18 @@ async function triggerActiveMsgsPoll() {
 
 async function loadActiveMessages() {
   if (!activeChatId || !adminToken) return;
+  const requestedChatId = activeChatId;
 
   try {
-    const res = await fetch(`/api/chat/messages?chatId=${encodeURIComponent(activeChatId)}&reader=Raoprime`, {
+    const res = await fetch(`/api/chat/messages?chatId=${encodeURIComponent(requestedChatId)}&reader=Raoprime`, {
       headers: { 'x-admin-token': adminToken || '' }
     });
+    // Discard response if user switched to another chat while request was pending
+    if (requestedChatId !== activeChatId) return;
+
     const data = await res.json();
+    if (requestedChatId !== activeChatId) return;
+
     if (data.success && data.messages) {
       window.currentAdminCachedMessages = data.messages;
       const currentSig = data.messages.map(m => `${m.id}:${m.status || ''}:${m.isEdited ? '1' : '0'}:${m.text || ''}`).join('|');
@@ -515,7 +538,7 @@ async function loadActiveMessages() {
       }
 
       // Check if client is typing or actively online
-      const isClientTyping = Boolean(data.typing && (data.typing.Client || data.typing[activeChatId]));
+      const isClientTyping = Boolean(data.typing && (data.typing.Client || data.typing[requestedChatId]));
       const isClientOnline = Boolean(data.online && data.online.Client);
       updateAdminTypingUI(isClientOnline, isClientTyping);
     }

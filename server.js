@@ -150,6 +150,36 @@ function formatBytes(bytes) {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
 }
 
+// Canonical Chat ID Normalizer (Unifies room variations & case differences)
+function normalizeChatId(rawChatId) {
+  if (!rawChatId || typeof rawChatId !== 'string') return 'default';
+  let decoded = rawChatId.trim();
+  try {
+    decoded = decodeURIComponent(decoded).trim();
+  } catch (e) {}
+
+  if (!decoded || decoded.toLowerCase() === 'default' || decoded.toLowerCase() === 'all') {
+    return 'default';
+  }
+
+  // Canonical alias for Affaque Ahmed
+  const cleanKey = decoded.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (cleanKey === 'affaqueahmed' || cleanKey === 'afaqahmed' || cleanKey === 'affaque' || cleanKey === 'afaq') {
+    return 'Affaque Ahmed';
+  }
+
+  // Case-insensitive & normalized match against existing store keys
+  if (memoryChatStore) {
+    const existing = Object.keys(memoryChatStore);
+    const directMatch = existing.find(k => k.toLowerCase() === decoded.toLowerCase());
+    if (directMatch) return directMatch;
+    const fuzzyMatch = existing.find(k => k.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanKey);
+    if (fuzzyMatch) return fuzzyMatch;
+  }
+
+  return decoded;
+}
+
 // Local Fallback JSON Helpers
 function getAllLocalChats() {
   try {
@@ -177,7 +207,22 @@ let saveDebounceTimer = null;
 
 function ensureMemoryStore() {
   if (!memoryChatStore) {
-    memoryChatStore = getAllLocalChats();
+    const raw = getAllLocalChats();
+    memoryChatStore = {};
+    for (const [k, v] of Object.entries(raw)) {
+      const norm = normalizeChatId(k);
+      if (!memoryChatStore[norm]) {
+        memoryChatStore[norm] = [];
+      }
+      for (const m of (Array.isArray(v) ? v : [])) {
+        if (!memoryChatStore[norm].find(existing => existing.id === m.id)) {
+          memoryChatStore[norm].push({ ...m, chatId: norm });
+        }
+      }
+    }
+    for (const norm of Object.keys(memoryChatStore)) {
+      memoryChatStore[norm].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    }
   }
   return memoryChatStore;
 }
@@ -192,16 +237,34 @@ async function syncFirestoreIntoMemory() {
       const store = ensureMemoryStore();
       snap.docs.forEach(doc => {
         const msg = doc.data();
-        const cid = msg.chatId || 'default';
+        const cid = normalizeChatId(msg.chatId || 'default');
         if (!store[cid]) store[cid] = [];
         const exists = store[cid].find(m => m.id === msg.id);
         if (!exists) {
-          store[cid].push(msg);
+          store[cid].push({ ...msg, chatId: cid });
         } else {
           if (msg.status) exists.status = msg.status;
           if (msg.seenAt) exists.seenAt = msg.seenAt;
+          if (msg.isEdited) {
+            exists.isEdited = msg.isEdited;
+            exists.text = msg.text;
+            exists.editedAt = msg.editedAt;
+          }
         }
       });
+      // Purge any non-normalized keys if they existed
+      for (const k of Object.keys(store)) {
+        const norm = normalizeChatId(k);
+        if (norm !== k) {
+          if (!store[norm]) store[norm] = [];
+          for (const m of store[k]) {
+            if (!store[norm].find(x => x.id === m.id)) {
+              store[norm].push({ ...m, chatId: norm });
+            }
+          }
+          delete store[k];
+        }
+      }
       for (const cid of Object.keys(store)) {
         store[cid].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
       }
@@ -213,16 +276,19 @@ async function syncFirestoreIntoMemory() {
   }
 }
 setTimeout(syncFirestoreIntoMemory, 500);
-setInterval(syncFirestoreIntoMemory, 60000);
+setInterval(syncFirestoreIntoMemory, 600000); // 10 minutes interval to conserve quota
 
 // Instant RAM read
-function getChatMessages(chatId) {
+function getChatMessages(rawChatId) {
+  const chatId = normalizeChatId(rawChatId);
   const store = ensureMemoryStore();
   return store[chatId] || [];
 }
 
 // Instant RAM write + Async background persistence
-async function saveChatMessage(chatId, messageObj) {
+async function saveChatMessage(rawChatId, messageObj) {
+  const chatId = normalizeChatId(rawChatId);
+  messageObj.chatId = chatId;
   const store = ensureMemoryStore();
   if (!store[chatId]) store[chatId] = [];
   store[chatId].push(messageObj);
@@ -262,7 +328,8 @@ const presenceStatus = {}; // { [chatId]: { Client: timestamp, Raoprime: timesta
 let globalAdminPresence = 0; // Tracks if Raoprime Admin is live on portal anywhere
 
 // Instant RAM seen update + non-blocking background Firestore sync
-async function markChatMessagesSeen(chatId, readerRole) {
+async function markChatMessagesSeen(rawChatId, readerRole) {
+  const chatId = normalizeChatId(rawChatId);
   const store = ensureMemoryStore();
   if (!store[chatId]) return false;
 
@@ -313,7 +380,8 @@ async function markChatMessagesSeen(chatId, readerRole) {
 
 // Heartbeat Endpoint to track Live Presence (Active vs Offline)
 app.post('/api/chat/heartbeat', (req, res) => {
-  const { chatId = 'default', sender = 'Client' } = req.body;
+  const { chatId: rawChatId = 'default', sender = 'Client' } = req.body;
+  const chatId = normalizeChatId(rawChatId);
   const now = Date.now();
   if (sender === 'Raoprime') {
     globalAdminPresence = now;
@@ -325,7 +393,8 @@ app.post('/api/chat/heartbeat', (req, res) => {
 
 // Explicit Mark As Seen Endpoint
 app.post('/api/chat/seen', async (req, res) => {
-  const { chatId = 'default', reader = 'Client' } = req.body;
+  const { chatId: rawChatId = 'default', reader = 'Client' } = req.body;
+  const chatId = normalizeChatId(rawChatId);
   await markChatMessagesSeen(chatId, reader);
   res.json({ success: true });
 });
@@ -337,7 +406,8 @@ app.post('/api/chat/seen', async (req, res) => {
 // Get Messages & Real-time Typing + Presence State
 app.get('/api/chat/messages', async (req, res) => {
   try {
-    const chatId = req.query.chatId || 'default';
+    const rawChatId = req.query.chatId || 'default';
+    const chatId = normalizeChatId(rawChatId);
     const reader = req.query.reader || (req.headers['x-admin-token'] ? 'Raoprime' : null);
 
     // If a reader is actively querying, mark other party's messages as seen and refresh presence
@@ -378,7 +448,8 @@ app.get('/api/chat/messages', async (req, res) => {
 
 // Update Real-time Typing Status
 app.post('/api/chat/typing', (req, res) => {
-  const { chatId = 'default', sender = 'Client', isTyping } = req.body;
+  const { chatId: rawChatId = 'default', sender = 'Client', isTyping } = req.body;
+  const chatId = normalizeChatId(rawChatId);
   const now = Date.now();
   if (sender === 'Raoprime') {
     globalAdminPresence = now;
@@ -394,7 +465,8 @@ app.post('/api/chat/typing', (req, res) => {
 // Post Text Message
 app.post('/api/chat/send', async (req, res) => {
   try {
-    const { chatId = 'default', sender = 'Client', text = '' } = req.body;
+    const { chatId: rawChatId = 'default', sender = 'Client', text = '' } = req.body;
+    const chatId = normalizeChatId(rawChatId);
     if (!text.trim()) {
       return res.status(400).json({ success: false, error: 'Empty message' });
     }
@@ -434,7 +506,8 @@ app.post('/api/chat/send', async (req, res) => {
 // Edit Existing Text Message
 app.post('/api/chat/message/edit', async (req, res) => {
   try {
-    const { chatId = 'default', messageId, text, sender } = req.body;
+    const { chatId: rawChatId = 'default', messageId, text, sender } = req.body;
+    const chatId = normalizeChatId(rawChatId);
     if (!messageId || !text || !text.trim()) {
       return res.status(400).json({ success: false, error: 'Message ID and text are required' });
     }
@@ -547,7 +620,8 @@ function getDynamicIceServers() {
   };
 }
 
-function resolveActiveCall(chatId) {
+function resolveActiveCall(rawChatId) {
+  const chatId = rawChatId ? normalizeChatId(rawChatId) : rawChatId;
   const now = Date.now();
   // 1. Direct match on chatId with active (non-ended) call
   if (chatId && activeCalls[chatId]) {
@@ -580,7 +654,8 @@ app.get('/api/call/ice-servers', (req, res) => {
 });
 
 app.post('/api/call/initiate', (req, res) => {
-  const { chatId = 'default', caller = 'Client', type = 'video' } = req.body;
+  const { chatId: rawChatId = 'default', caller = 'Client', type = 'video' } = req.body;
+  const chatId = normalizeChatId(rawChatId);
 
   // Purge any stale calls for this room
   if (activeCalls[chatId]) delete activeCalls[chatId];
@@ -616,7 +691,7 @@ app.post('/api/call/initiate', (req, res) => {
 });
 
 app.get('/api/call/status', (req, res) => {
-  const chatId = req.query.chatId;
+  const chatId = normalizeChatId(req.query.chatId);
   const role = req.query.role; // 'admin' or 'client'
   const call = resolveActiveCall(chatId);
 
@@ -634,7 +709,8 @@ app.get('/api/call/status', (req, res) => {
 });
 
 app.post('/api/call/signal', (req, res) => {
-  const { chatId = 'default', from = 'Client', signal } = req.body;
+  const { chatId: rawChatId = 'default', from = 'Client', signal } = req.body;
+  const chatId = normalizeChatId(rawChatId);
   const call = resolveActiveCall(chatId);
   if (!call) {
     return res.status(404).json({ success: false, error: 'No active call' });
@@ -650,7 +726,7 @@ app.post('/api/call/signal', (req, res) => {
 });
 
 app.get('/api/call/signals', (req, res) => {
-  const chatId = req.query.chatId || 'default';
+  const chatId = normalizeChatId(req.query.chatId || 'default');
   const forRole = req.query.forRole || 'Client';
   const since = parseInt(req.query.since || '0', 10);
   const call = resolveActiveCall(chatId);
@@ -669,7 +745,8 @@ app.get('/api/call/signals', (req, res) => {
 });
 
 app.post('/api/call/accept', (req, res) => {
-  const { chatId = 'default' } = req.body;
+  const { chatId: rawChatId = 'default' } = req.body;
+  const chatId = normalizeChatId(rawChatId);
   const call = resolveActiveCall(chatId);
   if (call) {
     call.status = 'connected';
@@ -679,7 +756,8 @@ app.post('/api/call/accept', (req, res) => {
 });
 
 app.post('/api/call/end', (req, res) => {
-  const { chatId = 'default' } = req.body;
+  const { chatId: rawChatId = 'default' } = req.body;
+  const chatId = normalizeChatId(rawChatId);
   const call = resolveActiveCall(chatId);
   if (call) {
     call.status = 'ended';
@@ -818,7 +896,7 @@ app.get('/api/admin/chats', requireAdminAuth, async (req, res) => {
 // Admin: Download All Files for a client in a single ZIP
 app.get('/api/admin/download-all/:chatId', requireAdminAuth, async (req, res) => {
   try {
-    const { chatId } = req.params;
+    const chatId = normalizeChatId(req.params.chatId);
     const messages = await getChatMessages(chatId);
     const files = messages.filter((m) => m.type === 'file' && m.file);
 
@@ -858,10 +936,11 @@ app.get('/api/admin/download-all/:chatId', requireAdminAuth, async (req, res) =>
 // Admin: Delete an entire chat and its files permanently
 app.delete('/api/admin/chat/:chatId', requireAdminAuth, async (req, res) => {
   try {
-    const { chatId } = req.params;
-    if (!chatId) {
+    const rawChatId = req.params.chatId;
+    if (!rawChatId) {
       return res.status(400).json({ success: false, error: 'Chat ID required' });
     }
+    const chatId = normalizeChatId(rawChatId);
 
     // 1. Delete from Firebase Firestore if connected
     initFirebase();
@@ -919,7 +998,8 @@ app.delete('/api/admin/chat/:chatId', requireAdminAuth, async (req, res) => {
 // 1. Init Upload Session
 app.post('/api/upload/init', (req, res) => {
   try {
-    const { uploadId, fileName, fileSize, totalChunks, chunkSize, fileType, chatId = 'default', sender = 'Client' } = req.body;
+    const { uploadId, fileName, fileSize, totalChunks, chunkSize, fileType, chatId: rawChatId = 'default', sender = 'Client' } = req.body;
+    const chatId = normalizeChatId(rawChatId);
     if (!uploadId || !fileName || !totalChunks) {
       return res.status(400).json({ success: false, error: 'Missing parameters' });
     }

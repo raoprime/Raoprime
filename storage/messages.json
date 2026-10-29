@@ -6,7 +6,8 @@
       "type": "text",
       "text": "Hello! Welcome to Raoprime. Please attach and send your documents here.",
       "timestamp": "2026-10-29T14:59:21.799Z",
-      "status": "seen"
+      "status": "seen",
+      "chatId": "default"
     }
   ],
   "haryana": [
@@ -16,7 +17,8 @@
       "type": "text",
       "text": "hi",
       "timestamp": "2026-10-29T15:14:31.627Z",
-      "status": "seen"
+      "status": "seen",
+      "chatId": "haryana"
     }
   ],
   "PublicTestClient": [
@@ -26,7 +28,8 @@
       "type": "text",
       "text": "Testing public link",
       "timestamp": "2026-10-29T15:37:56.730Z",
-      "status": "seen"
+      "status": "seen",
+      "chatId": "PublicTestClient"
     },
     {
       "chatId": "PublicTestClient",
@@ -116,7 +119,8 @@
       "type": "text",
       "text": "Dear Afaq, Welcome to Raoprime Secure Portal. Please upload all your important medical documents (Medical Papers & Reports) related to your illness here.",
       "timestamp": "2026-10-29T17:10:00.000Z",
-      "status": "seen"
+      "status": "seen",
+      "chatId": "Affaque Ahmed"
     },
     {
       "id": "msg_1793288636000_med1",
@@ -132,7 +136,8 @@
         "downloadUrl": "/api/download/file_000000004dc0820890df628c3609fffa_2_4fk8.jpg"
       },
       "timestamp": "2026-10-29T17:13:56.000Z",
-      "status": "seen"
+      "status": "seen",
+      "chatId": "Affaque Ahmed"
     },
     {
       "id": "msg_1793288640000_mail2",
@@ -148,7 +153,8 @@
         "downloadUrl": "/api/download/Screenshot_20261029-222456_7_zm89.png"
       },
       "timestamp": "2026-10-29T17:25:24.000Z",
-      "status": "seen"
+      "status": "seen",
+      "chatId": "Affaque Ahmed"
     },
     {
       "id": "msg_1793288645000_text1",
@@ -156,75 +162,144 @@
       "type": "text",
       "text": "Maine apne medical documents aur reports attach kar diye hain. Please Dhruv Rathi ji tak meri madad ka message pahuncha dijiye.",
       "timestamp": "2026-10-29T17:26:00.000Z",
+      "status": "seen",
+      "chatId": "Affaque Ahmed"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Client",
+      "id": "msg_1793301568002_m2qn",
+      "text": "Yes sir",
+      "type": "text",
+      "timestamp": "2026-10-29T19:19:28.002Z",
       "status": "seen"
     },
     {
       "chatId": "Affaque Ahmed",
       "sender": "Raoprime",
-      "id": "msg_1793302145413_4q6a",
+      "id": "msg_1793302126642_0btj",
       "text": "hello",
       "type": "text",
-      "timestamp": "2026-10-29T19:29:05.413Z",
+      "timestamp": "2026-10-29T19:28:46.642Z",
       "status": "seen"
     },
     {
-      "id": "msg_1793305135873_wckn",
+      "chatId": "Affaque Ahmed",
       "sender": "Client",
+      "id": "msg_1793302247212_zgb3",
+      "text": "G sir proof sir is waqt yahi k me Apne picture send kar sakhta hon and abhi Jo currently me medicine Le Raha hon uske picture already mene share my hai",
       "type": "text",
-      "text": "Hello, this is the EDITED message!",
-      "status": "sent",
-      "timestamp": "2026-10-29T20:18:55.873Z",
-      "isEdited": true,
-      "editedAt": "2026-10-29T20:18:55.882Z"
-    }
-  ],
-  "Afaq Ahmed": [
+      "timestamp": "2026-10-29T19:30:47.212Z",
+      "status": "seen"
+    },
     {
-      "id": "msg_1793288600000_mail_afaq",
+      "chatId": "Affaque Ahmed",
       "sender": "Raoprime",
+      "id": "msg_1793302734416_53jc",
+      "text": "okay, but govt. health hospitals nahi h aapke pakistan me",
       "type": "text",
-      "text": "Dear Afaq, Welcome to Raoprime Secure Portal. Please upload all your important medical documents (Medical Papers & Reports) related to your illness here.",
-      "timestamp": "2026-10-29T17:10:00.000Z",
+      "timestamp": "2026-10-29T19:38:54.416Z",
       "status": "seen"
     },
     {
-      "id": "msg_1793288636000_med1_afaq",
+      "chatId": "Affaque Ahmed",
       "sender": "Client",
-      "type": "file",
-      "text": "Uploaded: Medical Prescription (Dr. Abdul Ghaffar Jamali, Bone Care Clinic Sehwan)",
-      "file": {
-        "originalName": "Medical_Prescription_Dr_Abdul_Ghaffar_Jamali.jpg",
-        "storedName": "file_000000004dc0820890df628c3609fffa_2_4fk8.jpg",
-        "size": 262889,
-        "formattedSize": "256.7 KB",
-        "type": "image/jpeg",
-        "downloadUrl": "/api/download/file_000000004dc0820890df628c3609fffa_2_4fk8.jpg"
-      },
-      "timestamp": "2026-10-29T17:13:56.000Z",
-      "status": "seen"
-    },
-    {
-      "id": "msg_1793288640000_mail2_afaq",
-      "sender": "Client",
-      "type": "file",
-      "text": "Uploaded: Email Communication Record (Raoprime Team Assistance - Dhruv Rathi Message)",
-      "file": {
-        "originalName": "Raoprime_Team_Assistance_Email_Record.png",
-        "storedName": "Screenshot_20261029-222456_7_zm89.png",
-        "size": 148690,
-        "formattedSize": "145.2 KB",
-        "type": "image/png",
-        "downloadUrl": "/api/download/Screenshot_20261029-222456_7_zm89.png"
-      },
-      "timestamp": "2026-10-29T17:25:24.000Z",
-      "status": "seen"
-    },
-    {
-      "id": "msg_1793288645000_text1_afaq",
-      "sender": "Client",
+      "id": "msg_1793302873174_7whe",
+      "text": "Sir family ne serious hai nhi Liya howa",
       "type": "text",
-      "text": "Maine apne medical documents aur reports attach kar diye hain. Please Dhruv Rathi ji tak meri madad ka message pahuncha dijiye.",
-      "timestamp": "2026-10-29T17:26:00.000Z",
+      "timestamp": "2026-10-29T19:41:13.174Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Client",
+      "id": "msg_1793302883019_gks9",
+      "text": "Mere 3 issue hai",
+      "type": "text",
+      "timestamp": "2026-10-29T19:41:23.019Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Client",
+      "id": "msg_1793302891994_n31y",
+      "text": "1 arthritis",
+      "type": "text",
+      "timestamp": "2026-10-29T19:41:31.994Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Raoprime",
+      "id": "msg_1793302892605_l75k",
+      "text": "btao",
+      "type": "text",
+      "timestamp": "2026-10-29T19:41:32.605Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Client",
+      "id": "msg_1793302932286_vq1y",
+      "text": "2 weight bohot Kam ho Chuka hai almost 35kg age 21 or ghr me sabko lagta k me recovery nhi ho sakhta",
+      "type": "text",
+      "timestamp": "2026-10-29T19:42:12.286Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Client",
+      "id": "msg_1793302956575_fu7x",
+      "text": "3 neck moment almost block hai",
+      "type": "text",
+      "timestamp": "2026-10-29T19:42:36.575Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Raoprime",
+      "id": "msg_1793303235023_x4pf",
+      "text": "Bhai, meri ek baat bohot dhyan se sun. Mujhe pata hai tu is waqt kis dard aur takleef se guzar raha hai. Jab 21 saal ki age mein wazan 35 kilo reh jaye aur gardan block ho jaye, toh kisi ki bhi himmat toot jati hai. Tera haar maan lena samajh aata hai, lekin jo tu (suicide) karne ki soch raha hai na, wo bilkul galat hai mere bhai. Teri zindagi khatam nahi hui hai, masla ye hai ke tujhe abhi tak sahi doctor nahi mila. Teri bimari koi aam arthritis nahi hai, ye 'Ankylosing Spondylitis' ho sakti hai jo sirf jawan logo ko hoti hai. Tu kisi aam haddi walay doctor (orthopedic) ke paas mat ja. Tujhe sirf aur sirf ek 'Rheumatologist' ke paas jana hai. Aaj kal medical science mein iske aise injection (Biologics) aate hain jo jaadui tarike se dard rok dete hain aur haddiyon ko judne se bacha lete hain. Agar tujhe treatment ke paison ki tension hai, toh meri baat sun- Pakistan mein 'Bait-ul-Mal' ka sarkari program hai jo aisi bimariyon ke ilaj ke liye financial help deta hai. Iske ilawa Indus Hospital aur Aga Khan Hospital mein bhi Zakat fund se bilkul free ya bohot kam kharch mein ilaj hota hai. Raste bohot hain mere bhai, tune abhi try nahi kiya hai sahi jagah! Bas meri khatir ek kaam kar. Agar roti ya thos khana nahi khaya jata toh liquid diet le. Doodh, kele ka shake, aur protein waghera pi. Body mein thori jaan la. Teri age sirf 21 saal hai yaar, teri body bohot jaldi recover karegi agar sahi ilaaj mil jaye. Ek aakhri baar mere kehne par himmat kar le bhai. Ek baar kisi baday sarkari hospital ke Rheumatology ward mein chala ja, teri puri life badal jayegi. Haar mat maan mere bhai, please. Main yahan baitha hoon teri help ke liye. Mujhe message ka reply kar.",
+      "type": "text",
+      "status": "sent",
+      "timestamp": "2026-10-29T19:47:15.023Z"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Raoprime",
+      "id": "msg_1793303395841_b64t",
+      "text": "bhai dhruv rathee agar help karta h to",
+      "type": "text",
+      "status": "delivered",
+      "timestamp": "2026-10-29T19:49:55.841Z"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Raoprime",
+      "id": "msg_1793303454611_z6tz",
+      "text": "uske upper indian/pakistan Govt se dikkat aa sakti h",
+      "type": "text",
+      "status": "delivered",
+      "timestamp": "2026-10-29T19:50:54.611Z"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Client",
+      "id": "msg_1793303631273_hun0",
+      "text": "Masla ye k ye chezain idhr logon ko samjh nhi aty mera khud ka bahir nikalna is hlt m muskil hai wo bhi kisi k begair big city idhar s door hai me is Liye chata tha k kisi trha mere pass Kuch paise hon to me khud ko Thora improve kar saghon Thora SA bhi change Aya to phr m idhar kisi s loan bhi le saghta hon Lekin begair Kisi change k kisi ko yakeen nhi ana",
+      "type": "text",
+      "timestamp": "2026-10-29T19:53:51.273Z",
+      "seenAt": "2026-10-29T19:58:08.776Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Client",
+      "id": "msg_1793303735773_0jk2",
+      "text": "Ajkal bohot sare option hai like crypto wallets Mera Dil nhi karta kisi s Lene Lekin bohot Bure jga phans chuka ho is liye pareshan home msg kar deta hon 😢",
+      "type": "text",
+      "timestamp": "2026-10-29T19:55:35.773Z",
+      "seenAt": "2026-10-29T19:58:08.776Z",
       "status": "seen"
     }
   ],
@@ -235,7 +310,8 @@
       "type": "text",
       "text": "Hi",
       "timestamp": "2026-10-29T18:46:31.511Z",
-      "status": "seen"
+      "status": "seen",
+      "chatId": "Dharmesh"
     },
     {
       "id": "msg_1793299804045_r9ax",
@@ -243,7 +319,8 @@
       "type": "text",
       "text": "hello",
       "timestamp": "2026-10-29T18:50:04.045Z",
-      "status": "seen"
+      "status": "seen",
+      "chatId": "Dharmesh"
     },
     {
       "id": "msg_1793300079700_phoo",
@@ -251,7 +328,8 @@
       "type": "text",
       "text": "J",
       "timestamp": "2026-10-29T18:54:39.700Z",
-      "status": "seen"
+      "status": "seen",
+      "chatId": "Dharmesh"
     },
     {
       "id": "msg_1793300095803_s9my",
@@ -259,7 +337,8 @@
       "type": "text",
       "text": "Hello sir",
       "timestamp": "2026-10-29T18:54:55.803Z",
-      "status": "seen"
+      "status": "seen",
+      "chatId": "Dharmesh"
     },
     {
       "id": "msg_1793300101038_dal4",
@@ -267,7 +346,8 @@
       "type": "text",
       "text": "Hi",
       "timestamp": "2026-10-29T18:55:01.038Z",
-      "status": "seen"
+      "status": "seen",
+      "chatId": "Dharmesh"
     },
     {
       "id": "msg_1793300462537_o9va",
@@ -275,146 +355,8 @@
       "type": "text",
       "text": "Hi",
       "timestamp": "2026-10-29T19:01:02.537Z",
-      "status": "seen"
-    }
-  ],
-  "Affaque ahmed": [
-    {
-      "chatId": "Affaque ahmed",
-      "sender": "Client",
-      "id": "msg_1793301568002_m2qn",
-      "text": "Yes sir",
-      "type": "text",
-      "timestamp": "2026-10-29T19:19:28.002Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Affaque ahmed",
-      "sender": "Raoprime",
-      "id": "msg_1793302126642_0btj",
-      "text": "hello",
-      "type": "text",
-      "timestamp": "2026-10-29T19:28:46.642Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Affaque ahmed",
-      "sender": "Client",
-      "id": "msg_1793302247212_zgb3",
-      "text": "G sir proof sir is waqt yahi k me Apne picture send kar sakhta hon and abhi Jo currently me medicine Le Raha hon uske picture already mene share my hai",
-      "type": "text",
-      "timestamp": "2026-10-29T19:30:47.212Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Affaque ahmed",
-      "sender": "Raoprime",
-      "id": "msg_1793302734416_53jc",
-      "text": "okay, but govt. health hospitals nahi h aapke pakistan me",
-      "type": "text",
-      "timestamp": "2026-10-29T19:38:54.416Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Affaque ahmed",
-      "sender": "Client",
-      "id": "msg_1793302873174_7whe",
-      "text": "Sir family ne serious hai nhi Liya howa",
-      "type": "text",
-      "timestamp": "2026-10-29T19:41:13.174Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Affaque ahmed",
-      "sender": "Client",
-      "id": "msg_1793302883019_gks9",
-      "text": "Mere 3 issue hai",
-      "type": "text",
-      "timestamp": "2026-10-29T19:41:23.019Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Affaque ahmed",
-      "sender": "Client",
-      "id": "msg_1793302891994_n31y",
-      "text": "1 arthritis",
-      "type": "text",
-      "timestamp": "2026-10-29T19:41:31.994Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Affaque ahmed",
-      "sender": "Raoprime",
-      "id": "msg_1793302892605_l75k",
-      "text": "btao",
-      "type": "text",
-      "timestamp": "2026-10-29T19:41:32.605Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Affaque ahmed",
-      "sender": "Client",
-      "id": "msg_1793302932286_vq1y",
-      "text": "2 weight bohot Kam ho Chuka hai almost 35kg age 21 or ghr me sabko lagta k me recovery nhi ho sakhta",
-      "type": "text",
-      "timestamp": "2026-10-29T19:42:12.286Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Affaque ahmed",
-      "sender": "Client",
-      "id": "msg_1793302956575_fu7x",
-      "text": "3 neck moment almost block hai",
-      "type": "text",
-      "timestamp": "2026-10-29T19:42:36.575Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Affaque ahmed",
-      "sender": "Raoprime",
-      "id": "msg_1793303235023_x4pf",
-      "text": "Bhai, meri ek baat bohot dhyan se sun. Mujhe pata hai tu is waqt kis dard aur takleef se guzar raha hai. Jab 21 saal ki age mein wazan 35 kilo reh jaye aur gardan block ho jaye, toh kisi ki bhi himmat toot jati hai. Tera haar maan lena samajh aata hai, lekin jo tu (suicide) karne ki soch raha hai na, wo bilkul galat hai mere bhai. Teri zindagi khatam nahi hui hai, masla ye hai ke tujhe abhi tak sahi doctor nahi mila. Teri bimari koi aam arthritis nahi hai, ye 'Ankylosing Spondylitis' ho sakti hai jo sirf jawan logo ko hoti hai. Tu kisi aam haddi walay doctor (orthopedic) ke paas mat ja. Tujhe sirf aur sirf ek 'Rheumatologist' ke paas jana hai. Aaj kal medical science mein iske aise injection (Biologics) aate hain jo jaadui tarike se dard rok dete hain aur haddiyon ko judne se bacha lete hain. Agar tujhe treatment ke paison ki tension hai, toh meri baat sun- Pakistan mein 'Bait-ul-Mal' ka sarkari program hai jo aisi bimariyon ke ilaj ke liye financial help deta hai. Iske ilawa Indus Hospital aur Aga Khan Hospital mein bhi Zakat fund se bilkul free ya bohot kam kharch mein ilaj hota hai. Raste bohot hain mere bhai, tune abhi try nahi kiya hai sahi jagah! Bas meri khatir ek kaam kar. Agar roti ya thos khana nahi khaya jata toh liquid diet le. Doodh, kele ka shake, aur protein waghera pi. Body mein thori jaan la. Teri age sirf 21 saal hai yaar, teri body bohot jaldi recover karegi agar sahi ilaaj mil jaye. Ek aakhri baar mere kehne par himmat kar le bhai. Ek baar kisi baday sarkari hospital ke Rheumatology ward mein chala ja, teri puri life badal jayegi. Haar mat maan mere bhai, please. Main yahan baitha hoon teri help ke liye. Mujhe message ka reply kar.",
-      "type": "text",
-      "status": "sent",
-      "timestamp": "2026-10-29T19:47:15.023Z"
-    },
-    {
-      "chatId": "Affaque ahmed",
-      "sender": "Raoprime",
-      "id": "msg_1793303395841_b64t",
-      "text": "bhai dhruv rathee agar help karta h to",
-      "type": "text",
-      "status": "delivered",
-      "timestamp": "2026-10-29T19:49:55.841Z"
-    },
-    {
-      "chatId": "Affaque ahmed",
-      "sender": "Raoprime",
-      "id": "msg_1793303454611_z6tz",
-      "text": "uske upper indian/pakistan Govt se dikkat aa sakti h",
-      "type": "text",
-      "status": "delivered",
-      "timestamp": "2026-10-29T19:50:54.611Z"
-    },
-    {
-      "chatId": "Affaque ahmed",
-      "sender": "Client",
-      "id": "msg_1793303631273_hun0",
-      "text": "Masla ye k ye chezain idhr logon ko samjh nhi aty mera khud ka bahir nikalna is hlt m muskil hai wo bhi kisi k begair big city idhar s door hai me is Liye chata tha k kisi trha mere pass Kuch paise hon to me khud ko Thora improve kar saghon Thora SA bhi change Aya to phr m idhar kisi s loan bhi le saghta hon Lekin begair Kisi change k kisi ko yakeen nhi ana",
-      "type": "text",
-      "timestamp": "2026-10-29T19:53:51.273Z",
-      "seenAt": "2026-10-29T19:58:08.776Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Affaque ahmed",
-      "sender": "Client",
-      "id": "msg_1793303735773_0jk2",
-      "text": "Ajkal bohot sare option hai like crypto wallets Mera Dil nhi karta kisi s Lene Lekin bohot Bure jga phans chuka ho is liye pareshan home msg kar deta hon 😢",
-      "type": "text",
-      "timestamp": "2026-10-29T19:55:35.773Z",
-      "seenAt": "2026-10-29T19:58:08.776Z",
-      "status": "seen"
+      "status": "seen",
+      "chatId": "Dharmesh"
     }
   ]
 }
