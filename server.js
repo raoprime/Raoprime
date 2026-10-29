@@ -295,8 +295,31 @@ app.post('/api/chat/send', async (req, res) => {
 // ──────────────────────────────────────────────────────────────
 const activeCalls = {};
 
+// Curated high-reliability ICE configuration (Google STUN + Cloudflare STUN + OpenRelay TURN)
+const SERVER_ICE_CONFIG = {
+  iceServers: [
+    {
+      urls: [
+        'turn:openrelay.metered.ca:80',
+        'turn:openrelay.metered.ca:443',
+        'turn:openrelay.metered.ca:443?transport=tcp'
+      ],
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    },
+    { urls: 'stun:openrelay.metered.ca:80' },
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' },
+    { urls: 'stun:stun.cloudflare.com:3478' }
+  ],
+  iceCandidatePoolSize: 10
+};
+
 function resolveActiveCall(chatId) {
-  // 1. Direct match on chatId
+  // 1. Direct match on chatId with active (non-ended) call
   if (chatId && activeCalls[chatId] && activeCalls[chatId].status !== 'ended') {
     return activeCalls[chatId];
   }
@@ -308,14 +331,30 @@ function resolveActiveCall(chatId) {
   const anyActive = Object.values(activeCalls).find(c => c && (c.status === 'ringing' || c.status === 'connected'));
   if (anyActive) return anyActive;
 
-  // 4. Any recently ended call (to allow graceful handshake termination)
-  const anyEnded = Object.values(activeCalls).find(c => c && c.status === 'ended');
-  if (anyEnded) return anyEnded;
+  // 4. Return ended call ONLY if specifically matching this room
+  if (chatId && activeCalls[chatId] && activeCalls[chatId].status === 'ended') {
+    return activeCalls[chatId];
+  }
+  if (activeCalls['default'] && activeCalls['default'].status === 'ended') {
+    return activeCalls['default'];
+  }
   return null;
 }
 
+app.get('/api/call/ice-servers', (req, res) => {
+  res.json({ success: true, config: SERVER_ICE_CONFIG });
+});
+
 app.post('/api/call/initiate', (req, res) => {
   const { chatId = 'default', caller = 'Client', type = 'video' } = req.body;
+
+  // Purge any old/ended calls so new call starts with a clean slate
+  for (const k of Object.keys(activeCalls)) {
+    if (activeCalls[k] && activeCalls[k].status === 'ended') {
+      delete activeCalls[k];
+    }
+  }
+
   const newCall = {
     callId: 'call_' + Date.now(),
     chatId: chatId || 'default',
@@ -405,10 +444,12 @@ app.post('/api/call/end', (req, res) => {
     call.status = 'ended';
     console.log(`🛑 Call ended in room [${call.chatId}]`);
     setTimeout(() => {
-      delete activeCalls[chatId];
-      delete activeCalls['default'];
-      if (call.chatId) delete activeCalls[call.chatId];
-    }, 4000);
+      for (const k of Object.keys(activeCalls)) {
+        if (activeCalls[k] === call || activeCalls[k]?.status === 'ended') {
+          delete activeCalls[k];
+        }
+      }
+    }, 2500);
   }
   res.json({ success: true });
 });

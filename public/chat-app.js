@@ -565,13 +565,26 @@ function escapeHtml(string) {
 // ──────────────────────────────────────────────────────────────
 const RTC_CONFIG = {
   iceServers: [
+    // OpenRelay Free Global TURN Servers (Bypasses Symmetric NAT, Jio, Airtel, Vi, 4G, 5G, Wi-Fi)
+    {
+      urls: [
+        'turn:openrelay.metered.ca:80',
+        'turn:openrelay.metered.ca:443',
+        'turn:openrelay.metered.ca:443?transport=tcp'
+      ],
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    },
+    { urls: 'stun:openrelay.metered.ca:80' },
+    // Google Global STUN Servers
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
     { urls: 'stun:stun2.l.google.com:19302' },
     { urls: 'stun:stun3.l.google.com:19302' },
     { urls: 'stun:stun4.l.google.com:19302' },
     { urls: 'stun:stun.cloudflare.com:3478' }
-  ]
+  ],
+  iceCandidatePoolSize: 10
 };
 
 let peerConnection = null;
@@ -654,12 +667,18 @@ async function startCall(type = 'video') {
   lastSignalSeq = 0;
   pendingCandidates = [];
 
-  // 1. Immediately unlock browser audio context on user interaction
+  // 1. Prime and unlock browser audio & video contexts synchronously on user gesture
   const remoteAudioEl = document.getElementById('remoteAudio');
   if (remoteAudioEl) {
     remoteAudioEl.muted = false;
     remoteAudioEl.volume = 1.0;
     remoteAudioEl.play().catch(() => {});
+  }
+  const remoteVideoEl = document.getElementById('remoteVideo');
+  if (remoteVideoEl) {
+    remoteVideoEl.muted = false;
+    remoteVideoEl.volume = 1.0;
+    remoteVideoEl.play().catch(() => {});
   }
 
   // 2. Open active call overlay instantly
@@ -668,7 +687,6 @@ async function startCall(type = 'video') {
   const peerNameEl = document.getElementById('callOverlayPeerName');
   const initialEl = document.getElementById('callOverlayInitial');
   const visualizerEl = document.getElementById('audioCallVisualizer');
-  const remoteVideoEl = document.getElementById('remoteVideo');
   const localContainer = document.getElementById('localVideoContainer');
   const camBtn = document.getElementById('camToggleBtn');
   const flipBtn = document.getElementById('flipCamBtn');
@@ -680,13 +698,18 @@ async function startCall(type = 'video') {
 
   if (type === 'audio') {
     if (visualizerEl) visualizerEl.classList.remove('hidden');
-    if (remoteVideoEl) remoteVideoEl.classList.add('hidden');
+    if (remoteVideoEl) {
+      remoteVideoEl.classList.add('opacity-0', 'pointer-events-none');
+      remoteVideoEl.classList.remove('hidden');
+    }
     if (localContainer) localContainer.classList.add('hidden');
     if (camBtn) camBtn.classList.add('hidden');
     if (flipBtn) flipBtn.classList.add('hidden');
   } else {
     if (visualizerEl) visualizerEl.classList.add('hidden');
-    if (remoteVideoEl) remoteVideoEl.classList.remove('hidden');
+    if (remoteVideoEl) {
+      remoteVideoEl.classList.remove('opacity-0', 'pointer-events-none', 'hidden');
+    }
     if (localContainer) localContainer.classList.remove('hidden');
     if (camBtn) camBtn.classList.remove('hidden');
     if (flipBtn) flipBtn.classList.remove('hidden');
@@ -739,12 +762,18 @@ async function acceptIncomingCall() {
   lastSignalSeq = 0;
   pendingCandidates = [];
 
-  // Unlock browser audio context on user interaction
+  // Prime and unlock browser audio & video contexts synchronously on user gesture
   const remoteAudioEl = document.getElementById('remoteAudio');
   if (remoteAudioEl) {
     remoteAudioEl.muted = false;
     remoteAudioEl.volume = 1.0;
     remoteAudioEl.play().catch(() => {});
+  }
+  const remoteVideoEl = document.getElementById('remoteVideo');
+  if (remoteVideoEl) {
+    remoteVideoEl.muted = false;
+    remoteVideoEl.volume = 1.0;
+    remoteVideoEl.play().catch(() => {});
   }
 
   const overlay = document.getElementById('callOverlay');
@@ -752,7 +781,6 @@ async function acceptIncomingCall() {
   const peerNameEl = document.getElementById('callOverlayPeerName');
   const initialEl = document.getElementById('callOverlayInitial');
   const visualizerEl = document.getElementById('audioCallVisualizer');
-  const remoteVideoEl = document.getElementById('remoteVideo');
   const localContainer = document.getElementById('localVideoContainer');
   const camBtn = document.getElementById('camToggleBtn');
   const flipBtn = document.getElementById('flipCamBtn');
@@ -764,13 +792,18 @@ async function acceptIncomingCall() {
 
   if (currentCallType === 'audio') {
     if (visualizerEl) visualizerEl.classList.remove('hidden');
-    if (remoteVideoEl) remoteVideoEl.classList.add('hidden');
+    if (remoteVideoEl) {
+      remoteVideoEl.classList.add('opacity-0', 'pointer-events-none');
+      remoteVideoEl.classList.remove('hidden');
+    }
     if (localContainer) localContainer.classList.add('hidden');
     if (camBtn) camBtn.classList.add('hidden');
     if (flipBtn) flipBtn.classList.add('hidden');
   } else {
     if (visualizerEl) visualizerEl.classList.add('hidden');
-    if (remoteVideoEl) remoteVideoEl.classList.remove('hidden');
+    if (remoteVideoEl) {
+      remoteVideoEl.classList.remove('opacity-0', 'pointer-events-none', 'hidden');
+    }
     if (localContainer) localContainer.classList.remove('hidden');
     if (camBtn) camBtn.classList.remove('hidden');
     if (flipBtn) flipBtn.classList.remove('hidden');
@@ -826,7 +859,7 @@ async function acquireLocalMedia(isVideo) {
     try {
       stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-        video: { facingMode: currentFacingMode, width: { ideal: 1280, max: 1920 }, height: { ideal: 720, max: 1080 } }
+        video: { facingMode: currentFacingMode }
       });
     } catch (e1) {
       try {
@@ -880,34 +913,40 @@ async function initPeerConnection(isVideo) {
 
   if (localStream) {
     localStream.getTracks().forEach(track => {
-      peerConnection.addTrack(track, localStream);
+      try {
+        peerConnection.addTrack(track, localStream);
+      } catch (e) {}
     });
   }
 
   peerConnection.onicecandidate = (event) => {
-    if (event.candidate) {
+    if (event.candidate && event.candidate.candidate) {
       sendCallSignal({ candidate: event.candidate });
     }
   };
+
+  const remoteStream = new MediaStream();
 
   peerConnection.ontrack = (event) => {
     console.log('Got remote track:', event.track.kind);
     const remoteAudioEl = document.getElementById('remoteAudio');
     const remoteVideoEl = document.getElementById('remoteVideo');
 
-    // Dedicated unhidden remote audio output
-    if (remoteAudioEl && event.streams && event.streams[0]) {
-      remoteAudioEl.srcObject = event.streams[0];
-      remoteAudioEl.muted = false;
-      remoteAudioEl.volume = 1.0;
-      remoteAudioEl.play().catch(e => console.warn('Audio play err:', e));
-    }
+    remoteStream.addTrack(event.track);
+    const stream = (event.streams && event.streams[0]) ? event.streams[0] : remoteStream;
 
-    if (remoteVideoEl && event.streams && event.streams[0]) {
-      remoteVideoEl.srcObject = event.streams[0];
+    if (remoteVideoEl) {
+      remoteVideoEl.srcObject = stream;
       remoteVideoEl.muted = false;
       remoteVideoEl.volume = 1.0;
-      remoteVideoEl.play().catch(e => console.warn('Video play err:', e));
+      remoteVideoEl.play().catch(e => console.warn('Video play notice:', e));
+    }
+
+    if (remoteAudioEl) {
+      remoteAudioEl.srcObject = stream;
+      remoteAudioEl.muted = false;
+      remoteAudioEl.volume = 1.0;
+      remoteAudioEl.play().catch(e => console.warn('Audio play notice:', e));
     }
   };
 
@@ -916,12 +955,25 @@ async function initPeerConnection(isVideo) {
     if (peerConnection.connectionState === 'connected') {
       startCallDurationTimer();
       const remoteAudioEl = document.getElementById('remoteAudio');
+      const remoteVideoEl = document.getElementById('remoteVideo');
       if (remoteAudioEl) remoteAudioEl.play().catch(() => {});
+      if (remoteVideoEl) remoteVideoEl.play().catch(() => {});
       showToast('1080p Ultra HD Connected • Encrypted');
     } else if (peerConnection.connectionState === 'failed') {
       if (peerConnection.restartIce) {
         peerConnection.restartIce();
       }
+    }
+  };
+
+  peerConnection.oniceconnectionstatechange = () => {
+    console.log('ICE connection state:', peerConnection.iceConnectionState);
+    if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') {
+      startCallDurationTimer();
+      const remoteAudioEl = document.getElementById('remoteAudio');
+      const remoteVideoEl = document.getElementById('remoteVideo');
+      if (remoteAudioEl) remoteAudioEl.play().catch(() => {});
+      if (remoteVideoEl) remoteVideoEl.play().catch(() => {});
     }
   };
 }
@@ -970,31 +1022,38 @@ function startSignalPolling() {
 async function handleIncomingSignal(sig) {
   if (!peerConnection) return;
 
-  if (sig.sdp) {
-    if (sig.sdp.type === 'offer') {
-      await peerConnection.setRemoteDescription(new RTCSessionDescription(sig.sdp));
-      for (const cand of pendingCandidates) {
-        await peerConnection.addIceCandidate(new RTCIceCandidate(cand)).catch(() => {});
-      }
-      pendingCandidates = [];
+  try {
+    if (sig.sdp) {
+      if (sig.sdp.type === 'offer') {
+        if (peerConnection.signalingState !== 'stable') {
+          console.warn('Signaling state not stable for offer:', peerConnection.signalingState);
+        }
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(sig.sdp));
+        for (const cand of pendingCandidates) {
+          await peerConnection.addIceCandidate(new RTCIceCandidate(cand)).catch(() => {});
+        }
+        pendingCandidates = [];
 
-      const answer = await peerConnection.createAnswer();
-      await peerConnection.setLocalDescription(answer);
-      await sendCallSignal({ sdp: answer });
-    } else if (sig.sdp.type === 'answer') {
-      await peerConnection.setRemoteDescription(new RTCSessionDescription(sig.sdp));
-      for (const cand of pendingCandidates) {
-        await peerConnection.addIceCandidate(new RTCIceCandidate(cand)).catch(() => {});
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+        await sendCallSignal({ sdp: answer });
+      } else if (sig.sdp.type === 'answer') {
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(sig.sdp));
+        for (const cand of pendingCandidates) {
+          await peerConnection.addIceCandidate(new RTCIceCandidate(cand)).catch(() => {});
+        }
+        pendingCandidates = [];
+        startCallDurationTimer();
       }
-      pendingCandidates = [];
-      startCallDurationTimer();
+    } else if (sig.candidate) {
+      if (peerConnection.remoteDescription && peerConnection.remoteDescription.type) {
+        await peerConnection.addIceCandidate(new RTCIceCandidate(sig.candidate)).catch(() => {});
+      } else {
+        pendingCandidates.push(sig.candidate);
+      }
     }
-  } else if (sig.candidate) {
-    if (peerConnection.remoteDescription && peerConnection.remoteDescription.type) {
-      await peerConnection.addIceCandidate(new RTCIceCandidate(sig.candidate)).catch(() => {});
-    } else {
-      pendingCandidates.push(sig.candidate);
-    }
+  } catch (err) {
+    console.warn('Signal handling notice:', err);
   }
 }
 

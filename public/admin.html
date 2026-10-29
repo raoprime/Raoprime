@@ -459,7 +459,7 @@
       <video id="remoteVideo" autoplay playsinline webkit-playsinline class="w-full h-full object-cover"></video>
 
       <!-- Dedicated Remote Audio Output (Never hidden with display:none to guarantee loud crystal-clear audio on iOS & Android) -->
-      <audio id="remoteAudio" autoplay playsinline style="position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;"></audio>
+      <audio id="remoteAudio" autoplay playsinline class="sr-only"></audio>
 
       <!-- Audio Call Screen with Dynamic Bouncing Soundwave Suite -->
       <div id="audioCallVisualizer" class="hidden absolute inset-0 flex flex-col items-center justify-center space-y-8 text-center p-6 bg-gradient-to-b from-[#090b12] via-[#05060a] to-[#090b12]">
