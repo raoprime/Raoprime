@@ -81,13 +81,18 @@ document.addEventListener('DOMContentLoaded', () => {
   // Drag and Drop anywhere on page
   setupDragAndDrop();
 
-  // Heartbeat Loop (Pings every 2.5s to maintain Live Online Status)
+  // Heartbeat Loop (Pings every 5s as secondary fallback)
   sendHeartbeat();
-  setInterval(sendHeartbeat, 2500);
+  setInterval(sendHeartbeat, 5000);
 
-  // Initial load & Polling (Ultra-fast 800ms polling for WhatsApp/Instagram-grade real-time response)
-  loadMessages();
-  setInterval(loadMessages, 800);
+  // Sequential non-blocking message polling (100% immune to request pile-up and freezes)
+  triggerMessagePoll();
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      triggerMessagePoll();
+    }
+  });
 });
 
 // Send Heartbeat to declare active online presence
@@ -240,6 +245,9 @@ function onFilesChosen(e) {
 // ──────────────────────────────────────────────────────────────
 
 let lastMessageSig = '';
+let lastTypingSig = '';
+let isPollingMessages = false;
+let messagePollTimer = null;
 
 function renderMessageStatus(status, isOut) {
   if (!isOut) return '';
@@ -251,6 +259,20 @@ function renderMessageStatus(status, isOut) {
     return `<span class="inline-flex items-center gap-0.5 text-slate-400 font-medium ml-1.5" title="Delivered"><svg class="w-3.5 h-3.5 inline fill-current" viewBox="0 0 16 16"><path d="M12.354 4.354a.5.5 0 0 0-.708-.708L5 10.293 1.854 7.146a.5.5 0 1 0-.708.708l3.5 3.5a.5.5 0 0 0 .708 0l7-7zm-4.708 7.293L15.354 3.94a.5.5 0 1 0-.708-.708L7.646 10.94l-.708-.707a.5.5 0 0 0-.708.708l1.062 1.061a.5.5 0 0 0 .708 0z"/></svg><span class="text-[9px]">Delivered</span></span>`;
   }
   return `<span class="inline-flex items-center gap-0.5 text-slate-500 font-medium ml-1.5" title="Sent"><svg class="w-3 h-3 inline fill-current" viewBox="0 0 16 16"><path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/></svg><span class="text-[9px]">Sent</span></span>`;
+}
+
+async function triggerMessagePoll() {
+  if (isPollingMessages) return;
+  isPollingMessages = true;
+  try {
+    await loadMessages();
+  } catch (e) {
+  } finally {
+    isPollingMessages = false;
+    const interval = document.hidden ? 3000 : 1000;
+    if (messagePollTimer) clearTimeout(messagePollTimer);
+    messagePollTimer = setTimeout(triggerMessagePoll, interval);
+  }
 }
 
 async function loadMessages() {
@@ -274,7 +296,11 @@ async function loadMessages() {
       const otherSender = currentRole === 'Client' ? 'Raoprime' : 'Client';
       const isOtherTyping = Boolean(data.typing && data.typing[otherSender]);
       const isOtherOnline = Boolean(data.online && data.online[otherSender]);
-      updateTypingUI(isOtherOnline, isOtherTyping);
+      const currentTypingSig = `${isOtherOnline}:${isOtherTyping}`;
+      if (currentTypingSig !== lastTypingSig) {
+        lastTypingSig = currentTypingSig;
+        updateTypingUI(isOtherOnline, isOtherTyping);
+      }
     }
   } catch (err) {
     // Silent fail on poll
@@ -643,11 +669,13 @@ let callStartTime = null;
 let callDurationTimer = null;
 let currentCallType = 'video';
 
-// Background check for incoming calls (Universal detection)
-setInterval(checkIncomingCallStatus, 1500);
+// Background check for incoming calls (Universal detection with in-flight guard)
+let isCheckingCall = false;
+setInterval(checkIncomingCallStatus, 2000);
 
 async function checkIncomingCallStatus() {
-  if (isCallActive) return;
+  if (isCallActive || isCheckingCall) return;
+  isCheckingCall = true;
   try {
     const res = await fetch(`/api/call/status?role=client&chatId=${encodeURIComponent(currentChatId)}`);
     const data = await res.json();
@@ -663,7 +691,10 @@ async function checkIncomingCallStatus() {
     } else if (data.call && data.call.status === 'ended') {
       cleanupCall();
     }
-  } catch (e) {}
+  } catch (e) {
+  } finally {
+    isCheckingCall = false;
+  }
 }
 
 function showIncomingCallModal(call) {

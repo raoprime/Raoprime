@@ -168,48 +168,92 @@ function saveAllLocalChats(chats) {
   } catch (e) {}
 }
 
-// Firebase + Local Hybrid Message Operations
-async function getChatMessages(chatId) {
-  initFirebase();
-  if (isFirebaseConnected && firebaseDb) {
-    try {
-      const snap = await firebaseDb.collection('raoprime_messages').where('chatId', '==', chatId).get();
-      if (!snap.empty) {
-        const msgs = snap.docs.map(d => d.data());
-        msgs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-        return msgs;
-      }
-    } catch (e) {
-      console.warn('Firebase read notice:', e.message);
-    }
+// ──────────────────────────────────────────────────────────────
+// High-Speed In-Memory Chat Store (Zero-Latency Instant RAM Reads)
+// Async background Firestore & Disk sync prevents any hanging or CPU freeze
+// ──────────────────────────────────────────────────────────────
+let memoryChatStore = null;
+let saveDebounceTimer = null;
+
+function ensureMemoryStore() {
+  if (!memoryChatStore) {
+    memoryChatStore = getAllLocalChats();
   }
-  const localChats = getAllLocalChats();
-  return localChats[chatId] || [];
+  return memoryChatStore;
 }
 
-async function saveChatMessage(chatId, messageObj) {
+// Initial Async Sync from Firebase Firestore into RAM
+async function syncFirestoreIntoMemory() {
   initFirebase();
-  const clientName = chatId === 'default' ? 'General Desk' : decodeURIComponent(chatId);
-  if (isFirebaseConnected && firebaseDb) {
-    try {
-      await firebaseDb.collection('raoprime_messages').doc(messageObj.id).set({
-        chatId,
-        ...messageObj
-      }, { merge: true });
-
-      await firebaseDb.collection('raoprime_chats').doc(chatId).set({
-        chatId,
-        clientName,
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
-    } catch (e) {
-      console.warn('Firebase write notice:', e.message);
+  if (!isFirebaseConnected || !firebaseDb) return;
+  try {
+    const snap = await firebaseDb.collection('raoprime_messages').get();
+    if (!snap.empty) {
+      const store = ensureMemoryStore();
+      snap.docs.forEach(doc => {
+        const msg = doc.data();
+        const cid = msg.chatId || 'default';
+        if (!store[cid]) store[cid] = [];
+        const exists = store[cid].find(m => m.id === msg.id);
+        if (!exists) {
+          store[cid].push(msg);
+        } else {
+          if (msg.status) exists.status = msg.status;
+          if (msg.seenAt) exists.seenAt = msg.seenAt;
+        }
+      });
+      for (const cid of Object.keys(store)) {
+        store[cid].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+      }
+      saveAllLocalChats(store);
+      console.log('⚡ High-Speed In-Memory Store primed (0ms read latency)!');
     }
+  } catch (e) {
+    console.warn('Memory store initial prime notice:', e.message);
   }
-  const localChats = getAllLocalChats();
-  if (!localChats[chatId]) localChats[chatId] = [];
-  localChats[chatId].push(messageObj);
-  saveAllLocalChats(localChats);
+}
+setTimeout(syncFirestoreIntoMemory, 500);
+setInterval(syncFirestoreIntoMemory, 60000);
+
+// Instant RAM read
+function getChatMessages(chatId) {
+  const store = ensureMemoryStore();
+  return store[chatId] || [];
+}
+
+// Instant RAM write + Async background persistence
+async function saveChatMessage(chatId, messageObj) {
+  const store = ensureMemoryStore();
+  if (!store[chatId]) store[chatId] = [];
+  store[chatId].push(messageObj);
+
+  // Debounced write to disk
+  if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
+  saveDebounceTimer = setTimeout(() => {
+    saveAllLocalChats(store);
+  }, 250);
+
+  // Non-blocking asynchronous Firestore background write
+  setImmediate(async () => {
+    initFirebase();
+    if (isFirebaseConnected && firebaseDb) {
+      try {
+        const clientName = chatId === 'default' ? 'General Desk' : decodeURIComponent(chatId);
+        await firebaseDb.collection('raoprime_messages').doc(messageObj.id).set({
+          chatId,
+          ...messageObj
+        }, { merge: true });
+
+        await firebaseDb.collection('raoprime_chats').doc(chatId).set({
+          chatId,
+          clientName,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      } catch (e) {
+        console.warn('Async Firestore write notice:', e.message);
+      }
+    }
+  });
 }
 
 // In-memory Real-time Presence & Typing Tracker
@@ -217,55 +261,54 @@ const typingStatus = {}; // { [chatId]: { Client: timestamp, Raoprime: timestamp
 const presenceStatus = {}; // { [chatId]: { Client: timestamp, Raoprime: timestamp } }
 let globalAdminPresence = 0; // Tracks if Raoprime Admin is live on portal anywhere
 
-// Mark chat messages as seen by reader ('Client' or 'Raoprime')
+// Instant RAM seen update + non-blocking background Firestore sync
 async function markChatMessagesSeen(chatId, readerRole) {
-  initFirebase();
+  const store = ensureMemoryStore();
+  if (!store[chatId]) return false;
+
   const now = new Date().toISOString();
-  let updatedAny = false;
+  const updatedIds = [];
 
-  const localChats = getAllLocalChats();
-  if (localChats[chatId]) {
-    for (const msg of localChats[chatId]) {
-      const isIncomingForReader = readerRole === 'Raoprime'
-        ? (msg.sender !== 'Raoprime' && msg.sender !== 'RP')
-        : (msg.sender === 'Raoprime' || msg.sender === 'RP');
-      if (isIncomingForReader && msg.status !== 'seen') {
-        msg.status = 'seen';
-        msg.seenAt = now;
-        updatedAny = true;
-      }
-    }
-    if (updatedAny) {
-      saveAllLocalChats(localChats);
+  for (const msg of store[chatId]) {
+    const isIncomingForReader = readerRole === 'Raoprime'
+      ? (msg.sender !== 'Raoprime' && msg.sender !== 'RP')
+      : (msg.sender === 'Raoprime' || msg.sender === 'RP');
+    if (isIncomingForReader && msg.status !== 'seen') {
+      msg.status = 'seen';
+      msg.seenAt = now;
+      updatedIds.push(msg.id);
     }
   }
 
-  // Also sync to Firestore asynchronously
-  if (isFirebaseConnected && firebaseDb) {
-    try {
-      const snap = await firebaseDb.collection('raoprime_messages').where('chatId', '==', chatId).get();
-      if (!snap.empty) {
+  // If nothing changed, return instantly in 0ms!
+  if (updatedIds.length === 0) return false;
+
+  // Debounced write to disk
+  if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
+  saveDebounceTimer = setTimeout(() => {
+    saveAllLocalChats(store);
+  }, 250);
+
+  // Non-blocking background Firestore commit
+  setImmediate(async () => {
+    initFirebase();
+    if (isFirebaseConnected && firebaseDb) {
+      try {
         const batch = firebaseDb.batch();
-        let bCount = 0;
-        for (const doc of snap.docs) {
-          const m = doc.data();
-          const isIncomingForReader = readerRole === 'Raoprime'
-            ? (m.sender !== 'Raoprime' && m.sender !== 'RP')
-            : (m.sender === 'Raoprime' || m.sender === 'RP');
-          if (isIncomingForReader && m.status !== 'seen') {
-            batch.update(doc.ref, { status: 'seen', seenAt: now });
-            bCount++;
-          }
+        for (const id of updatedIds) {
+          batch.update(firebaseDb.collection('raoprime_messages').doc(id), {
+            status: 'seen',
+            seenAt: now
+          });
         }
-        if (bCount > 0) {
-          await batch.commit();
-        }
+        await batch.commit();
+      } catch (e) {
+        console.warn('Async seen batch commit notice:', e.message);
       }
-    } catch (e) {
-      console.warn('Firebase batch seen update notice:', e.message);
     }
-  }
-  return updatedAny;
+  });
+
+  return true;
 }
 
 // Heartbeat Endpoint to track Live Presence (Active vs Offline)
@@ -297,9 +340,12 @@ app.get('/api/chat/messages', async (req, res) => {
     const chatId = req.query.chatId || 'default';
     const reader = req.query.reader || (req.headers['x-admin-token'] ? 'Raoprime' : null);
 
-    // If a reader is actively querying, mark other party's messages as seen
+    // If a reader is actively querying, mark other party's messages as seen and refresh presence
     if (reader) {
-      if (reader === 'Raoprime') globalAdminPresence = Date.now();
+      const now = Date.now();
+      if (reader === 'Raoprime') globalAdminPresence = now;
+      if (!presenceStatus[chatId]) presenceStatus[chatId] = {};
+      presenceStatus[chatId][reader] = now;
       await markChatMessagesSeen(chatId, reader);
     }
 
@@ -656,89 +702,44 @@ app.get('/api/admin/verify', requireAdminAuth, (req, res) => {
 // Admin APIs: Inbox & Chat Management (Protected)
 // ──────────────────────────────────────────────────────────────
 
-// List all active conversations for the Admin Portal
+// List all active conversations for the Admin Portal (Ultra-Fast 0ms RAM Read)
 app.get('/api/admin/chats', requireAdminAuth, async (req, res) => {
   try {
-    initFirebase();
     const chatList = [];
     const now = Date.now();
     globalAdminPresence = now;
 
-    if (isFirebaseConnected && firebaseDb) {
-      try {
-        const chatsSnap = await firebaseDb.collection('raoprime_chats').get();
-        for (const doc of chatsSnap.docs) {
-          const cData = doc.data();
-          const chatId = cData.chatId || doc.id;
-          const messages = await getChatMessages(chatId);
-          if (!Array.isArray(messages) || messages.length === 0) continue;
+    const store = ensureMemoryStore();
+    for (const [chatId, messages] of Object.entries(store)) {
+      if (!Array.isArray(messages) || messages.length === 0) continue;
 
-          const lastMsg = messages[messages.length - 1];
-          const files = messages.filter((m) => m.type === 'file' && m.file);
-          const clientName = cData.clientName || (chatId === 'default' ? 'General Desk' : decodeURIComponent(chatId));
+      const lastMsg = messages[messages.length - 1];
+      const files = messages.filter((m) => m.type === 'file' && m.file);
+      const clientName = chatId === 'default' ? 'General Desk' : decodeURIComponent(chatId);
 
-          const chatPresence = presenceStatus[chatId] || {};
-          const chatTyping = typingStatus[chatId] || {};
-          const isClientOnline = Boolean(chatPresence.Client && (now - chatPresence.Client < 10000));
-          const isClientTyping = Boolean(chatTyping.Client && (now - chatTyping.Client < 3500));
-          const unseenCount = messages.filter(m => (m.sender !== 'Raoprime' && m.sender !== 'RP') && m.status !== 'seen').length;
+      const chatPresence = presenceStatus[chatId] || {};
+      const chatTyping = typingStatus[chatId] || {};
+      const isClientOnline = Boolean(chatPresence.Client && (now - chatPresence.Client < 10000));
+      const isClientTyping = Boolean(chatTyping.Client && (now - chatTyping.Client < 3500));
+      const unseenCount = messages.filter(m => (m.sender !== 'Raoprime' && m.sender !== 'RP') && m.status !== 'seen').length;
 
-          chatList.push({
-            chatId,
-            clientName,
-            totalMessages: messages.length,
-            totalFiles: files.length,
-            files: files.map((f) => f.file),
-            isOnline: isClientOnline,
-            isTyping: isClientTyping,
-            unseenCount,
-            lastMessage: {
-              sender: lastMsg.sender,
-              text: lastMsg.type === 'file' ? `📁 [File] ${lastMsg.file.originalName}` : lastMsg.text,
-              status: lastMsg.status || 'seen',
-              timestamp: lastMsg.timestamp,
-              type: lastMsg.type
-            }
-          });
+      chatList.push({
+        chatId,
+        clientName,
+        totalMessages: messages.length,
+        totalFiles: files.length,
+        files: files.map((f) => f.file),
+        isOnline: isClientOnline,
+        isTyping: isClientTyping,
+        unseenCount,
+        lastMessage: {
+          sender: lastMsg.sender,
+          text: lastMsg.type === 'file' ? `📁 [File] ${lastMsg.file.originalName}` : lastMsg.text,
+          status: lastMsg.status || 'seen',
+          timestamp: lastMsg.timestamp,
+          type: lastMsg.type
         }
-      } catch (fbErr) {
-        console.warn('Firebase admin chats query warning:', fbErr.message);
-      }
-    }
-
-    if (chatList.length === 0) {
-      const chats = getAllLocalChats();
-      for (const [chatId, messages] of Object.entries(chats)) {
-        if (!Array.isArray(messages) || messages.length === 0) continue;
-
-        const lastMsg = messages[messages.length - 1];
-        const files = messages.filter((m) => m.type === 'file' && m.file);
-        const clientName = chatId === 'default' ? 'General Desk' : decodeURIComponent(chatId);
-
-        const chatPresence = presenceStatus[chatId] || {};
-        const chatTyping = typingStatus[chatId] || {};
-        const isClientOnline = Boolean(chatPresence.Client && (now - chatPresence.Client < 10000));
-        const isClientTyping = Boolean(chatTyping.Client && (now - chatTyping.Client < 3500));
-        const unseenCount = messages.filter(m => (m.sender !== 'Raoprime' && m.sender !== 'RP') && m.status !== 'seen').length;
-
-        chatList.push({
-          chatId,
-          clientName,
-          totalMessages: messages.length,
-          totalFiles: files.length,
-          files: files.map((f) => f.file),
-          isOnline: isClientOnline,
-          isTyping: isClientTyping,
-          unseenCount,
-          lastMessage: {
-            sender: lastMsg.sender,
-            text: lastMsg.type === 'file' ? `📁 [File] ${lastMsg.file.originalName}` : lastMsg.text,
-            status: lastMsg.status || 'seen',
-            timestamp: lastMsg.timestamp,
-            type: lastMsg.type
-          }
-        });
-      }
+      });
     }
 
     // Sort by latest message descending
@@ -812,10 +813,10 @@ app.delete('/api/admin/chat/:chatId', requireAdminAuth, async (req, res) => {
       }
     }
 
-    // 2. Delete from Local JSON Storage
-    const localChats = getAllLocalChats();
-    if (localChats[chatId]) {
-      const messages = localChats[chatId] || [];
+    // 2. Delete from In-Memory & Local JSON Storage
+    const store = ensureMemoryStore();
+    if (store[chatId]) {
+      const messages = store[chatId] || [];
       for (const m of messages) {
         if (m.type === 'file' && m.file && m.file.storedName) {
           const fPath = path.join(VAULT_DIR, m.file.storedName);
@@ -824,8 +825,8 @@ app.delete('/api/admin/chat/:chatId', requireAdminAuth, async (req, res) => {
           }
         }
       }
-      delete localChats[chatId];
-      saveAllLocalChats(localChats);
+      delete store[chatId];
+      saveAllLocalChats(store);
     }
 
     // 3. Clear active calls or typing state

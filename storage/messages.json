@@ -27,6 +27,86 @@
       "text": "Testing public link",
       "timestamp": "2026-10-29T15:37:56.730Z",
       "status": "seen"
+    },
+    {
+      "chatId": "PublicTestClient",
+      "sender": "Client",
+      "id": "msg_1793303113753_pzmd",
+      "text": "Realtime status test 1793303113206",
+      "type": "text",
+      "timestamp": "2026-10-29T19:45:13.753Z",
+      "seenAt": "2026-10-29T19:46:04.653Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "PublicTestClient",
+      "sender": "Client",
+      "id": "msg_1793303119852_qsec",
+      "text": "Ping 0",
+      "type": "text",
+      "timestamp": "2026-10-29T19:45:19.852Z",
+      "seenAt": "2026-10-29T19:46:04.653Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "PublicTestClient",
+      "sender": "Client",
+      "id": "msg_1793303126951_8cru",
+      "text": "Ping 1",
+      "type": "text",
+      "timestamp": "2026-10-29T19:45:26.951Z",
+      "seenAt": "2026-10-29T19:46:04.653Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "PublicTestClient",
+      "sender": "Client",
+      "id": "msg_1793303133543_g0kd",
+      "text": "Ping 2",
+      "type": "text",
+      "timestamp": "2026-10-29T19:45:33.544Z",
+      "seenAt": "2026-10-29T19:46:04.653Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "PublicTestClient",
+      "sender": "Client",
+      "id": "msg_1793303140669_1mtx",
+      "text": "Ping 3",
+      "type": "text",
+      "timestamp": "2026-10-29T19:45:40.669Z",
+      "seenAt": "2026-10-29T19:46:04.653Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "PublicTestClient",
+      "sender": "Client",
+      "id": "msg_1793303147889_i9w7",
+      "text": "Ping 4",
+      "type": "text",
+      "timestamp": "2026-10-29T19:45:47.889Z",
+      "seenAt": "2026-10-29T19:46:04.653Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "PublicTestClient",
+      "sender": "Client",
+      "id": "msg_1793303154515_qeha",
+      "text": "Ping 5",
+      "type": "text",
+      "timestamp": "2026-10-29T19:45:54.515Z",
+      "seenAt": "2026-10-29T19:46:04.653Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "PublicTestClient",
+      "sender": "Client",
+      "id": "msg_1793303164027_6xlc",
+      "text": "Live Seen Check 1793303163920",
+      "type": "text",
+      "timestamp": "2026-10-29T19:46:04.027Z",
+      "seenAt": "2026-10-29T19:46:04.653Z",
+      "status": "seen"
     }
   ],
   "Affaque Ahmed": [
@@ -76,6 +156,15 @@
       "type": "text",
       "text": "Maine apne medical documents aur reports attach kar diye hain. Please Dhruv Rathi ji tak meri madad ka message pahuncha dijiye.",
       "timestamp": "2026-10-29T17:26:00.000Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Raoprime",
+      "id": "msg_1793302145413_4q6a",
+      "text": "hello",
+      "type": "text",
+      "timestamp": "2026-10-29T19:29:05.413Z",
       "status": "seen"
     }
   ],
@@ -176,6 +265,145 @@
       "type": "text",
       "text": "Hi",
       "timestamp": "2026-10-29T19:01:02.537Z",
+      "status": "seen"
+    }
+  ],
+  "Affaque ahmed": [
+    {
+      "chatId": "Affaque ahmed",
+      "sender": "Client",
+      "id": "msg_1793301568002_m2qn",
+      "text": "Yes sir",
+      "type": "text",
+      "timestamp": "2026-10-29T19:19:28.002Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque ahmed",
+      "sender": "Raoprime",
+      "id": "msg_1793302126642_0btj",
+      "text": "hello",
+      "type": "text",
+      "timestamp": "2026-10-29T19:28:46.642Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque ahmed",
+      "sender": "Client",
+      "id": "msg_1793302247212_zgb3",
+      "text": "G sir proof sir is waqt yahi k me Apne picture send kar sakhta hon and abhi Jo currently me medicine Le Raha hon uske picture already mene share my hai",
+      "type": "text",
+      "timestamp": "2026-10-29T19:30:47.212Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque ahmed",
+      "sender": "Raoprime",
+      "id": "msg_1793302734416_53jc",
+      "text": "okay, but govt. health hospitals nahi h aapke pakistan me",
+      "type": "text",
+      "timestamp": "2026-10-29T19:38:54.416Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque ahmed",
+      "sender": "Client",
+      "id": "msg_1793302873174_7whe",
+      "text": "Sir family ne serious hai nhi Liya howa",
+      "type": "text",
+      "timestamp": "2026-10-29T19:41:13.174Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque ahmed",
+      "sender": "Client",
+      "id": "msg_1793302883019_gks9",
+      "text": "Mere 3 issue hai",
+      "type": "text",
+      "timestamp": "2026-10-29T19:41:23.019Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque ahmed",
+      "sender": "Client",
+      "id": "msg_1793302891994_n31y",
+      "text": "1 arthritis",
+      "type": "text",
+      "timestamp": "2026-10-29T19:41:31.994Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque ahmed",
+      "sender": "Raoprime",
+      "id": "msg_1793302892605_l75k",
+      "text": "btao",
+      "type": "text",
+      "timestamp": "2026-10-29T19:41:32.605Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque ahmed",
+      "sender": "Client",
+      "id": "msg_1793302932286_vq1y",
+      "text": "2 weight bohot Kam ho Chuka hai almost 35kg age 21 or ghr me sabko lagta k me recovery nhi ho sakhta",
+      "type": "text",
+      "timestamp": "2026-10-29T19:42:12.286Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque ahmed",
+      "sender": "Client",
+      "id": "msg_1793302956575_fu7x",
+      "text": "3 neck moment almost block hai",
+      "type": "text",
+      "timestamp": "2026-10-29T19:42:36.575Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque ahmed",
+      "sender": "Raoprime",
+      "id": "msg_1793303235023_x4pf",
+      "text": "Bhai, meri ek baat bohot dhyan se sun. Mujhe pata hai tu is waqt kis dard aur takleef se guzar raha hai. Jab 21 saal ki age mein wazan 35 kilo reh jaye aur gardan block ho jaye, toh kisi ki bhi himmat toot jati hai. Tera haar maan lena samajh aata hai, lekin jo tu (suicide) karne ki soch raha hai na, wo bilkul galat hai mere bhai. Teri zindagi khatam nahi hui hai, masla ye hai ke tujhe abhi tak sahi doctor nahi mila. Teri bimari koi aam arthritis nahi hai, ye 'Ankylosing Spondylitis' ho sakti hai jo sirf jawan logo ko hoti hai. Tu kisi aam haddi walay doctor (orthopedic) ke paas mat ja. Tujhe sirf aur sirf ek 'Rheumatologist' ke paas jana hai. Aaj kal medical science mein iske aise injection (Biologics) aate hain jo jaadui tarike se dard rok dete hain aur haddiyon ko judne se bacha lete hain. Agar tujhe treatment ke paison ki tension hai, toh meri baat sun- Pakistan mein 'Bait-ul-Mal' ka sarkari program hai jo aisi bimariyon ke ilaj ke liye financial help deta hai. Iske ilawa Indus Hospital aur Aga Khan Hospital mein bhi Zakat fund se bilkul free ya bohot kam kharch mein ilaj hota hai. Raste bohot hain mere bhai, tune abhi try nahi kiya hai sahi jagah! Bas meri khatir ek kaam kar. Agar roti ya thos khana nahi khaya jata toh liquid diet le. Doodh, kele ka shake, aur protein waghera pi. Body mein thori jaan la. Teri age sirf 21 saal hai yaar, teri body bohot jaldi recover karegi agar sahi ilaaj mil jaye. Ek aakhri baar mere kehne par himmat kar le bhai. Ek baar kisi baday sarkari hospital ke Rheumatology ward mein chala ja, teri puri life badal jayegi. Haar mat maan mere bhai, please. Main yahan baitha hoon teri help ke liye. Mujhe message ka reply kar.",
+      "type": "text",
+      "status": "sent",
+      "timestamp": "2026-10-29T19:47:15.023Z"
+    },
+    {
+      "chatId": "Affaque ahmed",
+      "sender": "Raoprime",
+      "id": "msg_1793303395841_b64t",
+      "text": "bhai dhruv rathee agar help karta h to",
+      "type": "text",
+      "status": "delivered",
+      "timestamp": "2026-10-29T19:49:55.841Z"
+    },
+    {
+      "chatId": "Affaque ahmed",
+      "sender": "Raoprime",
+      "id": "msg_1793303454611_z6tz",
+      "text": "uske upper indian/pakistan Govt se dikkat aa sakti h",
+      "type": "text",
+      "status": "delivered",
+      "timestamp": "2026-10-29T19:50:54.611Z"
+    },
+    {
+      "chatId": "Affaque ahmed",
+      "sender": "Client",
+      "id": "msg_1793303631273_hun0",
+      "text": "Masla ye k ye chezain idhr logon ko samjh nhi aty mera khud ka bahir nikalna is hlt m muskil hai wo bhi kisi k begair big city idhar s door hai me is Liye chata tha k kisi trha mere pass Kuch paise hon to me khud ko Thora improve kar saghon Thora SA bhi change Aya to phr m idhar kisi s loan bhi le saghta hon Lekin begair Kisi change k kisi ko yakeen nhi ana",
+      "type": "text",
+      "timestamp": "2026-10-29T19:53:51.273Z",
+      "seenAt": "2026-10-29T19:58:08.776Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque ahmed",
+      "sender": "Client",
+      "id": "msg_1793303735773_0jk2",
+      "text": "Ajkal bohot sare option hai like crypto wallets Mera Dil nhi karta kisi s Lene Lekin bohot Bure jga phans chuka ho is liye pareshan home msg kar deta hon 😢",
+      "type": "text",
+      "timestamp": "2026-10-29T19:55:35.773Z",
+      "seenAt": "2026-10-29T19:58:08.776Z",
       "status": "seen"
     }
   ]

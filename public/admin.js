@@ -46,8 +46,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     setTimeout(scrollAdminToBottom, 300);
   });
 
-  // Admin Heartbeat Loop
-  setInterval(sendAdminHeartbeat, 2500);
+  // Admin Heartbeat Loop (5s secondary pulse)
+  setInterval(sendAdminHeartbeat, 5000);
+
+  // Resume polling on window visibility
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && adminToken) {
+      triggerAdminChatsPoll();
+      if (activeChatId) triggerActiveMsgsPoll();
+    }
+  });
 
   // Verify authentication before loading chats
   await checkAuthStatus();
@@ -120,12 +128,8 @@ function hideLoginGateway() {
 }
 
 function startPolling() {
-  loadAdminChats();
-  pollIntervals.forEach(clearInterval);
-  pollIntervals = [
-    setInterval(loadAdminChats, 1500),
-    setInterval(loadActiveMessages, 800)
-  ];
+  triggerAdminChatsPoll();
+  triggerActiveMsgsPoll();
 }
 
 async function handleAdminLogin(e) {
@@ -182,6 +186,8 @@ async function handleAdminLogout() {
 
   adminToken = '';
   localStorage.removeItem('raoprime_admin_token');
+  if (adminChatsPollTimer) clearTimeout(adminChatsPollTimer);
+  if (activeMsgsPollTimer) clearTimeout(activeMsgsPollTimer);
   pollIntervals.forEach(clearInterval);
   showLoginGateway();
   showToast('Admin session locked.');
@@ -202,11 +208,17 @@ async function sendAdminTypingStatus(isTyping) {
   } catch (e) {}
 }
 
+let lastAdminTypingSig = '';
+
 function updateAdminTypingUI(isOnline, isTyping) {
   const meta = document.getElementById('activeClientMeta');
   const bubble = document.getElementById('adminTypingBubbleContainer');
   const radarDot = document.getElementById('activeClientRadarDot');
   const clientName = document.getElementById('activeClientName')?.textContent || 'Client';
+
+  const typingSig = `${clientName}:${isOnline}:${isTyping}`;
+  if (typingSig === lastAdminTypingSig) return;
+  lastAdminTypingSig = typingSig;
 
   if (isTyping) {
     if (meta) {
@@ -249,8 +261,28 @@ function updateAdminTypingUI(isOnline, isTyping) {
 }
 
 // ──────────────────────────────────────────────────────────────
-// Load Conversations List
+// Load Conversations List (Sequential Non-Blocking & DOM Diffed)
 // ──────────────────────────────────────────────────────────────
+
+let lastChatsSig = '';
+let lastRenderedActiveChatId = '';
+let isPollingAdminChats = false;
+let adminChatsPollTimer = null;
+
+async function triggerAdminChatsPoll() {
+  if (!adminToken) return;
+  if (isPollingAdminChats) return;
+  isPollingAdminChats = true;
+  try {
+    await loadAdminChats();
+  } catch (e) {
+  } finally {
+    isPollingAdminChats = false;
+    const interval = document.hidden ? 4000 : 1500;
+    if (adminChatsPollTimer) clearTimeout(adminChatsPollTimer);
+    adminChatsPollTimer = setTimeout(triggerAdminChatsPoll, interval);
+  }
+}
 
 async function loadAdminChats() {
   if (!adminToken) return;
@@ -265,7 +297,20 @@ async function loadAdminChats() {
     const data = await res.json();
     if (data.success && data.chats) {
       allChats = data.chats;
-      filterChats();
+
+      const currentSig = data.chats.map(c =>
+        `${c.chatId}:${c.totalMessages}:${c.unseenCount}:${c.isOnline ? 1 : 0}:${c.isTyping ? 1 : 0}:${c.lastMessage?.status || ''}:${c.lastMessage?.timestamp || ''}`
+      ).join('|');
+
+      const isSearchActive = document.activeElement === document.getElementById('searchInput');
+
+      if (currentSig !== lastChatsSig || activeChatId !== lastRenderedActiveChatId) {
+        lastChatsSig = currentSig;
+        lastRenderedActiveChatId = activeChatId;
+        if (!isSearchActive) {
+          filterChats();
+        }
+      }
 
       // On desktop: if no chat selected and we have chats, auto-select the first one
       if (!activeChatId && allChats.length > 0) {
@@ -355,6 +400,11 @@ function filterChats() {
 
 function selectChat(chatId, isUserTap = false) {
   activeChatId = chatId;
+  lastAdminMsgSig = '';
+  lastAdminTypingSig = '';
+  lastMsgCount = 0;
+  lastRenderedActiveChatId = chatId;
+
   const current = allChats.find(c => c.chatId === chatId);
   const clientName = current ? current.clientName : decodeURIComponent(chatId);
 
@@ -374,8 +424,7 @@ function selectChat(chatId, isUserTap = false) {
   document.getElementById('adminMessageInput').placeholder = `Reply as Raoprime to ${clientName}...`;
 
   filterChats();
-  lastMsgCount = 0; // Force re-render
-  loadActiveMessages();
+  triggerActiveMsgsPoll();
 
   // On mobile: switch views only if explicitly tapped
   if (window.innerWidth < 768 && isUserTap) {
@@ -404,6 +453,8 @@ function showInboxOnMobile() {
 // ──────────────────────────────────────────────────────────────
 
 let lastAdminMsgSig = '';
+let isPollingActiveMsgs = false;
+let activeMsgsPollTimer = null;
 
 function renderAdminMessageStatus(status, isRaoprime) {
   if (!isRaoprime) return '';
@@ -417,8 +468,27 @@ function renderAdminMessageStatus(status, isRaoprime) {
   return `<span class="inline-flex items-center gap-0.5 text-slate-500 font-medium ml-1.5" title="Sent"><svg class="w-3 h-3 inline fill-current" viewBox="0 0 16 16"><path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/></svg><span class="text-[9px]">Sent</span></span>`;
 }
 
+async function triggerActiveMsgsPoll() {
+  if (!adminToken || !activeChatId) {
+    if (activeMsgsPollTimer) clearTimeout(activeMsgsPollTimer);
+    activeMsgsPollTimer = setTimeout(triggerActiveMsgsPoll, 1200);
+    return;
+  }
+  if (isPollingActiveMsgs) return;
+  isPollingActiveMsgs = true;
+  try {
+    await loadActiveMessages();
+  } catch (e) {
+  } finally {
+    isPollingActiveMsgs = false;
+    const interval = document.hidden ? 3000 : 1000;
+    if (activeMsgsPollTimer) clearTimeout(activeMsgsPollTimer);
+    activeMsgsPollTimer = setTimeout(triggerActiveMsgsPoll, interval);
+  }
+}
+
 async function loadActiveMessages() {
-  if (!activeChatId) return;
+  if (!activeChatId || !adminToken) return;
 
   try {
     const res = await fetch(`/api/chat/messages?chatId=${encodeURIComponent(activeChatId)}&reader=Raoprime`, {
@@ -579,8 +649,8 @@ async function sendAdminTextMessage() {
         text
       })
     });
-    loadActiveMessages();
-    loadAdminChats();
+    triggerActiveMsgsPoll();
+    triggerAdminChatsPoll();
   } catch (err) {
     showToast('Failed to send reply: ' + err.message);
   }
@@ -649,8 +719,8 @@ async function uploadAdminFile(file) {
       body: JSON.stringify({ uploadId })
     });
 
-    loadActiveMessages();
-    loadAdminChats();
+    triggerActiveMsgsPoll();
+    triggerAdminChatsPoll();
     showToast(`File "${file.name}" sent!`);
   } catch (err) {
     showToast(`Failed to upload ${file.name}: ` + err.message);
@@ -824,11 +894,13 @@ let callStartTime = null;
 let callDurationTimer = null;
 let currentCallType = 'video';
 
-// Background incoming call polling for Admin (Checks for calls from ANY client)
-setInterval(checkAdminIncomingCalls, 1500);
+// Background incoming call polling for Admin (Checks for calls from ANY client with in-flight guard)
+let isCheckingAdminCall = false;
+setInterval(checkAdminIncomingCalls, 2000);
 
 async function checkAdminIncomingCalls() {
-  if (isCallActive || !adminToken) return;
+  if (isCallActive || !adminToken || isCheckingAdminCall) return;
+  isCheckingAdminCall = true;
   try {
     const queryChat = activeChatId || 'all';
     const res = await fetch(`/api/call/status?role=admin&chatId=${encodeURIComponent(queryChat)}`);
@@ -846,7 +918,10 @@ async function checkAdminIncomingCalls() {
     } else if (data.call && data.call.status === 'ended') {
       cleanupCall();
     }
-  } catch (e) {}
+  } catch (e) {
+  } finally {
+    isCheckingAdminCall = false;
+  }
 }
 
 function showAdminIncomingModal(call, cid) {
