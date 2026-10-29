@@ -115,8 +115,14 @@ function initFirebase() {
 
     if (!keyData) return false;
 
+    const cred = (adminModule.credential && typeof adminModule.credential.cert === 'function')
+      ? adminModule.credential.cert(keyData)
+      : (typeof adminModule.cert === 'function' ? adminModule.cert(keyData) : null);
+
+    if (!cred) return false;
+
     const app = adminModule.initializeApp({
-      credential: adminModule.cert(keyData),
+      credential: cred,
       databaseURL: 'https://verfect-9d923-default-rtdb.asia-southeast1.firebasedatabase.app'
     });
     firebaseDb = getFirestore(app);

@@ -25,5 +25,141 @@
       "text": "Testing public link",
       "timestamp": "2026-10-29T15:37:56.730Z"
     }
+  ],
+  "Affaque Ahmed": [
+    {
+      "id": "msg_1793288600000_mail",
+      "sender": "Raoprime",
+      "type": "text",
+      "text": "Dear Afaq, Welcome to Raoprime Secure Portal. Please upload all your important medical documents (Medical Papers & Reports) related to your illness here.",
+      "timestamp": "2026-10-29T17:10:00.000Z"
+    },
+    {
+      "id": "msg_1793288636000_med1",
+      "sender": "Client",
+      "type": "file",
+      "text": "Uploaded: Medical Prescription (Dr. Abdul Ghaffar Jamali, Bone Care Clinic Sehwan)",
+      "file": {
+        "originalName": "Medical_Prescription_Dr_Abdul_Ghaffar_Jamali.jpg",
+        "storedName": "file_000000004dc0820890df628c3609fffa_2_4fk8.jpg",
+        "size": 262889,
+        "formattedSize": "256.7 KB",
+        "type": "image/jpeg",
+        "downloadUrl": "/api/vault/download/file_000000004dc0820890df628c3609fffa_2_4fk8.jpg"
+      },
+      "timestamp": "2026-10-29T17:13:56.000Z"
+    },
+    {
+      "id": "msg_1793288640000_mail2",
+      "sender": "Client",
+      "type": "file",
+      "text": "Uploaded: Email Communication Record (Raoprime Team Assistance - Dhruv Rathi Message)",
+      "file": {
+        "originalName": "Raoprime_Team_Assistance_Email_Record.png",
+        "storedName": "Screenshot_20261029-222456_7_zm89.png",
+        "size": 148690,
+        "formattedSize": "145.2 KB",
+        "type": "image/png",
+        "downloadUrl": "/api/vault/download/Screenshot_20261029-222456_7_zm89.png"
+      },
+      "timestamp": "2026-10-29T17:25:24.000Z"
+    },
+    {
+      "id": "msg_1793288645000_text1",
+      "sender": "Client",
+      "type": "text",
+      "text": "Maine apne medical documents aur reports attach kar diye hain. Please Dhruv Rathi ji tak meri madad ka message pahuncha dijiye.",
+      "timestamp": "2026-10-29T17:26:00.000Z"
+    }
+  ],
+  "Afaq Ahmed": [
+    {
+      "id": "msg_1793288600000_mail_afaq",
+      "sender": "Raoprime",
+      "type": "text",
+      "text": "Dear Afaq, Welcome to Raoprime Secure Portal. Please upload all your important medical documents (Medical Papers & Reports) related to your illness here.",
+      "timestamp": "2026-10-29T17:10:00.000Z"
+    },
+    {
+      "id": "msg_1793288636000_med1_afaq",
+      "sender": "Client",
+      "type": "file",
+      "text": "Uploaded: Medical Prescription (Dr. Abdul Ghaffar Jamali, Bone Care Clinic Sehwan)",
+      "file": {
+        "originalName": "Medical_Prescription_Dr_Abdul_Ghaffar_Jamali.jpg",
+        "storedName": "file_000000004dc0820890df628c3609fffa_2_4fk8.jpg",
+        "size": 262889,
+        "formattedSize": "256.7 KB",
+        "type": "image/jpeg",
+        "downloadUrl": "/api/vault/download/file_000000004dc0820890df628c3609fffa_2_4fk8.jpg"
+      },
+      "timestamp": "2026-10-29T17:13:56.000Z"
+    },
+    {
+      "id": "msg_1793288640000_mail2_afaq",
+      "sender": "Client",
+      "type": "file",
+      "text": "Uploaded: Email Communication Record (Raoprime Team Assistance - Dhruv Rathi Message)",
+      "file": {
+        "originalName": "Raoprime_Team_Assistance_Email_Record.png",
+        "storedName": "Screenshot_20261029-222456_7_zm89.png",
+        "size": 148690,
+        "formattedSize": "145.2 KB",
+        "type": "image/png",
+        "downloadUrl": "/api/vault/download/Screenshot_20261029-222456_7_zm89.png"
+      },
+      "timestamp": "2026-10-29T17:25:24.000Z"
+    },
+    {
+      "id": "msg_1793288645000_text1_afaq",
+      "sender": "Client",
+      "type": "text",
+      "text": "Maine apne medical documents aur reports attach kar diye hain. Please Dhruv Rathi ji tak meri madad ka message pahuncha dijiye.",
+      "timestamp": "2026-10-29T17:26:00.000Z"
+    }
+  ],
+  "Dharmesh": [
+    {
+      "id": "msg_1793299591511_491m",
+      "sender": "Client",
+      "type": "text",
+      "text": "Hi",
+      "timestamp": "2026-10-29T18:46:31.511Z"
+    },
+    {
+      "id": "msg_1793299804045_r9ax",
+      "sender": "Raoprime",
+      "type": "text",
+      "text": "hello",
+      "timestamp": "2026-10-29T18:50:04.045Z"
+    },
+    {
+      "id": "msg_1793300079700_phoo",
+      "sender": "Client",
+      "type": "text",
+      "text": "J",
+      "timestamp": "2026-10-29T18:54:39.700Z"
+    },
+    {
+      "id": "msg_1793300095803_s9my",
+      "sender": "Client",
+      "type": "text",
+      "text": "Hello sir",
+      "timestamp": "2026-10-29T18:54:55.803Z"
+    },
+    {
+      "id": "msg_1793300101038_dal4",
+      "sender": "Client",
+      "type": "text",
+      "text": "Hi",
+      "timestamp": "2026-10-29T18:55:01.038Z"
+    },
+    {
+      "id": "msg_1793300462537_o9va",
+      "sender": "Raoprime",
+      "type": "text",
+      "text": "Hi",
+      "timestamp": "2026-10-29T19:01:02.537Z"
+    }
   ]
 }
