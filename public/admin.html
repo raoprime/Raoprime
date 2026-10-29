@@ -268,6 +268,17 @@
 
       <!-- Action Buttons for Selected Client -->
       <div id="chatActions" class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <!-- Feedback Request / Result Badge -->
+        <button id="adminFeedbackBtn" onclick="requestClientFeedback()" class="h-9 px-2.5 sm:px-3 rounded-full bg-[#12151f] hover:bg-amber-950/40 text-amber-300 hover:text-amber-200 border border-amber-500/30 flex items-center gap-1.5 transition-all active:scale-95 shadow-sm cursor-pointer" title="Request Client Feedback / Rating" aria-label="Request Feedback">
+          <i data-lucide="star" class="w-3.5 h-3.5 text-amber-400 fill-amber-400/20"></i>
+          <span id="adminFeedbackBtnText" class="hidden md:inline text-xs font-semibold">Feedback</span>
+        </button>
+
+        <button id="adminFeedbackBadge" onclick="showAdminFeedbackDetails()" class="hidden h-9 px-2.5 sm:px-3 rounded-full bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition-all active:scale-95 shadow-sm cursor-pointer" title="Click to view client feedback details">
+          <i data-lucide="star" class="w-3.5 h-3.5 text-amber-400 fill-amber-400"></i>
+          <span id="adminFeedbackScore" class="text-xs font-bold">5.0</span>
+        </button>
+
         <!-- HD Voice Call Button -->
         <button onclick="startAdminCall('audio')" class="w-9 h-9 rounded-full bg-[#12151f] hover:bg-[#1c2232] text-slate-300 hover:text-white border border-white/10 flex items-center justify-center transition-all active:scale-95 shadow-sm cursor-pointer" title="HD Voice Call" aria-label="Voice Call">
           <i data-lucide="phone" class="w-4 h-4 text-emerald-400"></i>
@@ -628,6 +639,63 @@
       </div>
     </div>
 
+  </div>
+
+  <!-- Feedback Details Modal for Admin -->
+  <div id="adminFeedbackModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-[#0e1118] border border-amber-500/30 rounded-3xl p-6 sm:p-7 max-w-md w-full space-y-4 shadow-2xl relative">
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+            <i data-lucide="star" class="w-5 h-5 fill-amber-400"></i>
+          </div>
+          <div>
+            <h3 class="font-extrabold text-sm sm:text-base text-white">Client Service Feedback</h3>
+            <p id="feedbackModalClientName" class="text-xs text-slate-400">Client Name</p>
+          </div>
+        </div>
+        <button onclick="closeAdminFeedbackModal()" class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition-colors">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        <!-- Rating Display Card -->
+        <div class="text-center py-3 px-4 bg-[#141824] rounded-2xl border border-white/5">
+          <div id="feedbackModalStars" class="flex items-center justify-center gap-1.5 text-amber-400 text-2xl mb-1">
+            <!-- Dynamic Stars -->
+          </div>
+          <p id="feedbackModalRatingText" class="text-xs font-bold text-amber-300">5.0 / 5.0 • Exceptional Service</p>
+          <p id="feedbackModalDate" class="text-[11px] text-slate-500 mt-1">Submitted: Just now</p>
+        </div>
+
+        <!-- Highlight Tags -->
+        <div id="feedbackModalTagsSection" class="space-y-1.5">
+          <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Service Highlights</label>
+          <div id="feedbackModalTags" class="flex flex-wrap gap-1.5">
+            <!-- Dynamic Tags -->
+          </div>
+        </div>
+
+        <!-- Client Written Review -->
+        <div class="space-y-1.5">
+          <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Client Notes & Comments</label>
+          <div id="feedbackModalComment" class="p-3.5 bg-[#141824] rounded-2xl border border-white/5 text-xs sm:text-sm text-slate-200 min-h-[60px] leading-relaxed break-words italic">
+            "No written review provided."
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-2 flex items-center justify-between gap-3">
+        <button onclick="reRequestFeedbackFromModal()" class="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-amber-300 hover:text-amber-200 border border-amber-500/20 text-xs font-semibold transition-all flex items-center gap-1.5">
+          <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
+          <span>Request Again</span>
+        </button>
+        <button onclick="closeAdminFeedbackModal()" class="px-5 py-2.5 rounded-xl maroon-btn text-white text-xs font-semibold transition-all">
+          Done
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- Delete Chat Confirmation Modal -->

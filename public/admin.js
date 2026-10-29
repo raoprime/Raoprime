@@ -389,6 +389,7 @@ function filterChats() {
           <div class="flex items-center justify-between mt-1">
             <p class="text-[11px] text-slate-400 truncate max-w-[140px] sm:max-w-[160px]">${snippetHtml}</p>
             <div class="flex items-center gap-1 shrink-0 ml-1">
+              ${c.feedback && c.feedback.status === 'completed' ? `<span class="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">★ ${Number(c.feedback.rating || 5).toFixed(1)}</span>` : ''}
               ${c.unseenCount > 0 ? `<span class="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-sky-500 text-white shadow-sm animate-pulse">${c.unseenCount}</span>` : ''}
               ${c.totalFiles > 0 ? `<span class="px-1.5 py-0.2 rounded-full text-[9px] font-mono font-bold bg-rose-900/40 text-rose-300 border border-rose-700/40">${c.totalFiles} files</span>` : ''}
             </div>
@@ -433,6 +434,7 @@ function selectChat(chatId, isUserTap = false) {
       : 'absolute bottom-0 right-0 w-2.5 h-2.5 bg-slate-500 border-2 border-[#0a0c12] rounded-full';
   }
   document.getElementById('adminMessageInput').placeholder = `Reply as Raoprime to ${clientName}...`;
+  updateAdminFeedbackUI(current?.feedback || null);
 
   // Immediately clear old messages and display smooth loading placeholder
   const container = document.getElementById('adminMessagesList');
@@ -579,6 +581,10 @@ async function loadActiveMessages() {
       const isClientTyping = Boolean(data.typing && (data.typing.Client || data.typing[requestedChatId]));
       const isClientOnline = Boolean(data.online && data.online.Client);
       updateAdminTypingUI(isClientOnline, isClientTyping);
+
+      if (data.feedback !== undefined) {
+        updateAdminFeedbackUI(data.feedback);
+      }
     }
   } catch (err) {
     // Silent fail
@@ -2247,5 +2253,160 @@ function cleanupCall() {
   if (camIcon) camIcon.setAttribute('data-lucide', 'video');
 
   if (window.lucide) window.lucide.createIcons();
+}
+
+// ──────────────────────────────────────────────────────────────
+// Admin Feedback Management Suite
+// ──────────────────────────────────────────────────────────────
+let currentChatFeedback = null;
+
+function updateAdminFeedbackUI(feedback) {
+  currentChatFeedback = feedback;
+  const btn = document.getElementById('adminFeedbackBtn');
+  const btnText = document.getElementById('adminFeedbackBtnText');
+  const badge = document.getElementById('adminFeedbackBadge');
+  const scoreSpan = document.getElementById('adminFeedbackScore');
+
+  if (!btn || !badge) return;
+
+  if (feedback && feedback.status === 'completed') {
+    // Show rating score badge (e.g. 5.0)
+    badge.classList.remove('hidden');
+    if (scoreSpan) scoreSpan.textContent = Number(feedback.rating || 5).toFixed(1);
+
+    if (btnText) btnText.textContent = 'Feedback';
+    btn.title = `Client rating: ${feedback.rating} Stars. Click to request again.`;
+  } else if (feedback && feedback.status === 'pending') {
+    // Awaiting client submission
+    badge.classList.add('hidden');
+    if (btnText) btnText.textContent = 'Pending...';
+    btn.title = 'Automated feedback survey sent to client. Awaiting submission.';
+  } else {
+    // Normal state
+    badge.classList.add('hidden');
+    if (btnText) btnText.textContent = 'Feedback';
+    btn.title = 'Request Client Feedback / Rating';
+  }
+}
+
+async function requestClientFeedback() {
+  if (!activeChatId || !adminToken) return;
+  const btn = document.getElementById('adminFeedbackBtn');
+  const btnText = document.getElementById('adminFeedbackBtnText');
+
+  const originalText = btnText ? btnText.textContent : 'Feedback';
+  if (btnText) btnText.textContent = 'Sending...';
+
+  try {
+    const res = await fetch('/api/chat/feedback/request', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-admin-token': adminToken
+      },
+      body: JSON.stringify({ chatId: activeChatId })
+    });
+    const data = await res.json();
+    if (data.success && data.feedback) {
+      updateAdminFeedbackUI(data.feedback);
+      showToast('⭐ Automated feedback survey sent to client!');
+    } else {
+      showToast(data.error || 'Failed to request feedback');
+      if (btnText) btnText.textContent = originalText;
+    }
+  } catch (err) {
+    showToast('Failed to request feedback: ' + err.message);
+    if (btnText) btnText.textContent = originalText;
+  }
+}
+
+function showAdminFeedbackDetails() {
+  if (!currentChatFeedback) return;
+  const fb = currentChatFeedback;
+  const modal = document.getElementById('adminFeedbackModal');
+  if (!modal) return;
+
+  const clientName = fb.clientName || (activeChatId === 'default' ? 'General Desk' : decodeURIComponent(activeChatId));
+  const clientNameEl = document.getElementById('feedbackModalClientName');
+  if (clientNameEl) clientNameEl.textContent = clientName;
+
+  // Render Stars
+  const starsContainer = document.getElementById('feedbackModalStars');
+  if (starsContainer) {
+    const rating = Math.round(Number(fb.rating) || 5);
+    let starsHtml = '';
+    for (let i = 1; i <= 5; i++) {
+      if (i <= rating) {
+        starsHtml += '<span class="text-amber-400">★</span>';
+      } else {
+        starsHtml += '<span class="text-slate-600">★</span>';
+      }
+    }
+    starsContainer.innerHTML = starsHtml;
+  }
+
+  // Score label
+  const ratingTexts = {
+    1: '1.0 / 5.0 • Poor / Needs Urgent Attention',
+    2: '2.0 / 5.0 • Fair / Below Standard',
+    3: '3.0 / 5.0 • Good / Standard Service',
+    4: '4.0 / 5.0 • Very Good / High Quality',
+    5: '5.0 / 5.0 • Exceptional Service'
+  };
+  const ratingTextEl = document.getElementById('feedbackModalRatingText');
+  if (ratingTextEl) {
+    const r = Math.round(Number(fb.rating) || 5);
+    ratingTextEl.textContent = ratingTexts[r] || `${fb.rating} / 5.0 • Service Rated`;
+  }
+
+  // Date
+  const dateEl = document.getElementById('feedbackModalDate');
+  if (dateEl && fb.submittedAt) {
+    const d = new Date(fb.submittedAt);
+    dateEl.textContent = `Submitted: ${d.toLocaleDateString([], { month: 'short', day: 'numeric' })} at ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  }
+
+  // Tags
+  const tagsContainer = document.getElementById('feedbackModalTags');
+  const tagsSection = document.getElementById('feedbackModalTagsSection');
+  if (tagsContainer) {
+    if (Array.isArray(fb.tags) && fb.tags.length > 0) {
+      tagsContainer.innerHTML = fb.tags.map(t => `
+        <span class="px-2.5 py-1 rounded-xl bg-amber-500/10 text-amber-300 border border-amber-500/20 text-xs font-semibold">
+          ✓ ${escapeHtml(t)}
+        </span>
+      `).join('');
+      if (tagsSection) tagsSection.classList.remove('hidden');
+    } else {
+      if (tagsSection) tagsSection.classList.add('hidden');
+    }
+  }
+
+  // Comment
+  const commentEl = document.getElementById('feedbackModalComment');
+  if (commentEl) {
+    if (fb.comment && fb.comment.trim()) {
+      commentEl.textContent = `"${fb.comment.trim()}"`;
+      commentEl.classList.remove('text-slate-500');
+      commentEl.classList.add('text-slate-100');
+    } else {
+      commentEl.textContent = '"No written comments provided."';
+      commentEl.classList.remove('text-slate-100');
+      commentEl.classList.add('text-slate-500');
+    }
+  }
+
+  modal.classList.remove('hidden');
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function closeAdminFeedbackModal() {
+  const modal = document.getElementById('adminFeedbackModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function reRequestFeedbackFromModal() {
+  closeAdminFeedbackModal();
+  requestClientFeedback();
 }
 
