@@ -54,11 +54,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 function sendAdminHeartbeat() {
-  if (!activeChatId) return;
+  if (!adminToken) return;
   fetch('/api/chat/heartbeat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chatId: activeChatId, sender: 'Raoprime' })
+    body: JSON.stringify({ chatId: activeChatId || 'all', sender: 'Raoprime' })
   }).catch(() => {});
 }
 
@@ -333,7 +333,10 @@ function filterChats() {
           </div>
           <div class="flex items-center justify-between mt-1">
             <p class="text-[11px] text-slate-400 truncate max-w-[140px] sm:max-w-[160px]">${snippetHtml}</p>
-            ${c.totalFiles > 0 ? `<span class="px-1.5 py-0.2 rounded-full text-[9px] font-mono font-bold bg-rose-900/40 text-rose-300 border border-rose-700/40 shrink-0 ml-1">${c.totalFiles} files</span>` : ''}
+            <div class="flex items-center gap-1 shrink-0 ml-1">
+              ${c.unseenCount > 0 ? `<span class="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-sky-500 text-white shadow-sm animate-pulse">${c.unseenCount}</span>` : ''}
+              ${c.totalFiles > 0 ? `<span class="px-1.5 py-0.2 rounded-full text-[9px] font-mono font-bold bg-rose-900/40 text-rose-300 border border-rose-700/40">${c.totalFiles} files</span>` : ''}
+            </div>
           </div>
         </div>
         <button onclick="event.stopPropagation(); confirmDeleteChat('${c.chatId}', '${escapeHtml(c.clientName)}')" class="w-7 h-7 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-950/40 flex items-center justify-center transition-all shrink-0 ml-0.5 cursor-pointer active:scale-90" title="Delete chat">
@@ -357,10 +360,17 @@ function selectChat(chatId, isUserTap = false) {
 
   document.getElementById('activeClientName').textContent = clientName;
   document.getElementById('activeClientAvatar').textContent = clientName.charAt(0).toUpperCase();
-  document.getElementById('activeClientMeta').innerHTML = `
-    <span class="text-emerald-400 font-semibold flex items-center gap-1">
-      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Active conversation (${current?.totalFiles || 0} files)
-    </span>`;
+  const isOnline = Boolean(current?.isOnline);
+  document.getElementById('activeClientMeta').innerHTML = isOnline
+    ? `<span class="text-emerald-400 font-semibold flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400 radar-pulse"></span> Active now</span>`
+    : `<span class="text-slate-400 font-medium flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-slate-500"></span> Offline</span>`;
+
+  const radarDot = document.getElementById('activeClientRadarDot');
+  if (radarDot) {
+    radarDot.className = isOnline 
+      ? 'absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-[#0a0c12] rounded-full radar-pulse'
+      : 'absolute bottom-0 right-0 w-2.5 h-2.5 bg-slate-500 border-2 border-[#0a0c12] rounded-full';
+  }
   document.getElementById('adminMessageInput').placeholder = `Reply as Raoprime to ${clientName}...`;
 
   filterChats();
@@ -390,20 +400,41 @@ function showInboxOnMobile() {
 }
 
 // ──────────────────────────────────────────────────────────────
-// Message Stream for Active Chat
+// Message Stream for Active Chat (Real-time Seen / Delivered / Active)
 // ──────────────────────────────────────────────────────────────
+
+let lastAdminMsgSig = '';
+
+function renderAdminMessageStatus(status, isRaoprime) {
+  if (!isRaoprime) return '';
+  const s = status || 'delivered';
+  if (s === 'seen') {
+    return `<span class="inline-flex items-center gap-0.5 text-sky-400 font-semibold ml-1.5" title="Seen by Client"><svg class="w-3.5 h-3.5 inline fill-current" viewBox="0 0 16 16"><path d="M12.354 4.354a.5.5 0 0 0-.708-.708L5 10.293 1.854 7.146a.5.5 0 1 0-.708.708l3.5 3.5a.5.5 0 0 0 .708 0l7-7zm-4.708 7.293L15.354 3.94a.5.5 0 1 0-.708-.708L7.646 10.94l-.708-.707a.5.5 0 0 0-.708.708l1.062 1.061a.5.5 0 0 0 .708 0z"/></svg><span class="text-[9px]">Seen</span></span>`;
+  }
+  if (s === 'delivered') {
+    return `<span class="inline-flex items-center gap-0.5 text-slate-400 font-medium ml-1.5" title="Delivered"><svg class="w-3.5 h-3.5 inline fill-current" viewBox="0 0 16 16"><path d="M12.354 4.354a.5.5 0 0 0-.708-.708L5 10.293 1.854 7.146a.5.5 0 1 0-.708.708l3.5 3.5a.5.5 0 0 0 .708 0l7-7zm-4.708 7.293L15.354 3.94a.5.5 0 1 0-.708-.708L7.646 10.94l-.708-.707a.5.5 0 0 0-.708.708l1.062 1.061a.5.5 0 0 0 .708 0z"/></svg><span class="text-[9px]">Delivered</span></span>`;
+  }
+  return `<span class="inline-flex items-center gap-0.5 text-slate-500 font-medium ml-1.5" title="Sent"><svg class="w-3 h-3 inline fill-current" viewBox="0 0 16 16"><path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/></svg><span class="text-[9px]">Sent</span></span>`;
+}
 
 async function loadActiveMessages() {
   if (!activeChatId) return;
 
   try {
-    const res = await fetch(`/api/chat/messages?chatId=${encodeURIComponent(activeChatId)}`);
+    const res = await fetch(`/api/chat/messages?chatId=${encodeURIComponent(activeChatId)}&reader=Raoprime`, {
+      headers: { 'x-admin-token': adminToken || '' }
+    });
     const data = await res.json();
     if (data.success && data.messages) {
-      if (data.messages.length !== lastMsgCount) {
+      const currentSig = data.messages.map(m => m.id + ':' + (m.status || '')).join('|');
+      if (currentSig !== lastAdminMsgSig) {
+        const isNewLength = data.messages.length !== lastMsgCount;
+        lastAdminMsgSig = currentSig;
         lastMsgCount = data.messages.length;
         renderAdminMessages(data.messages);
-        scrollAdminToBottom();
+        if (isNewLength) {
+          scrollAdminToBottom();
+        }
       }
 
       // Check if client is typing or actively online
@@ -509,7 +540,10 @@ function renderAdminMessages(messages) {
         <div class="${isRaoprime ? 'bubble-admin-out' : 'bubble-admin-in'} max-w-[85%] sm:max-w-md shadow-md">
           ${bubbleContent}
         </div>
-        <div class="text-[10px] text-slate-600 mt-1 px-1">${timeFormatted}</div>
+        <div class="text-[10px] text-slate-500 mt-1 px-1 flex items-center ${isRaoprime ? 'justify-end' : 'justify-start'}">
+          <span>${timeFormatted}</span>
+          ${renderAdminMessageStatus(msg.status, isRaoprime)}
+        </div>
       </div>
     `;
   }).join('');

@@ -5,7 +5,8 @@
       "sender": "Raoprime",
       "type": "text",
       "text": "Hello! Welcome to Raoprime. Please attach and send your documents here.",
-      "timestamp": "2026-10-29T14:59:21.799Z"
+      "timestamp": "2026-10-29T14:59:21.799Z",
+      "status": "seen"
     }
   ],
   "haryana": [
@@ -14,7 +15,8 @@
       "sender": "Client",
       "type": "text",
       "text": "hi",
-      "timestamp": "2026-10-29T15:14:31.627Z"
+      "timestamp": "2026-10-29T15:14:31.627Z",
+      "status": "seen"
     }
   ],
   "PublicTestClient": [
@@ -23,7 +25,8 @@
       "sender": "Client",
       "type": "text",
       "text": "Testing public link",
-      "timestamp": "2026-10-29T15:37:56.730Z"
+      "timestamp": "2026-10-29T15:37:56.730Z",
+      "status": "seen"
     }
   ],
   "Affaque Ahmed": [
@@ -32,7 +35,8 @@
       "sender": "Raoprime",
       "type": "text",
       "text": "Dear Afaq, Welcome to Raoprime Secure Portal. Please upload all your important medical documents (Medical Papers & Reports) related to your illness here.",
-      "timestamp": "2026-10-29T17:10:00.000Z"
+      "timestamp": "2026-10-29T17:10:00.000Z",
+      "status": "seen"
     },
     {
       "id": "msg_1793288636000_med1",
@@ -47,7 +51,8 @@
         "type": "image/jpeg",
         "downloadUrl": "/api/download/file_000000004dc0820890df628c3609fffa_2_4fk8.jpg"
       },
-      "timestamp": "2026-10-29T17:13:56.000Z"
+      "timestamp": "2026-10-29T17:13:56.000Z",
+      "status": "seen"
     },
     {
       "id": "msg_1793288640000_mail2",
@@ -62,14 +67,16 @@
         "type": "image/png",
         "downloadUrl": "/api/download/Screenshot_20261029-222456_7_zm89.png"
       },
-      "timestamp": "2026-10-29T17:25:24.000Z"
+      "timestamp": "2026-10-29T17:25:24.000Z",
+      "status": "seen"
     },
     {
       "id": "msg_1793288645000_text1",
       "sender": "Client",
       "type": "text",
       "text": "Maine apne medical documents aur reports attach kar diye hain. Please Dhruv Rathi ji tak meri madad ka message pahuncha dijiye.",
-      "timestamp": "2026-10-29T17:26:00.000Z"
+      "timestamp": "2026-10-29T17:26:00.000Z",
+      "status": "seen"
     }
   ],
   "Afaq Ahmed": [
@@ -78,7 +85,8 @@
       "sender": "Raoprime",
       "type": "text",
       "text": "Dear Afaq, Welcome to Raoprime Secure Portal. Please upload all your important medical documents (Medical Papers & Reports) related to your illness here.",
-      "timestamp": "2026-10-29T17:10:00.000Z"
+      "timestamp": "2026-10-29T17:10:00.000Z",
+      "status": "seen"
     },
     {
       "id": "msg_1793288636000_med1_afaq",
@@ -93,7 +101,8 @@
         "type": "image/jpeg",
         "downloadUrl": "/api/download/file_000000004dc0820890df628c3609fffa_2_4fk8.jpg"
       },
-      "timestamp": "2026-10-29T17:13:56.000Z"
+      "timestamp": "2026-10-29T17:13:56.000Z",
+      "status": "seen"
     },
     {
       "id": "msg_1793288640000_mail2_afaq",
@@ -108,14 +117,16 @@
         "type": "image/png",
         "downloadUrl": "/api/download/Screenshot_20261029-222456_7_zm89.png"
       },
-      "timestamp": "2026-10-29T17:25:24.000Z"
+      "timestamp": "2026-10-29T17:25:24.000Z",
+      "status": "seen"
     },
     {
       "id": "msg_1793288645000_text1_afaq",
       "sender": "Client",
       "type": "text",
       "text": "Maine apne medical documents aur reports attach kar diye hain. Please Dhruv Rathi ji tak meri madad ka message pahuncha dijiye.",
-      "timestamp": "2026-10-29T17:26:00.000Z"
+      "timestamp": "2026-10-29T17:26:00.000Z",
+      "status": "seen"
     }
   ],
   "Dharmesh": [
@@ -124,42 +135,48 @@
       "sender": "Client",
       "type": "text",
       "text": "Hi",
-      "timestamp": "2026-10-29T18:46:31.511Z"
+      "timestamp": "2026-10-29T18:46:31.511Z",
+      "status": "seen"
     },
     {
       "id": "msg_1793299804045_r9ax",
       "sender": "Raoprime",
       "type": "text",
       "text": "hello",
-      "timestamp": "2026-10-29T18:50:04.045Z"
+      "timestamp": "2026-10-29T18:50:04.045Z",
+      "status": "seen"
     },
     {
       "id": "msg_1793300079700_phoo",
       "sender": "Client",
       "type": "text",
       "text": "J",
-      "timestamp": "2026-10-29T18:54:39.700Z"
+      "timestamp": "2026-10-29T18:54:39.700Z",
+      "status": "seen"
     },
     {
       "id": "msg_1793300095803_s9my",
       "sender": "Client",
       "type": "text",
       "text": "Hello sir",
-      "timestamp": "2026-10-29T18:54:55.803Z"
+      "timestamp": "2026-10-29T18:54:55.803Z",
+      "status": "seen"
     },
     {
       "id": "msg_1793300101038_dal4",
       "sender": "Client",
       "type": "text",
       "text": "Hi",
-      "timestamp": "2026-10-29T18:55:01.038Z"
+      "timestamp": "2026-10-29T18:55:01.038Z",
+      "status": "seen"
     },
     {
       "id": "msg_1793300462537_o9va",
       "sender": "Raoprime",
       "type": "text",
       "text": "Hi",
-      "timestamp": "2026-10-29T19:01:02.537Z"
+      "timestamp": "2026-10-29T19:01:02.537Z",
+      "status": "seen"
     }
   ]
 }

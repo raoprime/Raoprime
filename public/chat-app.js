@@ -236,19 +236,38 @@ function onFilesChosen(e) {
 }
 
 // ──────────────────────────────────────────────────────────────
-// Messaging & Polling
+// Messaging & Polling (Real-time Seen / Delivered / Active)
 // ──────────────────────────────────────────────────────────────
+
+let lastMessageSig = '';
+
+function renderMessageStatus(status, isOut) {
+  if (!isOut) return '';
+  const s = status || 'delivered';
+  if (s === 'seen') {
+    return `<span class="inline-flex items-center gap-0.5 text-sky-400 font-semibold ml-1.5" title="Seen"><svg class="w-3.5 h-3.5 inline fill-current" viewBox="0 0 16 16"><path d="M12.354 4.354a.5.5 0 0 0-.708-.708L5 10.293 1.854 7.146a.5.5 0 1 0-.708.708l3.5 3.5a.5.5 0 0 0 .708 0l7-7zm-4.708 7.293L15.354 3.94a.5.5 0 1 0-.708-.708L7.646 10.94l-.708-.707a.5.5 0 0 0-.708.708l1.062 1.061a.5.5 0 0 0 .708 0z"/></svg><span class="text-[9px]">Seen</span></span>`;
+  }
+  if (s === 'delivered') {
+    return `<span class="inline-flex items-center gap-0.5 text-slate-400 font-medium ml-1.5" title="Delivered"><svg class="w-3.5 h-3.5 inline fill-current" viewBox="0 0 16 16"><path d="M12.354 4.354a.5.5 0 0 0-.708-.708L5 10.293 1.854 7.146a.5.5 0 1 0-.708.708l3.5 3.5a.5.5 0 0 0 .708 0l7-7zm-4.708 7.293L15.354 3.94a.5.5 0 1 0-.708-.708L7.646 10.94l-.708-.707a.5.5 0 0 0-.708.708l1.062 1.061a.5.5 0 0 0 .708 0z"/></svg><span class="text-[9px]">Delivered</span></span>`;
+  }
+  return `<span class="inline-flex items-center gap-0.5 text-slate-500 font-medium ml-1.5" title="Sent"><svg class="w-3 h-3 inline fill-current" viewBox="0 0 16 16"><path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/></svg><span class="text-[9px]">Sent</span></span>`;
+}
 
 async function loadMessages() {
   try {
-    const res = await fetch(`/api/chat/messages?chatId=${encodeURIComponent(currentChatId)}`);
+    const res = await fetch(`/api/chat/messages?chatId=${encodeURIComponent(currentChatId)}&reader=Client`);
     const data = await res.json();
     if (data.success && data.messages) {
       window.currentCachedMessages = data.messages;
-      if (data.messages.length !== lastMessagesCount) {
+      const currentSig = data.messages.map(m => m.id + ':' + (m.status || '')).join('|');
+      if (currentSig !== lastMessageSig) {
+        const isNewLength = data.messages.length !== lastMessagesCount;
+        lastMessageSig = currentSig;
         lastMessagesCount = data.messages.length;
         renderMessages(data.messages);
-        scrollToBottom();
+        if (isNewLength) {
+          scrollToBottom();
+        }
       }
 
       // Check if other party (Raoprime Admin) is typing or online
@@ -347,7 +366,10 @@ function renderMessages(messages) {
         <div class="${isOut ? 'bubble-out' : 'bubble-in'} max-w-[85%] sm:max-w-md shadow-md">
           ${bubbleContent}
         </div>
-        <div class="text-[10px] text-slate-600 mt-1 px-1">${timeFormatted}</div>
+        <div class="text-[10px] text-slate-500 mt-1 px-1 flex items-center ${isOut ? 'justify-end' : 'justify-start'}">
+          <span>${timeFormatted}</span>
+          ${renderMessageStatus(msg.status, isOut)}
+        </div>
       </div>
     `;
   }).join('');

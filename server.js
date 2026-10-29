@@ -215,12 +215,75 @@ async function saveChatMessage(chatId, messageObj) {
 // In-memory Real-time Presence & Typing Tracker
 const typingStatus = {}; // { [chatId]: { Client: timestamp, Raoprime: timestamp } }
 const presenceStatus = {}; // { [chatId]: { Client: timestamp, Raoprime: timestamp } }
+let globalAdminPresence = 0; // Tracks if Raoprime Admin is live on portal anywhere
+
+// Mark chat messages as seen by reader ('Client' or 'Raoprime')
+async function markChatMessagesSeen(chatId, readerRole) {
+  initFirebase();
+  const now = new Date().toISOString();
+  let updatedAny = false;
+
+  const localChats = getAllLocalChats();
+  if (localChats[chatId]) {
+    for (const msg of localChats[chatId]) {
+      const isIncomingForReader = readerRole === 'Raoprime'
+        ? (msg.sender !== 'Raoprime' && msg.sender !== 'RP')
+        : (msg.sender === 'Raoprime' || msg.sender === 'RP');
+      if (isIncomingForReader && msg.status !== 'seen') {
+        msg.status = 'seen';
+        msg.seenAt = now;
+        updatedAny = true;
+      }
+    }
+    if (updatedAny) {
+      saveAllLocalChats(localChats);
+    }
+  }
+
+  // Also sync to Firestore asynchronously
+  if (isFirebaseConnected && firebaseDb) {
+    try {
+      const snap = await firebaseDb.collection('raoprime_messages').where('chatId', '==', chatId).get();
+      if (!snap.empty) {
+        const batch = firebaseDb.batch();
+        let bCount = 0;
+        for (const doc of snap.docs) {
+          const m = doc.data();
+          const isIncomingForReader = readerRole === 'Raoprime'
+            ? (m.sender !== 'Raoprime' && m.sender !== 'RP')
+            : (m.sender === 'Raoprime' || m.sender === 'RP');
+          if (isIncomingForReader && m.status !== 'seen') {
+            batch.update(doc.ref, { status: 'seen', seenAt: now });
+            bCount++;
+          }
+        }
+        if (bCount > 0) {
+          await batch.commit();
+        }
+      }
+    } catch (e) {
+      console.warn('Firebase batch seen update notice:', e.message);
+    }
+  }
+  return updatedAny;
+}
 
 // Heartbeat Endpoint to track Live Presence (Active vs Offline)
 app.post('/api/chat/heartbeat', (req, res) => {
   const { chatId = 'default', sender = 'Client' } = req.body;
+  const now = Date.now();
+  if (sender === 'Raoprime') {
+    globalAdminPresence = now;
+  }
   if (!presenceStatus[chatId]) presenceStatus[chatId] = {};
-  presenceStatus[chatId][sender] = Date.now();
+  presenceStatus[chatId][sender] = now;
+  res.json({ success: true });
+});
+
+// Explicit Mark As Seen Endpoint
+app.post('/api/chat/seen', async (req, res) => {
+  const { chatId = 'default', reader = 'Client' } = req.body;
+  await markChatMessagesSeen(chatId, reader);
   res.json({ success: true });
 });
 
@@ -232,6 +295,14 @@ app.post('/api/chat/heartbeat', (req, res) => {
 app.get('/api/chat/messages', async (req, res) => {
   try {
     const chatId = req.query.chatId || 'default';
+    const reader = req.query.reader || (req.headers['x-admin-token'] ? 'Raoprime' : null);
+
+    // If a reader is actively querying, mark other party's messages as seen
+    if (reader) {
+      if (reader === 'Raoprime') globalAdminPresence = Date.now();
+      await markChatMessagesSeen(chatId, reader);
+    }
+
     const messages = await getChatMessages(chatId);
 
     const now = Date.now();
@@ -245,9 +316,12 @@ app.get('/api/chat/messages', async (req, res) => {
       }
     }
 
+    const isClientOnline = Boolean(chatPresence.Client && (now - chatPresence.Client < 10000));
+    const isRaoprimeOnline = Boolean((now - globalAdminPresence < 10000) || (chatPresence.Raoprime && (now - chatPresence.Raoprime < 10000)));
+
     const onlineStatus = {
-      Client: Boolean(chatPresence.Client && (now - chatPresence.Client < 7000)),
-      Raoprime: Boolean(chatPresence.Raoprime && (now - chatPresence.Raoprime < 7000))
+      Client: isClientOnline,
+      Raoprime: isRaoprimeOnline
     };
 
     res.json({ success: true, chatId, messages, typing: activeTyping, online: onlineStatus });
@@ -259,11 +333,15 @@ app.get('/api/chat/messages', async (req, res) => {
 // Update Real-time Typing Status
 app.post('/api/chat/typing', (req, res) => {
   const { chatId = 'default', sender = 'Client', isTyping } = req.body;
+  const now = Date.now();
+  if (sender === 'Raoprime') {
+    globalAdminPresence = now;
+  }
   if (!typingStatus[chatId]) typingStatus[chatId] = {};
   if (!presenceStatus[chatId]) presenceStatus[chatId] = {};
 
-  presenceStatus[chatId][sender] = Date.now(); // Typing immediately confirms active presence
-  typingStatus[chatId][sender] = isTyping ? Date.now() : 0;
+  presenceStatus[chatId][sender] = now; // Typing immediately confirms active presence
+  typingStatus[chatId][sender] = isTyping ? now : 0;
   res.json({ success: true });
 });
 
@@ -275,14 +353,27 @@ app.post('/api/chat/send', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Empty message' });
     }
 
+    const now = Date.now();
+    if (sender === 'Raoprime') {
+      globalAdminPresence = now;
+    }
+    if (!presenceStatus[chatId]) presenceStatus[chatId] = {};
+    presenceStatus[chatId][sender] = now;
+
     // Reset typing when message is sent
     if (typingStatus[chatId]) typingStatus[chatId][sender] = 0;
+
+    const otherSender = (sender === 'Raoprime' || sender === 'RP') ? 'Client' : 'Raoprime';
+    const isOtherOnline = otherSender === 'Raoprime'
+      ? Boolean(now - globalAdminPresence < 10000 || (presenceStatus[chatId]?.Raoprime && now - presenceStatus[chatId].Raoprime < 10000))
+      : Boolean(presenceStatus[chatId]?.Client && (now - presenceStatus[chatId].Client < 10000));
 
     const newMsg = {
       id: 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
       sender, // 'Client' or 'Raoprime'
       type: 'text',
       text: text.trim(),
+      status: isOtherOnline ? 'delivered' : 'sent',
       timestamp: new Date().toISOString()
     };
 
@@ -571,6 +662,7 @@ app.get('/api/admin/chats', requireAdminAuth, async (req, res) => {
     initFirebase();
     const chatList = [];
     const now = Date.now();
+    globalAdminPresence = now;
 
     if (isFirebaseConnected && firebaseDb) {
       try {
@@ -587,8 +679,9 @@ app.get('/api/admin/chats', requireAdminAuth, async (req, res) => {
 
           const chatPresence = presenceStatus[chatId] || {};
           const chatTyping = typingStatus[chatId] || {};
-          const isClientOnline = Boolean(chatPresence.Client && (now - chatPresence.Client < 7000));
+          const isClientOnline = Boolean(chatPresence.Client && (now - chatPresence.Client < 10000));
           const isClientTyping = Boolean(chatTyping.Client && (now - chatTyping.Client < 3500));
+          const unseenCount = messages.filter(m => (m.sender !== 'Raoprime' && m.sender !== 'RP') && m.status !== 'seen').length;
 
           chatList.push({
             chatId,
@@ -598,9 +691,11 @@ app.get('/api/admin/chats', requireAdminAuth, async (req, res) => {
             files: files.map((f) => f.file),
             isOnline: isClientOnline,
             isTyping: isClientTyping,
+            unseenCount,
             lastMessage: {
               sender: lastMsg.sender,
               text: lastMsg.type === 'file' ? `📁 [File] ${lastMsg.file.originalName}` : lastMsg.text,
+              status: lastMsg.status || 'seen',
               timestamp: lastMsg.timestamp,
               type: lastMsg.type
             }
@@ -622,8 +717,9 @@ app.get('/api/admin/chats', requireAdminAuth, async (req, res) => {
 
         const chatPresence = presenceStatus[chatId] || {};
         const chatTyping = typingStatus[chatId] || {};
-        const isClientOnline = Boolean(chatPresence.Client && (now - chatPresence.Client < 7000));
+        const isClientOnline = Boolean(chatPresence.Client && (now - chatPresence.Client < 10000));
         const isClientTyping = Boolean(chatTyping.Client && (now - chatTyping.Client < 3500));
+        const unseenCount = messages.filter(m => (m.sender !== 'Raoprime' && m.sender !== 'RP') && m.status !== 'seen').length;
 
         chatList.push({
           chatId,
@@ -633,9 +729,11 @@ app.get('/api/admin/chats', requireAdminAuth, async (req, res) => {
           files: files.map((f) => f.file),
           isOnline: isClientOnline,
           isTyping: isClientTyping,
+          unseenCount,
           lastMessage: {
             sender: lastMsg.sender,
             text: lastMsg.type === 'file' ? `📁 [File] ${lastMsg.file.originalName}` : lastMsg.text,
+            status: lastMsg.status || 'seen',
             timestamp: lastMsg.timestamp,
             type: lastMsg.type
           }
@@ -887,10 +985,17 @@ app.post('/api/upload/finalize', async (req, res) => {
     } catch (e) {}
 
     // Add file message to chat thread
+    const nowMs = Date.now();
+    const otherSender = (sender === 'Raoprime' || sender === 'RP') ? 'Client' : 'Raoprime';
+    const isOtherOnline = otherSender === 'Raoprime'
+      ? Boolean(nowMs - globalAdminPresence < 10000 || (presenceStatus[chatId]?.Raoprime && nowMs - presenceStatus[chatId].Raoprime < 10000))
+      : Boolean(presenceStatus[chatId]?.Client && (nowMs - presenceStatus[chatId].Client < 10000));
+
     const fileMessage = {
       id: 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
       sender: sender || 'Client',
       type: 'file',
+      status: isOtherOnline ? 'delivered' : 'sent',
       file: {
         fileId: uploadId,
         originalName,
