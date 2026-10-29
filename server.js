@@ -528,6 +528,69 @@ app.get('/api/admin/download-all/:chatId', requireAdminAuth, async (req, res) =>
   }
 });
 
+// Admin: Delete an entire chat and its files permanently
+app.delete('/api/admin/chat/:chatId', requireAdminAuth, async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    if (!chatId) {
+      return res.status(400).json({ success: false, error: 'Chat ID required' });
+    }
+
+    // 1. Delete from MongoDB if connected
+    await connectDB();
+    if (isMongoConnected) {
+      try {
+        const messages = await Message.find({ chatId }).lean();
+        if (gridfsBucket) {
+          for (const m of messages) {
+            if (m.type === 'file' && m.file && m.file.gridFsId) {
+              try {
+                await gridfsBucket.delete(new mongoose.Types.ObjectId(m.file.gridFsId));
+              } catch (e) {}
+            }
+          }
+        }
+        await Message.deleteMany({ chatId });
+        await Chat.deleteOne({ chatId });
+      } catch (mErr) {
+        console.warn('MongoDB delete warning:', mErr.message);
+      }
+    }
+
+    // 2. Delete from Local JSON Storage
+    const localChats = getAllLocalChats();
+    if (localChats[chatId]) {
+      const messages = localChats[chatId] || [];
+      for (const m of messages) {
+        if (m.type === 'file' && m.file && m.file.storedName) {
+          const fPath = path.join(VAULT_DIR, m.file.storedName);
+          if (fs.existsSync(fPath)) {
+            try { fs.unlinkSync(fPath); } catch (e) {}
+          }
+        }
+      }
+      delete localChats[chatId];
+      saveAllLocalChats(localChats);
+    }
+
+    // 3. Clear active calls or typing state
+    if (activeCalls[chatId]) {
+      delete activeCalls[chatId];
+    }
+    if (presenceHeartbeats[chatId]) {
+      delete presenceHeartbeats[chatId];
+    }
+    if (typingStates[chatId]) {
+      delete typingStates[chatId];
+    }
+
+    res.json({ success: true, message: `Chat ${chatId} deleted successfully` });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+
 // ──────────────────────────────────────────────────────────────
 // Zero-Error Chunked File Streaming into Chat
 // Vercel Serverless Ready (2MB Chunks)

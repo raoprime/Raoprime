@@ -232,6 +232,11 @@
           <i data-lucide="link" class="w-3.5 h-3.5"></i>
           <span class="hidden sm:inline">Copy Link</span>
         </button>
+
+        <!-- Delete Chat Button -->
+        <button onclick="confirmDeleteActiveChat()" class="w-9 h-9 rounded-full bg-red-950/40 hover:bg-red-900/80 text-red-400 hover:text-white border border-red-800/40 flex items-center justify-center transition-all active:scale-95 shadow-sm" title="Delete this chat & files" aria-label="Delete Chat">
+          <i data-lucide="trash-2" class="w-4 h-4"></i>
+        </button>
       </div>
 
     </header>
@@ -432,6 +437,23 @@
 
     </div>
 
+  </div>
+
+  <!-- Delete Chat Confirmation Modal -->
+  <div id="deleteChatModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-[#0e1118] border border-red-900/40 rounded-3xl p-6 sm:p-7 max-w-sm w-full text-center space-y-4 shadow-2xl relative">
+      <div class="w-14 h-14 rounded-full bg-red-950/70 border border-red-800/60 flex items-center justify-center text-red-400 mx-auto">
+        <i data-lucide="trash-2" class="w-6 h-6"></i>
+      </div>
+      <div class="space-y-1.5">
+        <h3 class="font-extrabold text-base text-white">Delete Conversation?</h3>
+        <p class="text-xs text-slate-400">All messages and uploaded files for <span id="deleteClientNameSpan" class="text-rose-400 font-bold">this client</span> will be permanently deleted.</p>
+      </div>
+      <div class="flex items-center gap-3 pt-2">
+        <button onclick="closeDeleteModal()" class="flex-1 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-slate-300 font-semibold text-xs transition-all active:scale-95 cursor-pointer">Cancel</button>
+        <button onclick="executeDeleteChat()" class="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs transition-all active:scale-95 shadow-lg shadow-red-950/60 cursor-pointer">Delete</button>
+      </div>
+    </div>
   </div>
 
   <script src="/admin.js"></script>

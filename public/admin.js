@@ -328,14 +328,17 @@ function filterChats() {
         </div>
         <div class="flex-1 min-w-0">
           <div class="flex items-center justify-between">
-            <h4 class="text-xs font-bold text-white truncate max-w-[140px] sm:max-w-[160px]">${escapeHtml(c.clientName)}</h4>
+            <h4 class="text-xs font-bold text-white truncate max-w-[130px] sm:max-w-[150px]">${escapeHtml(c.clientName)}</h4>
             <span class="text-[10px] text-slate-500 shrink-0 ml-1">${timeFormatted}</span>
           </div>
           <div class="flex items-center justify-between mt-1">
-            <p class="text-[11px] text-slate-400 truncate max-w-[170px] sm:max-w-[190px]">${snippetHtml}</p>
+            <p class="text-[11px] text-slate-400 truncate max-w-[140px] sm:max-w-[160px]">${snippetHtml}</p>
             ${c.totalFiles > 0 ? `<span class="px-1.5 py-0.2 rounded-full text-[9px] font-mono font-bold bg-rose-900/40 text-rose-300 border border-rose-700/40 shrink-0 ml-1">${c.totalFiles} files</span>` : ''}
           </div>
         </div>
+        <button onclick="event.stopPropagation(); confirmDeleteChat('${c.chatId}', '${escapeHtml(c.clientName)}')" class="w-7 h-7 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-950/40 flex items-center justify-center transition-all shrink-0 ml-0.5 cursor-pointer active:scale-90" title="Delete chat">
+          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+        </button>
       </div>
     `;
   }).join('');
@@ -646,6 +649,66 @@ function downloadClientZip() {
   if (!activeChatId || !adminToken) return;
   window.location.href = `/api/admin/download-all/${encodeURIComponent(activeChatId)}?token=${encodeURIComponent(adminToken)}`;
 }
+
+// ──────────────────────────────────────────────────────────────
+// Delete Conversation (Instant Deletion for Tests & Cleanups)
+// ──────────────────────────────────────────────────────────────
+let pendingDeleteChatId = null;
+
+function confirmDeleteActiveChat() {
+  if (!activeChatId) {
+    showToast('No active conversation selected.');
+    return;
+  }
+  const clientName = document.getElementById('activeClientName')?.textContent || activeChatId;
+  confirmDeleteChat(activeChatId, clientName);
+}
+
+function confirmDeleteChat(chatId, clientName) {
+  pendingDeleteChatId = chatId;
+  const span = document.getElementById('deleteClientNameSpan');
+  if (span) span.textContent = clientName || chatId;
+  const modal = document.getElementById('deleteChatModal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    if (window.lucide) window.lucide.createIcons();
+  }
+}
+
+function closeDeleteModal() {
+  pendingDeleteChatId = null;
+  const modal = document.getElementById('deleteChatModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function executeDeleteChat() {
+  if (!pendingDeleteChatId || !adminToken) return;
+  const targetId = pendingDeleteChatId;
+  closeDeleteModal();
+
+  try {
+    const res = await fetch(`/api/admin/chat/${encodeURIComponent(targetId)}?token=${encodeURIComponent(adminToken)}`, {
+      method: 'DELETE'
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(`Chat "${targetId}" deleted.`);
+      if (activeChatId === targetId) {
+        activeChatId = null;
+        lastMsgCount = 0;
+        const container = document.getElementById('adminMessagesList');
+        if (container) container.innerHTML = '';
+        closeWorkspaceMobile();
+      }
+      await loadAdminChats();
+    } else {
+      showToast('Delete failed: ' + (data.error || 'Unknown error'));
+    }
+  } catch (err) {
+    showToast('Delete error: ' + err.message);
+  }
+}
+
 
 function showToast(text) {
   const toast = document.getElementById('toast');

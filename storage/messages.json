@@ -16,14 +16,5 @@
       "text": "hi",
       "timestamp": "2026-10-29T15:14:31.627Z"
     }
-  ],
-  "PublicTestClient": [
-    {
-      "id": "msg_1793288276730_4sft",
-      "sender": "Client",
-      "type": "text",
-      "text": "Testing public link",
-      "timestamp": "2026-10-29T15:37:56.730Z"
-    }
   ]
 }
