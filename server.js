@@ -431,6 +431,70 @@ app.post('/api/chat/send', async (req, res) => {
   }
 });
 
+// Edit Existing Text Message
+app.post('/api/chat/message/edit', async (req, res) => {
+  try {
+    const { chatId = 'default', messageId, text, sender } = req.body;
+    if (!messageId || !text || !text.trim()) {
+      return res.status(400).json({ success: false, error: 'Message ID and text are required' });
+    }
+
+    const store = ensureMemoryStore();
+    if (!store[chatId]) {
+      return res.status(404).json({ success: false, error: 'Chat not found' });
+    }
+
+    const msg = store[chatId].find(m => m.id === messageId);
+    if (!msg) {
+      return res.status(404).json({ success: false, error: 'Message not found' });
+    }
+
+    if (msg.type !== 'text') {
+      return res.status(400).json({ success: false, error: 'Only text messages can be edited' });
+    }
+
+    // Permission check: only sender can edit their own message
+    if (sender) {
+      const isOwner = (sender === 'Raoprime' || sender === 'RP')
+        ? (msg.sender === 'Raoprime' || msg.sender === 'RP')
+        : (msg.sender !== 'Raoprime' && msg.sender !== 'RP');
+      if (!isOwner) {
+        return res.status(403).json({ success: false, error: 'Unauthorized to edit this message' });
+      }
+    }
+
+    msg.text = text.trim();
+    msg.isEdited = true;
+    msg.editedAt = new Date().toISOString();
+
+    // Debounced disk save
+    if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
+    saveDebounceTimer = setTimeout(() => {
+      saveAllLocalChats(store);
+    }, 250);
+
+    // Non-blocking Firestore sync
+    setImmediate(async () => {
+      initFirebase();
+      if (isFirebaseConnected && firebaseDb) {
+        try {
+          await firebaseDb.collection('raoprime_messages').doc(messageId).set({
+            text: msg.text,
+            isEdited: true,
+            editedAt: msg.editedAt
+          }, { merge: true });
+        } catch (e) {
+          console.warn('Async message edit Firestore notice:', e.message);
+        }
+      }
+    });
+
+    res.json({ success: true, message: msg });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ──────────────────────────────────────────────────────────────
 // ──────────────────────────────────────────────────────────────
 // Ultra HD WebRTC Calling Signaling Engine (1080p Video + Studio 48kHz Audio)

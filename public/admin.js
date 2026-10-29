@@ -24,6 +24,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendAdminTextMessage();
+    } else if (e.key === 'Escape' && adminEditingMessageId) {
+      e.preventDefault();
+      cancelAdminEditingMessage();
     }
   });
 
@@ -45,6 +48,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   msgInput.addEventListener('focus', () => {
     setTimeout(scrollAdminToBottom, 300);
   });
+
+  // Admin Message Context Menu (Right-click & Long-press)
+  setupAdminMessageContextMenu();
 
   // Admin Heartbeat Loop (5s secondary pulse)
   setInterval(sendAdminHeartbeat, 5000);
@@ -496,7 +502,8 @@ async function loadActiveMessages() {
     });
     const data = await res.json();
     if (data.success && data.messages) {
-      const currentSig = data.messages.map(m => m.id + ':' + (m.status || '')).join('|');
+      window.currentAdminCachedMessages = data.messages;
+      const currentSig = data.messages.map(m => `${m.id}:${m.status || ''}:${m.isEdited ? '1' : '0'}:${m.text || ''}`).join('|');
       if (currentSig !== lastAdminMsgSig) {
         const isNewLength = data.messages.length !== lastMsgCount;
         lastAdminMsgSig = currentSig;
@@ -604,14 +611,22 @@ function renderAdminMessages(messages) {
       }
     }
 
+    const editedBadge = msg.isEdited ? `<span class="text-[9px] text-slate-500 italic ml-1" title="Edited message">(edited)</span>` : '';
+
     return `
-      <div class="flex flex-col ${isRaoprime ? 'items-end' : 'items-start'}">
-        <div class="text-[10px] font-semibold text-slate-500 mb-1 px-1">${senderTitle}</div>
-        <div class="${isRaoprime ? 'bubble-admin-out' : 'bubble-admin-in'} max-w-[85%] sm:max-w-md shadow-md">
+      <div class="admin-message-row flex flex-col ${isRaoprime ? 'items-end' : 'items-start'} group" data-msg-id="${msg.id}" data-msg-sender="${msg.sender}">
+        <div class="text-[10px] font-semibold text-slate-500 mb-1 px-1 flex items-center gap-1.5">
+          <span>${senderTitle}</span>
+          <button onclick="openAdminMessageActionMenu(this.closest('.admin-message-row'))" class="opacity-0 group-hover:opacity-100 transition-opacity text-slate-500 hover:text-white p-0.5 rounded cursor-pointer" title="Options">
+            <i data-lucide="more-horizontal" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+        <div class="${isRaoprime ? 'bubble-admin-out' : 'bubble-admin-in'} max-w-[85%] sm:max-w-md shadow-md cursor-pointer select-text transition-transform active:scale-[0.99]">
           ${bubbleContent}
         </div>
         <div class="text-[10px] text-slate-500 mt-1 px-1 flex items-center ${isRaoprime ? 'justify-end' : 'justify-start'}">
           <span>${timeFormatted}</span>
+          ${editedBadge}
           ${renderAdminMessageStatus(msg.status, isRaoprime)}
         </div>
       </div>
@@ -622,7 +637,7 @@ function renderAdminMessages(messages) {
 }
 
 // ──────────────────────────────────────────────────────────────
-// Send Reply as Raoprime
+// Send Reply as Raoprime & Message Edit
 // ──────────────────────────────────────────────────────────────
 
 async function sendAdminTextMessage() {
@@ -631,6 +646,34 @@ async function sendAdminTextMessage() {
   const input = document.getElementById('adminMessageInput');
   const text = input.value.trim();
   if (!text) return;
+
+  // If in edit mode, save edited message
+  if (adminEditingMessageId) {
+    try {
+      const res = await fetch('/api/chat/message/edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chatId: activeChatId,
+          messageId: adminEditingMessageId,
+          text,
+          sender: 'Raoprime'
+        })
+      });
+      const data = await res.json();
+      if (!data.success) {
+        showToast('Edit error: ' + (data.error || 'Failed to edit'));
+        return;
+      }
+      cancelAdminEditingMessage();
+      triggerActiveMsgsPoll();
+      triggerAdminChatsPoll();
+      showToast('Message updated');
+    } catch (err) {
+      showToast('Failed to edit message: ' + err.message);
+    }
+    return;
+  }
 
   input.value = '';
 
@@ -654,6 +697,250 @@ async function sendAdminTextMessage() {
   } catch (err) {
     showToast('Failed to send reply: ' + err.message);
   }
+}
+
+// ──────────────────────────────────────────────────────────────
+// Admin Message Context Menu & Edit Suite (Long-Press & Right-Click)
+// ──────────────────────────────────────────────────────────────
+
+let adminContextTargetMessage = null;
+let adminEditingMessageId = null;
+
+function setupAdminMessageContextMenu() {
+  const container = document.getElementById('adminMessagesList');
+  if (!container) return;
+
+  // 1. Mouse Right-Click (Desktop)
+  container.addEventListener('contextmenu', (e) => {
+    const row = e.target.closest('.admin-message-row');
+    if (!row) return;
+    const msgId = row.dataset.msgId;
+    const msg = (window.currentAdminCachedMessages || []).find(m => m.id === msgId);
+    if (!msg) return;
+
+    e.preventDefault();
+    openAdminMessageContextMenu(msg, e.clientX, e.clientY);
+  });
+
+  // 2. Mobile Touch Long-Press (450ms)
+  let touchTimer = null;
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let touchTargetRow = null;
+
+  container.addEventListener('touchstart', (e) => {
+    const row = e.target.closest('.admin-message-row');
+    if (!row) return;
+    const touch = e.touches[0];
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+    touchTargetRow = row;
+
+    if (touchTimer) clearTimeout(touchTimer);
+    touchTimer = setTimeout(() => {
+      if (touchTargetRow) {
+        const msgId = touchTargetRow.dataset.msgId;
+        const msg = (window.currentAdminCachedMessages || []).find(m => m.id === msgId);
+        if (msg) {
+          if (navigator.vibrate) {
+            try { navigator.vibrate(40); } catch (err) {}
+          }
+          openAdminMessageContextMenu(msg, touchStartX, touchStartY);
+        }
+      }
+    }, 450);
+  }, { passive: true });
+
+  container.addEventListener('touchmove', (e) => {
+    if (!touchTimer) return;
+    const touch = e.touches[0];
+    const dx = Math.abs(touch.clientX - touchStartX);
+    const dy = Math.abs(touch.clientY - touchStartY);
+    if (dx > 10 || dy > 10) {
+      clearTimeout(touchTimer);
+      touchTimer = null;
+      touchTargetRow = null;
+    }
+  }, { passive: true });
+
+  container.addEventListener('touchend', () => {
+    if (touchTimer) {
+      clearTimeout(touchTimer);
+      touchTimer = null;
+    }
+    touchTargetRow = null;
+  });
+
+  container.addEventListener('touchcancel', () => {
+    if (touchTimer) {
+      clearTimeout(touchTimer);
+      touchTimer = null;
+    }
+    touchTargetRow = null;
+  });
+
+  // Close context menu on outside click, window scroll, or Escape
+  document.addEventListener('click', (e) => {
+    const menu = document.getElementById('adminMessageContextMenu');
+    if (menu && !menu.contains(e.target) && !e.target.closest('.admin-message-row')) {
+      closeAdminMessageContextMenu();
+    }
+  });
+
+  const chatStream = document.getElementById('adminChatStream');
+  if (chatStream) {
+    chatStream.addEventListener('scroll', closeAdminMessageContextMenu, true);
+  }
+  window.addEventListener('scroll', closeAdminMessageContextMenu, true);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeAdminMessageContextMenu();
+  });
+}
+
+function openAdminMessageActionMenu(rowEl) {
+  if (!rowEl) return;
+  const msgId = rowEl.dataset.msgId;
+  const msg = (window.currentAdminCachedMessages || []).find(m => m.id === msgId);
+  if (!msg) return;
+  const rect = rowEl.getBoundingClientRect();
+  openAdminMessageContextMenu(msg, Math.min(rect.right - 40, window.innerWidth - 160), rect.top + 25);
+}
+
+function openAdminMessageContextMenu(msg, x, y) {
+  adminContextTargetMessage = msg;
+  const menu = document.getElementById('adminMessageContextMenu');
+  if (!menu) return;
+
+  const editBtn = document.getElementById('adminCtxEditBtn');
+  // Can only edit own messages (sent by Raoprime)
+  const isRaoprime = msg.sender === 'Raoprime' || msg.sender === 'RP';
+  const canEdit = msg.type === 'text' && isRaoprime;
+  if (editBtn) {
+    if (canEdit) {
+      editBtn.classList.remove('hidden');
+    } else {
+      editBtn.classList.add('hidden');
+    }
+  }
+
+  menu.classList.remove('hidden');
+
+  // Viewport bounds safe positioning
+  const menuWidth = 150;
+  const menuHeight = canEdit ? 85 : 45;
+  let posX = x;
+  let posY = y;
+
+  if (posX + menuWidth > window.innerWidth - 12) {
+    posX = window.innerWidth - menuWidth - 12;
+  }
+  if (posX < 12) posX = 12;
+
+  if (posY + menuHeight > window.innerHeight - 12) {
+    posY = posY - menuHeight - 10;
+  }
+  if (posY < 12) posY = 12;
+
+  menu.style.left = `${posX}px`;
+  menu.style.top = `${posY}px`;
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function closeAdminMessageContextMenu() {
+  const menu = document.getElementById('adminMessageContextMenu');
+  if (menu && !menu.classList.contains('hidden')) {
+    menu.classList.add('hidden');
+  }
+}
+
+function handleAdminContextCopy() {
+  if (!adminContextTargetMessage) return;
+  closeAdminMessageContextMenu();
+
+  let textToCopy = '';
+  if (adminContextTargetMessage.type === 'text') {
+    textToCopy = adminContextTargetMessage.text;
+  } else if (adminContextTargetMessage.type === 'file' && adminContextTargetMessage.file) {
+    textToCopy = window.location.origin + adminContextTargetMessage.file.downloadUrl;
+  }
+
+  if (textToCopy) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        showToast('Copied to clipboard!');
+      }).catch(() => fallbackAdminCopy(textToCopy));
+    } else {
+      fallbackAdminCopy(textToCopy);
+    }
+  }
+}
+
+function fallbackAdminCopy(text) {
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('Copied to clipboard!');
+  } catch (e) {
+    showToast('Failed to copy');
+  }
+}
+
+function handleAdminContextEdit() {
+  if (!adminContextTargetMessage) return;
+  const msg = adminContextTargetMessage;
+  closeAdminMessageContextMenu();
+  startAdminEditingMessage(msg);
+}
+
+function startAdminEditingMessage(msg) {
+  if (!msg || msg.type !== 'text') return;
+  adminEditingMessageId = msg.id;
+
+  const banner = document.getElementById('adminEditBanner');
+  const preview = document.getElementById('adminEditingPreviewText');
+  const input = document.getElementById('adminMessageInput');
+  const sendBtn = document.getElementById('adminSendBtn');
+
+  if (banner) banner.classList.remove('hidden');
+  if (preview) preview.textContent = msg.text;
+
+  if (input) {
+    input.value = msg.text;
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+  }
+
+  if (sendBtn) {
+    sendBtn.innerHTML = '<i data-lucide="check" class="w-4 h-4 ml-0.5"></i>';
+    sendBtn.title = 'Save edited message';
+  }
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function cancelAdminEditingMessage() {
+  adminEditingMessageId = null;
+
+  const banner = document.getElementById('adminEditBanner');
+  const input = document.getElementById('adminMessageInput');
+  const sendBtn = document.getElementById('adminSendBtn');
+
+  if (banner) banner.classList.add('hidden');
+  if (input) input.value = '';
+
+  if (sendBtn) {
+    sendBtn.innerHTML = '<i data-lucide="send" class="w-4 h-4 ml-0.5 fill-current"></i>';
+    sendBtn.title = 'Send Reply';
+  }
+
+  if (window.lucide) window.lucide.createIcons();
 }
 
 // ──────────────────────────────────────────────────────────────

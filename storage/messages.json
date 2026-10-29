@@ -166,6 +166,16 @@
       "type": "text",
       "timestamp": "2026-10-29T19:29:05.413Z",
       "status": "seen"
+    },
+    {
+      "id": "msg_1793305135873_wckn",
+      "sender": "Client",
+      "type": "text",
+      "text": "Hello, this is the EDITED message!",
+      "status": "sent",
+      "timestamp": "2026-10-29T20:18:55.873Z",
+      "isEdited": true,
+      "editedAt": "2026-10-29T20:18:55.882Z"
     }
   ],
   "Afaq Ahmed": [

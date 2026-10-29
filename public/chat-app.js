@@ -56,6 +56,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendTextMessage();
+    } else if (e.key === 'Escape' && editingMessageId) {
+      e.preventDefault();
+      cancelEditingMessage();
     }
   });
 
@@ -80,6 +83,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Drag and Drop anywhere on page
   setupDragAndDrop();
+
+  // Message Context Menu (Long-press on mobile / Right-click on desktop)
+  setupMessageContextMenu();
 
   // Heartbeat Loop (Pings every 5s as secondary fallback)
   sendHeartbeat();
@@ -248,6 +254,8 @@ let lastMessageSig = '';
 let lastTypingSig = '';
 let isPollingMessages = false;
 let messagePollTimer = null;
+let contextTargetMessage = null;
+let editingMessageId = null;
 
 function renderMessageStatus(status, isOut) {
   if (!isOut) return '';
@@ -281,7 +289,7 @@ async function loadMessages() {
     const data = await res.json();
     if (data.success && data.messages) {
       window.currentCachedMessages = data.messages;
-      const currentSig = data.messages.map(m => m.id + ':' + (m.status || '')).join('|');
+      const currentSig = data.messages.map(m => `${m.id}:${m.status || ''}:${m.isEdited ? '1' : '0'}:${m.text || ''}`).join('|');
       if (currentSig !== lastMessageSig) {
         const isNewLength = data.messages.length !== lastMessagesCount;
         lastMessageSig = currentSig;
@@ -315,6 +323,7 @@ function renderMessages(messages) {
     const isOut = msg.sender === currentRole;
     const timeFormatted = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const senderLabel = isOut ? 'You' : (msg.sender === 'Raoprime' || msg.sender === 'RP' ? 'Raoprime' : (msg.sender || 'Client'));
+    const editedBadge = msg.isEdited ? `<span class="text-[9px] text-slate-500 italic ml-1" title="Edited message">(edited)</span>` : '';
 
     let bubbleContent = '';
 
@@ -387,13 +396,19 @@ function renderMessages(messages) {
     }
 
     return `
-      <div class="flex flex-col ${isOut ? 'items-end' : 'items-start'}">
-        <div class="text-[10px] font-semibold text-slate-500 mb-1 px-1">${senderLabel}</div>
-        <div class="${isOut ? 'bubble-out' : 'bubble-in'} max-w-[85%] sm:max-w-md shadow-md">
+      <div class="message-row flex flex-col ${isOut ? 'items-end' : 'items-start'} group" data-msg-id="${msg.id}" data-msg-sender="${msg.sender}">
+        <div class="text-[10px] font-semibold text-slate-500 mb-1 px-1 flex items-center gap-1.5">
+          <span>${senderLabel}</span>
+          <button onclick="openMessageActionMenu(this.closest('.message-row'))" class="opacity-0 group-hover:opacity-100 transition-opacity text-slate-500 hover:text-white p-0.5 rounded cursor-pointer" title="Options">
+            <i data-lucide="more-horizontal" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+        <div class="${isOut ? 'bubble-out' : 'bubble-in'} max-w-[85%] sm:max-w-md shadow-md cursor-pointer select-text transition-transform active:scale-[0.99]">
           ${bubbleContent}
         </div>
         <div class="text-[10px] text-slate-500 mt-1 px-1 flex items-center ${isOut ? 'justify-end' : 'justify-start'}">
           <span>${timeFormatted}</span>
+          ${editedBadge}
           ${renderMessageStatus(msg.status, isOut)}
         </div>
       </div>
@@ -407,6 +422,33 @@ async function sendTextMessage() {
   const input = document.getElementById('messageInput');
   const text = input.value.trim();
   if (!text) return;
+
+  // If currently in edit mode, save edited message
+  if (editingMessageId) {
+    try {
+      const res = await fetch('/api/chat/message/edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chatId: currentChatId,
+          messageId: editingMessageId,
+          text,
+          sender: currentRole
+        })
+      });
+      const data = await res.json();
+      if (!data.success) {
+        showToast('Edit error: ' + (data.error || 'Failed to edit'));
+        return;
+      }
+      cancelEditingMessage();
+      triggerMessagePoll();
+      showToast('Message updated');
+    } catch (err) {
+      showToast('Failed to edit message: ' + err.message);
+    }
+    return;
+  }
 
   input.value = '';
 
@@ -425,10 +467,246 @@ async function sendTextMessage() {
         text
       })
     });
-    loadMessages();
+    triggerMessagePoll();
   } catch (err) {
     showToast('Failed to send message: ' + err.message);
   }
+}
+
+// ──────────────────────────────────────────────────────────────
+// Message Context Menu & Edit Suite (Long-Press & Right-Click)
+// ──────────────────────────────────────────────────────────────
+
+function setupMessageContextMenu() {
+  const container = document.getElementById('messagesList');
+  if (!container) return;
+
+  // 1. Mouse Right-Click (Desktop)
+  container.addEventListener('contextmenu', (e) => {
+    const row = e.target.closest('.message-row');
+    if (!row) return;
+    const msgId = row.dataset.msgId;
+    const msg = (window.currentCachedMessages || []).find(m => m.id === msgId);
+    if (!msg) return;
+
+    e.preventDefault();
+    openMessageContextMenu(msg, e.clientX, e.clientY);
+  });
+
+  // 2. Mobile Touch Long-Press (450ms)
+  let touchTimer = null;
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let touchTargetRow = null;
+
+  container.addEventListener('touchstart', (e) => {
+    const row = e.target.closest('.message-row');
+    if (!row) return;
+    const touch = e.touches[0];
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+    touchTargetRow = row;
+
+    if (touchTimer) clearTimeout(touchTimer);
+    touchTimer = setTimeout(() => {
+      if (touchTargetRow) {
+        const msgId = touchTargetRow.dataset.msgId;
+        const msg = (window.currentCachedMessages || []).find(m => m.id === msgId);
+        if (msg) {
+          if (navigator.vibrate) {
+            try { navigator.vibrate(40); } catch (err) {}
+          }
+          openMessageContextMenu(msg, touchStartX, touchStartY);
+        }
+      }
+    }, 450);
+  }, { passive: true });
+
+  container.addEventListener('touchmove', (e) => {
+    if (!touchTimer) return;
+    const touch = e.touches[0];
+    const dx = Math.abs(touch.clientX - touchStartX);
+    const dy = Math.abs(touch.clientY - touchStartY);
+    if (dx > 10 || dy > 10) {
+      clearTimeout(touchTimer);
+      touchTimer = null;
+      touchTargetRow = null;
+    }
+  }, { passive: true });
+
+  container.addEventListener('touchend', () => {
+    if (touchTimer) {
+      clearTimeout(touchTimer);
+      touchTimer = null;
+    }
+    touchTargetRow = null;
+  });
+
+  container.addEventListener('touchcancel', () => {
+    if (touchTimer) {
+      clearTimeout(touchTimer);
+      touchTimer = null;
+    }
+    touchTargetRow = null;
+  });
+
+  // Close context menu on outside click, window scroll, or Escape
+  document.addEventListener('click', (e) => {
+    const menu = document.getElementById('messageContextMenu');
+    if (menu && !menu.contains(e.target) && !e.target.closest('.message-row')) {
+      closeMessageContextMenu();
+    }
+  });
+
+  window.addEventListener('scroll', closeMessageContextMenu, true);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeMessageContextMenu();
+  });
+}
+
+function openMessageActionMenu(rowEl) {
+  if (!rowEl) return;
+  const msgId = rowEl.dataset.msgId;
+  const msg = (window.currentCachedMessages || []).find(m => m.id === msgId);
+  if (!msg) return;
+  const rect = rowEl.getBoundingClientRect();
+  openMessageContextMenu(msg, Math.min(rect.right - 40, window.innerWidth - 160), rect.top + 25);
+}
+
+function openMessageContextMenu(msg, x, y) {
+  contextTargetMessage = msg;
+  const menu = document.getElementById('messageContextMenu');
+  if (!menu) return;
+
+  const editBtn = document.getElementById('ctxEditBtn');
+  // Can only edit own text messages
+  const canEdit = msg.type === 'text' && msg.sender === currentRole;
+  if (editBtn) {
+    if (canEdit) {
+      editBtn.classList.remove('hidden');
+    } else {
+      editBtn.classList.add('hidden');
+    }
+  }
+
+  menu.classList.remove('hidden');
+
+  // Viewport bounds safe positioning
+  const menuWidth = 150;
+  const menuHeight = canEdit ? 85 : 45;
+  let posX = x;
+  let posY = y;
+
+  if (posX + menuWidth > window.innerWidth - 12) {
+    posX = window.innerWidth - menuWidth - 12;
+  }
+  if (posX < 12) posX = 12;
+
+  if (posY + menuHeight > window.innerHeight - 12) {
+    posY = posY - menuHeight - 10;
+  }
+  if (posY < 12) posY = 12;
+
+  menu.style.left = `${posX}px`;
+  menu.style.top = `${posY}px`;
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function closeMessageContextMenu() {
+  const menu = document.getElementById('messageContextMenu');
+  if (menu && !menu.classList.contains('hidden')) {
+    menu.classList.add('hidden');
+  }
+}
+
+function handleContextCopy() {
+  if (!contextTargetMessage) return;
+  closeMessageContextMenu();
+
+  let textToCopy = '';
+  if (contextTargetMessage.type === 'text') {
+    textToCopy = contextTargetMessage.text;
+  } else if (contextTargetMessage.type === 'file' && contextTargetMessage.file) {
+    textToCopy = window.location.origin + contextTargetMessage.file.downloadUrl;
+  }
+
+  if (textToCopy) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        showToast('Copied to clipboard!');
+      }).catch(() => fallbackCopy(textToCopy));
+    } else {
+      fallbackCopy(textToCopy);
+    }
+  }
+}
+
+function fallbackCopy(text) {
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('Copied to clipboard!');
+  } catch (e) {
+    showToast('Failed to copy');
+  }
+}
+
+function handleContextEdit() {
+  if (!contextTargetMessage) return;
+  const msg = contextTargetMessage;
+  closeMessageContextMenu();
+  startEditingMessage(msg);
+}
+
+function startEditingMessage(msg) {
+  if (!msg || msg.type !== 'text') return;
+  editingMessageId = msg.id;
+
+  const banner = document.getElementById('editBanner');
+  const preview = document.getElementById('editingPreviewText');
+  const input = document.getElementById('messageInput');
+  const sendBtn = document.getElementById('sendBtn');
+
+  if (banner) banner.classList.remove('hidden');
+  if (preview) preview.textContent = msg.text;
+
+  if (input) {
+    input.value = msg.text;
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+  }
+
+  if (sendBtn) {
+    sendBtn.innerHTML = '<i data-lucide="check" class="w-4 h-4 ml-0.5"></i>';
+    sendBtn.title = 'Save edited message';
+  }
+
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function cancelEditingMessage() {
+  editingMessageId = null;
+
+  const banner = document.getElementById('editBanner');
+  const input = document.getElementById('messageInput');
+  const sendBtn = document.getElementById('sendBtn');
+
+  if (banner) banner.classList.add('hidden');
+  if (input) input.value = '';
+
+  if (sendBtn) {
+    sendBtn.innerHTML = '<i data-lucide="send" class="w-4 h-4 ml-0.5 fill-current"></i>';
+    sendBtn.title = 'Send Message';
+  }
+
+  if (window.lucide) window.lucide.createIcons();
 }
 
 // ──────────────────────────────────────────────────────────────
