@@ -59,16 +59,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  let lastTypingTime = 0;
   messageInput.addEventListener('input', () => {
-    if (!isCurrentlyTyping) {
-      isCurrentlyTyping = true;
+    const now = Date.now();
+    if (now - lastTypingTime > 1000) {
+      lastTypingTime = now;
       sendTypingStatus(true);
     }
     clearTimeout(typingTimeout);
     typingTimeout = setTimeout(() => {
-      isCurrentlyTyping = false;
+      lastTypingTime = 0;
       sendTypingStatus(false);
-    }, 2000);
+    }, 2500);
   });
 
   // Mobile virtual keyboard handling
@@ -79,10 +81,23 @@ document.addEventListener('DOMContentLoaded', () => {
   // Drag and Drop anywhere on page
   setupDragAndDrop();
 
-  // Initial load & Polling (Fast 1.2s polling for instantaneous real-time typing & messages)
+  // Heartbeat Loop (Pings every 2.5s to maintain Live Online Status)
+  sendHeartbeat();
+  setInterval(sendHeartbeat, 2500);
+
+  // Initial load & Polling (Ultra-fast 800ms polling for WhatsApp/Instagram-grade real-time response)
   loadMessages();
-  setInterval(loadMessages, 1200);
+  setInterval(loadMessages, 800);
 });
+
+// Send Heartbeat to declare active online presence
+function sendHeartbeat() {
+  fetch('/api/chat/heartbeat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chatId: currentChatId, sender: currentRole })
+  }).catch(() => {});
+}
 
 // ──────────────────────────────────────────────────────────────
 // Mobile Viewport & Virtual Keyboard Handler
@@ -116,22 +131,26 @@ async function sendTypingStatus(isTyping) {
   } catch (e) {}
 }
 
-function updateTypingUI(isTyping) {
+function updateTypingUI(isOnline, isTyping) {
   const headerStatus = document.getElementById('headerStatus');
   const bubble = document.getElementById('typingBubbleContainer');
+  const radarDot = document.getElementById('headerRadarDot');
 
   if (isTyping) {
     if (headerStatus) {
       headerStatus.innerHTML = `
         <span class="text-rose-400 font-semibold flex items-center gap-1.5 animate-pulse">
-          <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span> typing...
+          <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span> Raoprime is typing...
         </span>`;
     }
     if (bubble && bubble.classList.contains('hidden')) {
       bubble.classList.remove('hidden');
       scrollToBottom();
     }
-  } else {
+    if (radarDot) {
+      radarDot.className = 'absolute bottom-0 right-0 w-3 h-3 bg-rose-500 border-2 border-[#0a0c12] rounded-full animate-ping';
+    }
+  } else if (isOnline) {
     if (headerStatus) {
       headerStatus.innerHTML = `
         <span class="text-emerald-400 font-semibold flex items-center gap-1">
@@ -140,8 +159,23 @@ function updateTypingUI(isTyping) {
         <span class="text-slate-600 hidden xs:inline">•</span>
         <span class="hidden sm:inline text-slate-400">Encrypted Client Desk</span>`;
     }
-    if (bubble) {
-      bubble.classList.add('hidden');
+    if (bubble) bubble.classList.add('hidden');
+    if (radarDot) {
+      radarDot.className = 'absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-[#0a0c12] rounded-full radar-pulse';
+    }
+  } else {
+    // Offline
+    if (headerStatus) {
+      headerStatus.innerHTML = `
+        <span class="text-slate-400 font-medium flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span> Offline
+        </span>
+        <span class="text-slate-600 hidden xs:inline">•</span>
+        <span class="hidden sm:inline text-slate-400">Encrypted Client Desk</span>`;
+    }
+    if (bubble) bubble.classList.add('hidden');
+    if (radarDot) {
+      radarDot.className = 'absolute bottom-0 right-0 w-3 h-3 bg-slate-500 border-2 border-[#0a0c12] rounded-full';
     }
   }
 }
@@ -217,10 +251,11 @@ async function loadMessages() {
         scrollToBottom();
       }
 
-      // Check if other party is typing
+      // Check if other party (Raoprime Admin) is typing or online
       const otherSender = currentRole === 'Client' ? 'Raoprime' : 'Client';
       const isOtherTyping = Boolean(data.typing && data.typing[otherSender]);
-      updateTypingUI(isOtherTyping);
+      const isOtherOnline = Boolean(data.online && data.online[otherSender]);
+      updateTypingUI(isOtherOnline, isOtherTyping);
     }
   } catch (err) {
     // Silent fail on poll

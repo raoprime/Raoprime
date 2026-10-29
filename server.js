@@ -179,14 +179,23 @@ async function saveChatMessage(chatId, messageObj) {
   saveAllLocalChats(localChats);
 }
 
-// In-memory Real-time Typing Tracker
+// In-memory Real-time Presence & Typing Tracker
 const typingStatus = {}; // { [chatId]: { Client: timestamp, Raoprime: timestamp } }
+const presenceStatus = {}; // { [chatId]: { Client: timestamp, Raoprime: timestamp } }
+
+// Heartbeat Endpoint to track Live Presence (Active vs Offline)
+app.post('/api/chat/heartbeat', (req, res) => {
+  const { chatId = 'default', sender = 'Client' } = req.body;
+  if (!presenceStatus[chatId]) presenceStatus[chatId] = {};
+  presenceStatus[chatId][sender] = Date.now();
+  res.json({ success: true });
+});
 
 // ──────────────────────────────────────────────────────────────
 // Chat APIs
 // ──────────────────────────────────────────────────────────────
 
-// Get Messages & Real-time Typing State
+// Get Messages & Real-time Typing + Presence State
 app.get('/api/chat/messages', async (req, res) => {
   try {
     const chatId = req.query.chatId || 'default';
@@ -194,6 +203,8 @@ app.get('/api/chat/messages', async (req, res) => {
 
     const now = Date.now();
     const chatTyping = typingStatus[chatId] || {};
+    const chatPresence = presenceStatus[chatId] || {};
+
     const activeTyping = {};
     for (const [sender, time] of Object.entries(chatTyping)) {
       if (now - time < 3500) {
@@ -201,7 +212,12 @@ app.get('/api/chat/messages', async (req, res) => {
       }
     }
 
-    res.json({ success: true, chatId, messages, typing: activeTyping });
+    const onlineStatus = {
+      Client: Boolean(chatPresence.Client && (now - chatPresence.Client < 7000)),
+      Raoprime: Boolean(chatPresence.Raoprime && (now - chatPresence.Raoprime < 7000))
+    };
+
+    res.json({ success: true, chatId, messages, typing: activeTyping, online: onlineStatus });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -211,6 +227,9 @@ app.get('/api/chat/messages', async (req, res) => {
 app.post('/api/chat/typing', (req, res) => {
   const { chatId = 'default', sender = 'Client', isTyping } = req.body;
   if (!typingStatus[chatId]) typingStatus[chatId] = {};
+  if (!presenceStatus[chatId]) presenceStatus[chatId] = {};
+
+  presenceStatus[chatId][sender] = Date.now(); // Typing immediately confirms active presence
   typingStatus[chatId][sender] = isTyping ? Date.now() : 0;
   res.json({ success: true });
 });
@@ -317,6 +336,7 @@ app.get('/api/admin/chats', requireAdminAuth, async (req, res) => {
   try {
     await connectDB();
     const chatList = [];
+    const now = Date.now();
 
     if (isMongoConnected) {
       const distinctChatIds = await Message.distinct('chatId');
@@ -328,12 +348,19 @@ app.get('/api/admin/chats', requireAdminAuth, async (req, res) => {
         const files = messages.filter((m) => m.type === 'file' && m.file);
         const clientName = chatId === 'default' ? 'General Desk' : decodeURIComponent(chatId);
 
+        const chatPresence = presenceStatus[chatId] || {};
+        const chatTyping = typingStatus[chatId] || {};
+        const isClientOnline = Boolean(chatPresence.Client && (now - chatPresence.Client < 7000));
+        const isClientTyping = Boolean(chatTyping.Client && (now - chatTyping.Client < 3500));
+
         chatList.push({
           chatId,
           clientName,
           totalMessages: messages.length,
           totalFiles: files.length,
           files: files.map((f) => f.file),
+          isOnline: isClientOnline,
+          isTyping: isClientTyping,
           lastMessage: {
             sender: lastMsg.sender,
             text: lastMsg.type === 'file' ? `📁 [File] ${lastMsg.file.originalName}` : lastMsg.text,
@@ -351,12 +378,19 @@ app.get('/api/admin/chats', requireAdminAuth, async (req, res) => {
         const files = messages.filter((m) => m.type === 'file' && m.file);
         const clientName = chatId === 'default' ? 'General Desk' : decodeURIComponent(chatId);
 
+        const chatPresence = presenceStatus[chatId] || {};
+        const chatTyping = typingStatus[chatId] || {};
+        const isClientOnline = Boolean(chatPresence.Client && (now - chatPresence.Client < 7000));
+        const isClientTyping = Boolean(chatTyping.Client && (now - chatTyping.Client < 3500));
+
         chatList.push({
           chatId,
           clientName,
           totalMessages: messages.length,
           totalFiles: files.length,
           files: files.map((f) => f.file),
+          isOnline: isClientOnline,
+          isTyping: isClientTyping,
           lastMessage: {
             sender: lastMsg.sender,
             text: lastMsg.type === 'file' ? `📁 [File] ${lastMsg.file.originalName}` : lastMsg.text,

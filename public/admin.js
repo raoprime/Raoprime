@@ -27,26 +27,40 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  let lastAdminTypingTime = 0;
   msgInput.addEventListener('input', () => {
     if (!activeChatId) return;
-    if (!isCurrentlyTyping) {
-      isCurrentlyTyping = true;
+    const now = Date.now();
+    if (now - lastAdminTypingTime > 1000) {
+      lastAdminTypingTime = now;
       sendAdminTypingStatus(true);
     }
     clearTimeout(typingTimeout);
     typingTimeout = setTimeout(() => {
-      isCurrentlyTyping = false;
+      lastAdminTypingTime = 0;
       sendAdminTypingStatus(false);
-    }, 2000);
+    }, 2500);
   });
 
   msgInput.addEventListener('focus', () => {
     setTimeout(scrollAdminToBottom, 300);
   });
 
+  // Admin Heartbeat Loop
+  setInterval(sendAdminHeartbeat, 2500);
+
   // Verify authentication before loading chats
   await checkAuthStatus();
 });
+
+function sendAdminHeartbeat() {
+  if (!activeChatId) return;
+  fetch('/api/chat/heartbeat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chatId: activeChatId, sender: 'Raoprime' })
+  }).catch(() => {});
+}
 
 // ──────────────────────────────────────────────────────────────
 // Mobile Viewport & Virtual Keyboard Handler
@@ -109,8 +123,8 @@ function startPolling() {
   loadAdminChats();
   pollIntervals.forEach(clearInterval);
   pollIntervals = [
-    setInterval(loadAdminChats, 2000),
-    setInterval(loadActiveMessages, 1200)
+    setInterval(loadAdminChats, 1500),
+    setInterval(loadActiveMessages, 800)
   ];
 }
 
@@ -188,9 +202,10 @@ async function sendAdminTypingStatus(isTyping) {
   } catch (e) {}
 }
 
-function updateAdminTypingUI(isTyping) {
+function updateAdminTypingUI(isOnline, isTyping) {
   const meta = document.getElementById('activeClientMeta');
   const bubble = document.getElementById('adminTypingBubbleContainer');
+  const radarDot = document.getElementById('activeClientRadarDot');
   const clientName = document.getElementById('activeClientName')?.textContent || 'Client';
 
   if (isTyping) {
@@ -204,15 +219,31 @@ function updateAdminTypingUI(isTyping) {
       bubble.classList.remove('hidden');
       scrollAdminToBottom();
     }
-  } else {
+    if (radarDot) {
+      radarDot.className = 'absolute bottom-0 right-0 w-2.5 h-2.5 bg-rose-500 border-2 border-[#0a0c12] rounded-full animate-ping';
+    }
+  } else if (isOnline) {
     if (meta) {
       meta.innerHTML = `
         <span class="text-emerald-400 font-semibold flex items-center gap-1">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Active conversation
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Active now
         </span>`;
     }
-    if (bubble) {
-      bubble.classList.add('hidden');
+    if (bubble) bubble.classList.add('hidden');
+    if (radarDot) {
+      radarDot.className = 'absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-[#0a0c12] rounded-full radar-pulse';
+    }
+  } else {
+    // Offline
+    if (meta) {
+      meta.innerHTML = `
+        <span class="text-slate-400 font-medium flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span> Offline
+        </span>`;
+    }
+    if (bubble) bubble.classList.add('hidden');
+    if (radarDot) {
+      radarDot.className = 'absolute bottom-0 right-0 w-2.5 h-2.5 bg-slate-500 border-2 border-[#0a0c12] rounded-full';
     }
   }
 }
@@ -281,7 +312,11 @@ function filterChats() {
     const timeFormatted = c.lastMessage?.timestamp 
       ? new Date(c.lastMessage.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       : '';
-    const lastSnippet = c.lastMessage?.text || 'No messages yet';
+    const isLiveOnline = Boolean(c.isOnline);
+    const isClientTyping = Boolean(c.isTyping);
+    const snippetHtml = isClientTyping
+      ? `<span class="text-rose-400 font-semibold animate-pulse flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span> typing...</span>`
+      : escapeHtml(c.lastMessage?.text || 'No messages yet');
 
     return `
       <div onclick="selectChat('${c.chatId}', true)" class="chat-item p-3.5 flex items-center gap-3 cursor-pointer hover:bg-slate-900/60 active:bg-rose-950/30 transition-colors ${isActive ? 'active' : ''}">
@@ -289,7 +324,7 @@ function filterChats() {
           <div class="w-11 h-11 rounded-full bg-gradient-to-tr from-rose-900 to-red-700 flex items-center justify-center text-white font-extrabold text-sm shadow-md ring-1 ring-black">
             ${initial}
           </div>
-          <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-[#090b10] rounded-full"></span>
+          <span class="absolute bottom-0 right-0 w-2.5 h-2.5 ${isLiveOnline ? 'bg-emerald-500 radar-pulse' : 'bg-slate-500'} border-2 border-[#090b10] rounded-full"></span>
         </div>
         <div class="flex-1 min-w-0">
           <div class="flex items-center justify-between">
@@ -297,7 +332,7 @@ function filterChats() {
             <span class="text-[10px] text-slate-500 shrink-0 ml-1">${timeFormatted}</span>
           </div>
           <div class="flex items-center justify-between mt-1">
-            <p class="text-[11px] text-slate-400 truncate max-w-[170px] sm:max-w-[190px]">${escapeHtml(lastSnippet)}</p>
+            <p class="text-[11px] text-slate-400 truncate max-w-[170px] sm:max-w-[190px]">${snippetHtml}</p>
             ${c.totalFiles > 0 ? `<span class="px-1.5 py-0.2 rounded-full text-[9px] font-mono font-bold bg-rose-900/40 text-rose-300 border border-rose-700/40 shrink-0 ml-1">${c.totalFiles} files</span>` : ''}
           </div>
         </div>
@@ -368,9 +403,10 @@ async function loadActiveMessages() {
         scrollAdminToBottom();
       }
 
-      // Check if client is typing
+      // Check if client is typing or actively online
       const isClientTyping = Boolean(data.typing && (data.typing.Client || data.typing[activeChatId]));
-      updateAdminTypingUI(isClientTyping);
+      const isClientOnline = Boolean(data.online && data.online.Client);
+      updateAdminTypingUI(isClientOnline, isClientTyping);
     }
   } catch (err) {
     // Silent fail
