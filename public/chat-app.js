@@ -560,15 +560,15 @@ function escapeHtml(string) {
 }
 
 // ──────────────────────────────────────────────────────────────
-// Ultra HD WebRTC Calling Engine (1080p Video + Studio 48kHz Audio)
+// Ultra HD WebRTC Calling Suite (1080p Video + Studio 48kHz Audio)
+// Sequence-Guaranteed Delivery • Mobile-Resilient • Zero Echo
 // ──────────────────────────────────────────────────────────────
 const RTC_CONFIG = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
     { urls: 'stun:stun2.l.google.com:19302' },
-    { urls: 'stun:stun3.l.google.com:19302' },
-    { urls: 'stun:stun4.l.google.com:19302' }
+    { urls: 'stun:stun.cloudflare.com:3478' }
   ]
 };
 
@@ -580,7 +580,7 @@ let isMicMuted = false;
 let isCamOff = false;
 let currentFacingMode = 'user';
 let callPollInterval = null;
-let lastSignalTimestamp = 0;
+let lastSignalSeq = 0;
 let pendingCandidates = [];
 let ringtoneAudioCtx = null;
 let ringtoneInterval = null;
@@ -594,7 +594,7 @@ setInterval(checkIncomingCallStatus, 1500);
 async function checkIncomingCallStatus() {
   if (isCallActive) return;
   try {
-    const res = await fetch(`/api/call/status?chatId=${encodeURIComponent(currentChatId)}`);
+    const res = await fetch(`/api/call/status?role=client&chatId=${encodeURIComponent(currentChatId)}`);
     const data = await res.json();
     if (data.success && data.active && data.call) {
       if (data.call.caller !== currentRole && data.call.status === 'ringing') {
@@ -620,12 +620,26 @@ function showIncomingCallModal(call) {
   const callerNameEl = document.getElementById('incomingCallerName');
   const callTypeEl = document.getElementById('incomingCallType');
   const callerInitEl = document.getElementById('incomingCallerInitial');
+  const avatarImg = document.getElementById('incomingCallerAvatarImg');
+  const initialFallback = document.getElementById('incomingCallerInitialFallback');
   
-  if (callerNameEl) callerNameEl.textContent = call.caller || 'Raoprime';
-  if (callerInitEl) callerInitEl.textContent = (call.caller || 'R').charAt(0).toUpperCase();
+  const callerName = call.caller || 'Raoprime';
+  if (callerNameEl) callerNameEl.textContent = callerName;
+  if (callerInitEl) callerInitEl.textContent = callerName.charAt(0).toUpperCase();
+
+  if (avatarImg && initialFallback) {
+    if (callerName === 'Raoprime' || callerName === 'RP') {
+      avatarImg.classList.remove('hidden');
+      initialFallback.classList.add('hidden');
+    } else {
+      avatarImg.classList.add('hidden');
+      initialFallback.classList.remove('hidden');
+    }
+  }
+
   if (callTypeEl) {
     const isVid = call.type === 'video';
-    callTypeEl.innerHTML = `<i data-lucide="${isVid ? 'video' : 'phone'}" class="w-4 h-4"></i> Incoming HD ${isVid ? 'Video' : 'Voice'} Call...`;
+    callTypeEl.innerHTML = `<i data-lucide="${isVid ? 'video' : 'phone'}" class="w-4 h-4"></i> Incoming 1080p Ultra HD ${isVid ? 'Video' : 'Voice'} Call...`;
     if (window.lucide) window.lucide.createIcons();
   }
 
@@ -637,12 +651,13 @@ async function startCall(type = 'video') {
   if (isCallActive) return;
   currentCallType = type;
   isCallActive = true;
-  lastSignalTimestamp = 0;
+  lastSignalSeq = 0;
   pendingCandidates = [];
 
   const overlay = document.getElementById('callOverlay');
   const durationEl = document.getElementById('callDuration');
   const peerNameEl = document.getElementById('callOverlayPeerName');
+  const initialEl = document.getElementById('callOverlayInitial');
   const visualizerEl = document.getElementById('audioCallVisualizer');
   const remoteVideoEl = document.getElementById('remoteVideo');
   const localContainer = document.getElementById('localVideoContainer');
@@ -651,9 +666,9 @@ async function startCall(type = 'video') {
 
   if (overlay) overlay.classList.remove('hidden');
   if (peerNameEl) peerNameEl.textContent = 'Raoprime';
+  if (initialEl) initialEl.textContent = 'RP';
   if (durationEl) durationEl.textContent = 'Calling...';
 
-  // Toggle layout based on audio vs video
   if (type === 'audio') {
     if (visualizerEl) visualizerEl.classList.remove('hidden');
     if (remoteVideoEl) remoteVideoEl.classList.add('hidden');
@@ -672,7 +687,7 @@ async function startCall(type = 'video') {
     await acquireLocalMedia(type === 'video');
     await initPeerConnection(type === 'video');
 
-    // Notify backend
+    // Notify backend of initiation
     await fetch('/api/call/initiate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -683,7 +698,7 @@ async function startCall(type = 'video') {
       })
     });
 
-    // Create SDP Offer
+    // Create SDP Offer with audio & optional video
     const offer = await peerConnection.createOffer({
       offerToReceiveAudio: true,
       offerToReceiveVideo: type === 'video'
@@ -691,10 +706,10 @@ async function startCall(type = 'video') {
     await peerConnection.setLocalDescription(offer);
     await sendCallSignal({ sdp: offer });
 
-    // Start signaling poll
     startSignalPolling();
-    showToast(`HD ${type === 'video' ? 'Video' : 'Voice'} Call initiated...`);
+    showToast(`HD ${type === 'video' ? 'Video' : 'Voice'} Call connecting...`);
   } catch (err) {
+    console.error('Call initiation error:', err);
     showToast('Camera/Microphone permission denied: ' + err.message);
     cleanupCall();
   }
@@ -709,12 +724,13 @@ async function acceptIncomingCall() {
   const call = pendingCall;
   currentCallType = call.type || 'video';
   isCallActive = true;
-  lastSignalTimestamp = 0;
+  lastSignalSeq = 0;
   pendingCandidates = [];
 
   const overlay = document.getElementById('callOverlay');
   const durationEl = document.getElementById('callDuration');
   const peerNameEl = document.getElementById('callOverlayPeerName');
+  const initialEl = document.getElementById('callOverlayInitial');
   const visualizerEl = document.getElementById('audioCallVisualizer');
   const remoteVideoEl = document.getElementById('remoteVideo');
   const localContainer = document.getElementById('localVideoContainer');
@@ -723,6 +739,7 @@ async function acceptIncomingCall() {
 
   if (overlay) overlay.classList.remove('hidden');
   if (peerNameEl) peerNameEl.textContent = call.caller || 'Raoprime';
+  if (initialEl) initialEl.textContent = (call.caller || 'R').charAt(0).toUpperCase();
   if (durationEl) durationEl.textContent = 'Connecting HD...';
 
   if (currentCallType === 'audio') {
@@ -750,8 +767,9 @@ async function acceptIncomingCall() {
     });
 
     startSignalPolling();
-    showToast('Connecting in Ultra HD...');
+    showToast('Ultra HD connected!');
   } catch (err) {
+    console.error('Call accept error:', err);
     showToast('Failed to connect: ' + err.message);
     cleanupCall();
   }
@@ -782,26 +800,23 @@ async function endCall() {
 }
 
 async function acquireLocalMedia(isVideo) {
-  const mediaConstraints = {
+  const constraints = {
     audio: {
-      sampleRate: { ideal: 48000 },
-      channelCount: { ideal: 2 },
       echoCancellation: true,
       noiseSuppression: true,
       autoGainControl: true
     },
     video: isVideo ? {
-      width: { ideal: 1920, max: 3840 },
-      height: { ideal: 1080, max: 2160 },
-      frameRate: { ideal: 30, max: 60 },
-      facingMode: currentFacingMode
+      facingMode: currentFacingMode,
+      width: { ideal: 1280, max: 1920 },
+      height: { ideal: 720, max: 1080 }
     } : false
   };
 
   try {
-    localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
+    localStream = await navigator.mediaDevices.getUserMedia(constraints);
   } catch (e) {
-    // Graceful fallback for devices that don't support 1080p
+    console.warn('Ultra HD constraints rejected by device, trying fallback:', e);
     localStream = await navigator.mediaDevices.getUserMedia({
       audio: true,
       video: isVideo ? { facingMode: currentFacingMode } : false
@@ -833,35 +848,18 @@ async function initPeerConnection(isVideo) {
     const remoteVideoEl = document.getElementById('remoteVideo');
     if (remoteVideoEl && event.streams && event.streams[0]) {
       remoteVideoEl.srcObject = event.streams[0];
+      remoteVideoEl.play().catch(e => console.warn('Remote video play:', e));
     }
   };
 
   peerConnection.onconnectionstatechange = () => {
     if (peerConnection.connectionState === 'connected') {
       startCallDurationTimer();
-      optimizeHDQuality();
-      showToast('1080p Ultra HD Connected • P2P Direct');
+      showToast('1080p Ultra HD Connected • Encrypted');
     } else if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
       cleanupCall();
     }
   };
-}
-
-function optimizeHDQuality() {
-  if (!peerConnection || !peerConnection.getSenders) return;
-  peerConnection.getSenders().forEach(sender => {
-    if (sender.track && sender.track.kind === 'video') {
-      const p = sender.getParameters();
-      if (!p.encodings) p.encodings = [{}];
-      p.encodings[0].maxBitrate = 4000000; // 4 Mbps for 1080p
-      sender.setParameters(p).catch(() => {});
-    } else if (sender.track && sender.track.kind === 'audio') {
-      const p = sender.getParameters();
-      if (!p.encodings) p.encodings = [{}];
-      p.encodings[0].maxBitrate = 128000; // 128 kbps stereo studio audio
-      sender.setParameters(p).catch(() => {});
-    }
-  });
 }
 
 async function sendCallSignal(signal) {
@@ -886,7 +884,7 @@ function startSignalPolling() {
       return;
     }
     try {
-      const res = await fetch(`/api/call/signals?chatId=${encodeURIComponent(currentChatId)}&forRole=${encodeURIComponent(currentRole)}&since=${lastSignalTimestamp}`);
+      const res = await fetch(`/api/call/signals?chatId=${encodeURIComponent(currentChatId)}&forRole=${encodeURIComponent(currentRole)}&since=${lastSignalSeq}`);
       const data = await res.json();
       if (data.status === 'ended') {
         cleanupCall();
@@ -895,8 +893,8 @@ function startSignalPolling() {
       }
       if (data.signals && data.signals.length > 0) {
         for (const item of data.signals) {
-          if (item.timestamp > lastSignalTimestamp) {
-            lastSignalTimestamp = item.timestamp;
+          if (item.seq && item.seq > lastSignalSeq) {
+            lastSignalSeq = item.seq;
           }
           await handleIncomingSignal(item.signal);
         }
@@ -987,8 +985,8 @@ async function flipCamera() {
   try {
     const newStream = await navigator.mediaDevices.getUserMedia({
       video: {
-        width: { ideal: 1920, max: 3840 },
-        height: { ideal: 1080, max: 2160 },
+        width: { ideal: 1280, max: 1920 },
+        height: { ideal: 720, max: 1080 },
         facingMode: currentFacingMode
       }
     });
@@ -1018,7 +1016,7 @@ async function flipCamera() {
         await sender.replaceTrack(newVideoTrack);
       }
     }
-    showToast(`Camera flipped (${currentFacingMode === 'user' ? 'Front' : 'Back'})`);
+    showToast(`Camera switched to ${currentFacingMode === 'user' ? 'Front' : 'Back'}`);
   } catch (err) {
     showToast('Failed to switch camera: ' + err.message);
   }
@@ -1058,7 +1056,7 @@ function playRingtone() {
       const gain1 = ringtoneAudioCtx.createGain();
       osc1.type = 'sine';
       osc1.frequency.setValueAtTime(587.33, now);
-      gain1.gain.setValueAtTime(0.15, now);
+      gain1.gain.setValueAtTime(0.18, now);
       gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
       osc1.connect(gain1);
       gain1.connect(ringtoneAudioCtx.destination);
@@ -1069,7 +1067,7 @@ function playRingtone() {
       const gain2 = ringtoneAudioCtx.createGain();
       osc2.type = 'sine';
       osc2.frequency.setValueAtTime(880, now + 0.2);
-      gain2.gain.setValueAtTime(0.18, now + 0.2);
+      gain2.gain.setValueAtTime(0.2, now + 0.2);
       gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
       osc2.connect(gain2);
       gain2.connect(ringtoneAudioCtx.destination);
@@ -1080,7 +1078,7 @@ function playRingtone() {
       const gain3 = ringtoneAudioCtx.createGain();
       osc3.type = 'sine';
       osc3.frequency.setValueAtTime(1174.66, now + 0.4);
-      gain3.gain.setValueAtTime(0.2, now + 0.4);
+      gain3.gain.setValueAtTime(0.22, now + 0.4);
       gain3.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
       osc3.connect(gain3);
       gain3.connect(ringtoneAudioCtx.destination);

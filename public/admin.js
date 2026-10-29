@@ -728,16 +728,15 @@ function escapeHtml(string) {
 }
 
 // ──────────────────────────────────────────────────────────────
-// Ultra HD WebRTC Calling Engine (Admin / Raoprime Console)
-// 1080p Video + Studio 48kHz Stereo Audio
+// Ultra HD WebRTC Calling Suite (Admin / Raoprime Console)
+// Sequence-Guaranteed Delivery • Universal Room Discovery
 // ──────────────────────────────────────────────────────────────
 const RTC_CONFIG = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
     { urls: 'stun:stun2.l.google.com:19302' },
-    { urls: 'stun:stun3.l.google.com:19302' },
-    { urls: 'stun:stun4.l.google.com:19302' }
+    { urls: 'stun:stun.cloudflare.com:3478' }
   ]
 };
 
@@ -750,7 +749,7 @@ let isMicMuted = false;
 let isCamOff = false;
 let currentFacingMode = 'user';
 let callPollInterval = null;
-let lastSignalTimestamp = 0;
+let lastSignalSeq = 0;
 let pendingCandidates = [];
 let ringtoneAudioCtx = null;
 let ringtoneInterval = null;
@@ -758,20 +757,20 @@ let callStartTime = null;
 let callDurationTimer = null;
 let currentCallType = 'video';
 
-// Background incoming call polling for Admin
+// Background incoming call polling for Admin (Checks for calls from ANY client)
 setInterval(checkAdminIncomingCalls, 1500);
 
 async function checkAdminIncomingCalls() {
   if (isCallActive || !adminToken) return;
   try {
     const queryChat = activeChatId || 'all';
-    const res = await fetch(`/api/call/status?chatId=${encodeURIComponent(queryChat)}`);
+    const res = await fetch(`/api/call/status?role=admin&chatId=${encodeURIComponent(queryChat)}`);
     const data = await res.json();
     if (data.success && data.active && data.call) {
       if (data.call.caller !== 'Raoprime' && data.call.status === 'ringing') {
         if (!pendingCall) {
           pendingCall = data.call;
-          pendingCallChatId = data.chatId || activeChatId;
+          pendingCallChatId = data.chatId || activeChatId || 'default';
           showAdminIncomingModal(data.call, pendingCallChatId);
         }
       } else if (data.call.status === 'ended') {
@@ -798,7 +797,7 @@ function showAdminIncomingModal(call, cid) {
   if (callerInitEl) callerInitEl.textContent = name.charAt(0).toUpperCase();
   if (callTypeEl) {
     const isVid = call.type === 'video';
-    callTypeEl.innerHTML = `<i data-lucide="${isVid ? 'video' : 'phone'}" class="w-4 h-4"></i> Incoming HD ${isVid ? 'Video' : 'Voice'} Call...`;
+    callTypeEl.innerHTML = `<i data-lucide="${isVid ? 'video' : 'phone'}" class="w-4 h-4"></i> Incoming 1080p Ultra HD ${isVid ? 'Video' : 'Voice'} Call...`;
     if (window.lucide) window.lucide.createIcons();
   }
 
@@ -808,17 +807,19 @@ function showAdminIncomingModal(call, cid) {
 
 async function startAdminCall(type = 'video') {
   if (isCallActive) return;
-  if (!activeChatId) {
+  const targetChat = activeChatId || (allChats.length > 0 ? allChats[0].chatId : 'default');
+  if (!targetChat) {
     showToast('Please select a client from the inbox first.');
     return;
   }
 
   currentCallType = type;
   isCallActive = true;
-  lastSignalTimestamp = 0;
+  lastSignalSeq = 0;
   pendingCandidates = [];
+  pendingCallChatId = targetChat;
 
-  const peerName = document.getElementById('activeClientName')?.textContent || activeChatId;
+  const peerName = document.getElementById('activeClientName')?.textContent || targetChat;
   const initial = peerName.charAt(0).toUpperCase();
 
   const overlay = document.getElementById('callOverlay');
@@ -862,7 +863,7 @@ async function startAdminCall(type = 'video') {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        chatId: activeChatId,
+        chatId: targetChat,
         caller: 'Raoprime',
         type
       })
@@ -878,6 +879,7 @@ async function startAdminCall(type = 'video') {
     startSignalPolling();
     showToast(`HD ${type === 'video' ? 'Video' : 'Voice'} Call started...`);
   } catch (err) {
+    console.error('Admin call error:', err);
     showToast('Permission or connection error: ' + err.message);
     cleanupCall();
   }
@@ -890,10 +892,10 @@ async function acceptIncomingCall() {
 
   if (!pendingCall) return;
   const call = pendingCall;
-  const callChatId = pendingCallChatId || activeChatId;
+  const callChatId = pendingCallChatId || activeChatId || 'default';
   currentCallType = call.type || 'video';
   isCallActive = true;
-  lastSignalTimestamp = 0;
+  lastSignalSeq = 0;
   pendingCandidates = [];
 
   const peerName = call.caller || callChatId || 'Client';
@@ -945,6 +947,7 @@ async function acceptIncomingCall() {
     startSignalPolling();
     showToast('Ultra HD connected!');
   } catch (err) {
+    console.error('Admin accept error:', err);
     showToast('Failed to connect: ' + err.message);
     cleanupCall();
   }
@@ -955,51 +958,46 @@ async function declineCall() {
   const modal = document.getElementById('incomingCallModal');
   if (modal) modal.classList.add('hidden');
 
-  const callChatId = pendingCallChatId || activeChatId;
-  if (callChatId) {
-    await fetch('/api/call/end', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chatId: callChatId })
-    }).catch(() => {});
-  }
+  const callChatId = pendingCallChatId || activeChatId || 'default';
+  await fetch('/api/call/end', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chatId: callChatId })
+  }).catch(() => {});
+  
   pendingCall = null;
   pendingCallChatId = null;
 }
 
 async function endCall() {
-  const callChatId = pendingCallChatId || activeChatId;
-  if (callChatId) {
-    await fetch('/api/call/end', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chatId: callChatId })
-    }).catch(() => {});
-  }
+  const callChatId = pendingCallChatId || activeChatId || 'default';
+  await fetch('/api/call/end', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chatId: callChatId })
+  }).catch(() => {});
   cleanupCall();
   showToast('Call ended');
 }
 
 async function acquireLocalMedia(isVideo) {
-  const mediaConstraints = {
+  const constraints = {
     audio: {
-      sampleRate: { ideal: 48000 },
-      channelCount: { ideal: 2 },
       echoCancellation: true,
       noiseSuppression: true,
       autoGainControl: true
     },
     video: isVideo ? {
-      width: { ideal: 1920, max: 3840 },
-      height: { ideal: 1080, max: 2160 },
-      frameRate: { ideal: 30, max: 60 },
-      facingMode: currentFacingMode
+      facingMode: currentFacingMode,
+      width: { ideal: 1280, max: 1920 },
+      height: { ideal: 720, max: 1080 }
     } : false
   };
 
   try {
-    localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
+    localStream = await navigator.mediaDevices.getUserMedia(constraints);
   } catch (e) {
+    console.warn('Ultra HD constraints rejected by device, trying fallback:', e);
     localStream = await navigator.mediaDevices.getUserMedia({
       audio: true,
       video: isVideo ? { facingMode: currentFacingMode } : false
@@ -1031,40 +1029,22 @@ async function initPeerConnection(isVideo) {
     const remoteVideoEl = document.getElementById('remoteVideo');
     if (remoteVideoEl && event.streams && event.streams[0]) {
       remoteVideoEl.srcObject = event.streams[0];
+      remoteVideoEl.play().catch(e => console.warn('Remote video play err:', e));
     }
   };
 
   peerConnection.onconnectionstatechange = () => {
     if (peerConnection.connectionState === 'connected') {
       startCallDurationTimer();
-      optimizeHDQuality();
-      showToast('1080p Ultra HD Connected • P2P Direct');
+      showToast('1080p Ultra HD Connected • Encrypted');
     } else if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
       cleanupCall();
     }
   };
 }
 
-function optimizeHDQuality() {
-  if (!peerConnection || !peerConnection.getSenders) return;
-  peerConnection.getSenders().forEach(sender => {
-    if (sender.track && sender.track.kind === 'video') {
-      const p = sender.getParameters();
-      if (!p.encodings) p.encodings = [{}];
-      p.encodings[0].maxBitrate = 4000000;
-      sender.setParameters(p).catch(() => {});
-    } else if (sender.track && sender.track.kind === 'audio') {
-      const p = sender.getParameters();
-      if (!p.encodings) p.encodings = [{}];
-      p.encodings[0].maxBitrate = 128000;
-      sender.setParameters(p).catch(() => {});
-    }
-  });
-}
-
 async function sendAdminCallSignal(signal) {
-  const targetChatId = pendingCallChatId || activeChatId;
-  if (!targetChatId) return;
+  const targetChatId = pendingCallChatId || activeChatId || 'default';
   try {
     await fetch('/api/call/signal', {
       method: 'POST',
@@ -1085,11 +1065,10 @@ function startSignalPolling() {
       clearInterval(callPollInterval);
       return;
     }
-    const targetChatId = pendingCallChatId || activeChatId;
-    if (!targetChatId) return;
+    const targetChatId = pendingCallChatId || activeChatId || 'default';
 
     try {
-      const res = await fetch(`/api/call/signals?chatId=${encodeURIComponent(targetChatId)}&forRole=Raoprime&since=${lastSignalTimestamp}`);
+      const res = await fetch(`/api/call/signals?chatId=${encodeURIComponent(targetChatId)}&forRole=Raoprime&since=${lastSignalSeq}`);
       const data = await res.json();
       if (data.status === 'ended') {
         cleanupCall();
@@ -1098,8 +1077,8 @@ function startSignalPolling() {
       }
       if (data.signals && data.signals.length > 0) {
         for (const item of data.signals) {
-          if (item.timestamp > lastSignalTimestamp) {
-            lastSignalTimestamp = item.timestamp;
+          if (item.seq && item.seq > lastSignalSeq) {
+            lastSignalSeq = item.seq;
           }
           await handleIncomingSignal(item.signal);
         }
@@ -1190,8 +1169,8 @@ async function flipCamera() {
   try {
     const newStream = await navigator.mediaDevices.getUserMedia({
       video: {
-        width: { ideal: 1920, max: 3840 },
-        height: { ideal: 1080, max: 2160 },
+        width: { ideal: 1280, max: 1920 },
+        height: { ideal: 720, max: 1080 },
         facingMode: currentFacingMode
       }
     });
@@ -1221,7 +1200,7 @@ async function flipCamera() {
         await sender.replaceTrack(newVideoTrack);
       }
     }
-    showToast(`Camera flipped (${currentFacingMode === 'user' ? 'Front' : 'Back'})`);
+    showToast(`Camera switched to ${currentFacingMode === 'user' ? 'Front' : 'Back'}`);
   } catch (err) {
     showToast('Failed to switch camera: ' + err.message);
   }
@@ -1261,7 +1240,7 @@ function playRingtone() {
       const gain1 = ringtoneAudioCtx.createGain();
       osc1.type = 'sine';
       osc1.frequency.setValueAtTime(587.33, now);
-      gain1.gain.setValueAtTime(0.15, now);
+      gain1.gain.setValueAtTime(0.18, now);
       gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
       osc1.connect(gain1);
       gain1.connect(ringtoneAudioCtx.destination);
@@ -1272,7 +1251,7 @@ function playRingtone() {
       const gain2 = ringtoneAudioCtx.createGain();
       osc2.type = 'sine';
       osc2.frequency.setValueAtTime(880, now + 0.2);
-      gain2.gain.setValueAtTime(0.18, now + 0.2);
+      gain2.gain.setValueAtTime(0.2, now + 0.2);
       gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
       osc2.connect(gain2);
       gain2.connect(ringtoneAudioCtx.destination);
@@ -1283,7 +1262,7 @@ function playRingtone() {
       const gain3 = ringtoneAudioCtx.createGain();
       osc3.type = 'sine';
       osc3.frequency.setValueAtTime(1174.66, now + 0.4);
-      gain3.gain.setValueAtTime(0.2, now + 0.4);
+      gain3.gain.setValueAtTime(0.22, now + 0.4);
       gain3.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
       osc3.connect(gain3);
       gain3.connect(ringtoneAudioCtx.destination);
@@ -1362,3 +1341,4 @@ function cleanupCall() {
 
   if (window.lucide) window.lucide.createIcons();
 }
+

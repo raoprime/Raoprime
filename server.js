@@ -263,77 +263,100 @@ app.post('/api/chat/send', async (req, res) => {
 
 // ──────────────────────────────────────────────────────────────
 // Ultra HD WebRTC Calling Signaling Engine (1080p Video + Studio 48kHz Audio)
+// Sequence-based Guaranteed Delivery & Universal Room Discovery
 // ──────────────────────────────────────────────────────────────
-const activeCalls = {}; // { [chatId]: { callId, type: 'audio'|'video', caller, status, startedAt, signals: [] } }
+const activeCalls = {}; // { [chatId]: { callId, chatId, type, caller, status, startedAt, signals: [], signalSeq: 0 } }
 
 app.post('/api/call/initiate', (req, res) => {
   const { chatId = 'default', caller = 'Client', type = 'video' } = req.body;
   activeCalls[chatId] = {
     callId: 'call_' + Date.now(),
+    chatId,
     type,
     caller,
     status: 'ringing',
     startedAt: Date.now(),
-    signals: []
+    signals: [],
+    signalSeq: 0
   };
   res.json({ success: true, call: activeCalls[chatId] });
 });
 
 app.get('/api/call/status', (req, res) => {
   const chatId = req.query.chatId;
-  if (!chatId || chatId === 'all' || chatId === 'any') {
-    const activeEntry = Object.entries(activeCalls).find(([cid, c]) => c && (c.status === 'ringing' || c.status === 'connected'));
+  const role = req.query.role; // 'admin' or 'client'
+
+  if (role === 'admin' || !chatId || chatId === 'all' || chatId === 'any') {
+    // If admin is checking, find ANY incoming call from a client that is ringing or connected!
+    const activeEntry = Object.entries(activeCalls).find(([cid, c]) => c && c.caller !== 'Raoprime' && (c.status === 'ringing' || c.status === 'connected'));
     if (activeEntry) {
       return res.json({ success: true, active: true, chatId: activeEntry[0], call: activeEntry[1] });
+    }
+    // Also check if Admin initiated a call on chatId
+    if (chatId && activeCalls[chatId]) {
+      return res.json({ success: true, active: true, chatId, call: activeCalls[chatId] });
     }
     return res.json({ success: true, active: false });
   }
 
-  const call = activeCalls[chatId];
+  // Client polling:
+  let call = activeCalls[chatId];
+  if (!call || call.status === 'ended') {
+    call = activeCalls['default'];
+  }
   if (!call || call.status === 'ended') {
     return res.json({ success: true, active: false });
   }
-  res.json({ success: true, active: true, chatId, call });
+  res.json({ success: true, active: true, chatId: call.chatId || chatId, call });
 });
 
 app.post('/api/call/signal', (req, res) => {
   const { chatId = 'default', from = 'Client', signal } = req.body;
-  if (!activeCalls[chatId]) {
+  const call = activeCalls[chatId] || activeCalls['default'];
+  if (!call) {
     return res.status(404).json({ success: false, error: 'No active call' });
   }
-  activeCalls[chatId].signals.push({
+  const seq = ++call.signalSeq;
+  call.signals.push({
+    seq,
     from,
     signal,
     timestamp: Date.now()
   });
-  res.json({ success: true });
+  res.json({ success: true, seq });
 });
 
 app.get('/api/call/signals', (req, res) => {
   const chatId = req.query.chatId || 'default';
   const forRole = req.query.forRole || 'Client';
   const since = parseInt(req.query.since || '0', 10);
-  const call = activeCalls[chatId];
-  if (!call) return res.json({ success: true, signals: [], status: 'none' });
+  const call = activeCalls[chatId] || activeCalls['default'];
+  if (!call) return res.json({ success: true, signals: [], status: 'none', lastSeq: 0 });
 
-  const newSignals = call.signals.filter((s) => s.from !== forRole && s.timestamp > since);
-  res.json({ success: true, signals: newSignals, status: call.status, type: call.type, caller: call.caller });
+  const newSignals = call.signals.filter((s) => s.from !== forRole && (s.seq ? s.seq > since : s.timestamp > since));
+  const maxSeq = call.signalSeq || (call.signals.length ? call.signals[call.signals.length - 1].timestamp : 0);
+  res.json({ success: true, signals: newSignals, status: call.status, type: call.type, caller: call.caller, lastSeq: maxSeq });
 });
 
 app.post('/api/call/accept', (req, res) => {
   const { chatId = 'default' } = req.body;
-  if (activeCalls[chatId]) {
-    activeCalls[chatId].status = 'connected';
+  const call = activeCalls[chatId] || activeCalls['default'];
+  if (call) {
+    call.status = 'connected';
   }
   res.json({ success: true });
 });
 
 app.post('/api/call/end', (req, res) => {
   const { chatId = 'default' } = req.body;
-  if (activeCalls[chatId]) {
-    activeCalls[chatId].status = 'ended';
+  const call = activeCalls[chatId] || activeCalls['default'];
+  if (call) {
+    call.status = 'ended';
     setTimeout(() => {
       delete activeCalls[chatId];
+      if (activeCalls['default'] && activeCalls['default'].status === 'ended') {
+        delete activeCalls['default'];
+      }
     }, 4000);
   }
   res.json({ success: true });
