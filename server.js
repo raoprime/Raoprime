@@ -301,68 +301,100 @@ app.post('/api/chat/send', async (req, res) => {
 // ──────────────────────────────────────────────────────────────
 const activeCalls = {};
 
-// Curated high-reliability ICE configuration (Google STUN + Cloudflare STUN + OpenRelay TURN)
-const SERVER_ICE_CONFIG = {
-  iceServers: [
-    {
-      urls: [
-        'turn:openrelay.metered.ca:80',
-        'turn:openrelay.metered.ca:443',
-        'turn:openrelay.metered.ca:443?transport=tcp'
-      ],
-      username: 'openrelayproject',
-      credential: 'openrelayproject'
-    },
-    { urls: 'stun:openrelay.metered.ca:80' },
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun2.l.google.com:19302' },
-    { urls: 'stun:stun3.l.google.com:19302' },
-    { urls: 'stun:stun4.l.google.com:19302' },
-    { urls: 'stun:stun.cloudflare.com:3478' }
-  ],
-  iceCandidatePoolSize: 10
-};
+// Curated high-reliability Dynamic ICE configuration (Google STUN + Cloudflare STUN + Authenticated OpenRelay TURN)
+function getDynamicIceServers() {
+  const secret = process.env.TURN_SECRET || 'openrelayprojectsecret';
+  const username = `${Math.floor(Date.now() / 1000) + 86400}:raoprime`;
+  const credential = crypto.createHmac('sha1', secret).update(username).digest('base64');
+
+  return {
+    iceServers: [
+      // Primary STUN (Google global distributed infrastructure)
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:stun3.l.google.com:19302' },
+      { urls: 'stun:stun4.l.google.com:19302' },
+      // Cloudflare STUN
+      { urls: 'stun:stun.cloudflare.com:3478' },
+      // Authenticated Metered StaticAuth TURN Relay (Port 80 - standard HTTP port, open across all corporate/firewalls)
+      {
+        urls: 'turn:staticauth.openrelay.metered.ca:80',
+        username,
+        credential
+      },
+      // Authenticated Metered StaticAuth TURN Relay (Port 443 - standard HTTPS port)
+      {
+        urls: 'turn:staticauth.openrelay.metered.ca:443',
+        username,
+        credential
+      },
+      // Authenticated Metered StaticAuth TURN Relay (TCP on Port 443 - bypasses carrier UDP drops)
+      {
+        urls: 'turn:staticauth.openrelay.metered.ca:443?transport=tcp',
+        username,
+        credential
+      },
+      // Authenticated TURNS (Secure TLS on Port 443 - 100% unblockable)
+      {
+        urls: 'turns:staticauth.openrelay.metered.ca:443?transport=tcp',
+        username,
+        credential
+      }
+    ],
+    iceCandidatePoolSize: 10
+  };
+}
 
 function resolveActiveCall(chatId) {
+  const now = Date.now();
   // 1. Direct match on chatId with active (non-ended) call
-  if (chatId && activeCalls[chatId] && activeCalls[chatId].status !== 'ended') {
-    return activeCalls[chatId];
+  if (chatId && activeCalls[chatId]) {
+    const c = activeCalls[chatId];
+    if (c.status !== 'ended') return c;
+    // Ended within last 2.5 seconds only
+    if (c.endedAt && now - c.endedAt < 2500) return c;
   }
-  // 2. Active call under 'default'
-  if (activeCalls['default'] && activeCalls['default'].status !== 'ended') {
-    return activeCalls['default'];
+  // 2. Active call under 'default' if querying 'default' or role is admin looking broadly
+  if (chatId === 'default' || chatId === 'all' || !chatId) {
+    if (activeCalls['default'] && activeCalls['default'].status !== 'ended') {
+      return activeCalls['default'];
+    }
   }
   // 3. Any ringing or connected call across any room
-  const anyActive = Object.values(activeCalls).find(c => c && (c.status === 'ringing' || c.status === 'connected'));
+  const anyActive = Object.values(activeCalls).find(c => c && (c.status === 'ringing' || c.status === 'connected') && (!chatId || chatId === 'all' || c.chatId === chatId || chatId === 'default'));
   if (anyActive) return anyActive;
 
-  // 4. Return ended call ONLY if specifically matching this room
+  // 4. Return ended call ONLY if it strictly belongs to this chatId and is recent (< 2.5 sec)
   if (chatId && activeCalls[chatId] && activeCalls[chatId].status === 'ended') {
-    return activeCalls[chatId];
-  }
-  if (activeCalls['default'] && activeCalls['default'].status === 'ended') {
-    return activeCalls['default'];
+    if (activeCalls[chatId].endedAt && now - activeCalls[chatId].endedAt < 2500) {
+      return activeCalls[chatId];
+    }
   }
   return null;
 }
 
 app.get('/api/call/ice-servers', (req, res) => {
-  res.json({ success: true, config: SERVER_ICE_CONFIG });
+  res.json({ success: true, config: getDynamicIceServers() });
 });
 
 app.post('/api/call/initiate', (req, res) => {
   const { chatId = 'default', caller = 'Client', type = 'video' } = req.body;
 
-  // Purge any old/ended calls so new call starts with a clean slate
+  // Purge any stale calls for this room
+  if (activeCalls[chatId]) delete activeCalls[chatId];
+  if (chatId === 'default' && activeCalls['default']) delete activeCalls['default'];
+
+  // Purge old ended calls across system
+  const now = Date.now();
   for (const k of Object.keys(activeCalls)) {
-    if (activeCalls[k] && activeCalls[k].status === 'ended') {
+    if (activeCalls[k] && (activeCalls[k].status === 'ended' || (activeCalls[k].endedAt && now - activeCalls[k].endedAt > 2500))) {
       delete activeCalls[k];
     }
   }
 
   const newCall = {
-    callId: 'call_' + Date.now(),
+    callId: 'call_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
     chatId: chatId || 'default',
     type: type || 'video',
     caller: caller || 'Client',
@@ -372,11 +404,13 @@ app.post('/api/call/initiate', (req, res) => {
     signalSeq: 0
   };
 
-  // Register on both the room AND globally so discovery is 100% guaranteed
+  // Register on the room
   activeCalls[chatId || 'default'] = newCall;
-  activeCalls['default'] = newCall;
+  if (chatId !== 'default') {
+    activeCalls['default'] = newCall;
+  }
 
-  console.log(`📞 Call initiated by ${caller} (${type}) in room [${chatId}]`);
+  console.log(`📞 Call initiated by ${caller} (${type}) in room [${chatId}] (ID: ${newCall.callId})`);
   res.json({ success: true, call: newCall });
 });
 
@@ -448,14 +482,15 @@ app.post('/api/call/end', (req, res) => {
   const call = resolveActiveCall(chatId);
   if (call) {
     call.status = 'ended';
+    call.endedAt = Date.now();
     console.log(`🛑 Call ended in room [${call.chatId}]`);
     setTimeout(() => {
       for (const k of Object.keys(activeCalls)) {
-        if (activeCalls[k] === call || activeCalls[k]?.status === 'ended') {
+        if (activeCalls[k] === call || (activeCalls[k]?.endedAt && Date.now() - activeCalls[k].endedAt > 2000)) {
           delete activeCalls[k];
         }
       }
-    }, 2500);
+    }, 2000);
   }
   res.json({ success: true });
 });

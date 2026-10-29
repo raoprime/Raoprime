@@ -729,31 +729,49 @@ function escapeHtml(string) {
 
 // ──────────────────────────────────────────────────────────────
 // Ultra HD WebRTC Calling Suite (Admin / Raoprime Console)
-// Sequence-Guaranteed Delivery • Universal Room Discovery
+// Dynamic Authenticated TURN • Mobile-Resilient • Zero Echo
 // ──────────────────────────────────────────────────────────────
 const RTC_CONFIG = {
   iceServers: [
-    // OpenRelay Free Global TURN Servers (Bypasses Symmetric NAT, Jio, Airtel, Vi, 4G, 5G, Wi-Fi)
-    {
-      urls: [
-        'turn:openrelay.metered.ca:80',
-        'turn:openrelay.metered.ca:443',
-        'turn:openrelay.metered.ca:443?transport=tcp'
-      ],
-      username: 'openrelayproject',
-      credential: 'openrelayproject'
-    },
-    { urls: 'stun:openrelay.metered.ca:80' },
-    // Google Global STUN Servers
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
     { urls: 'stun:stun2.l.google.com:19302' },
-    { urls: 'stun:stun3.l.google.com:19302' },
-    { urls: 'stun:stun4.l.google.com:19302' },
     { urls: 'stun:stun.cloudflare.com:3478' }
   ],
   iceCandidatePoolSize: 10
 };
+
+async function getRtcConfiguration() {
+  try {
+    const res = await fetch('/api/call/ice-servers');
+    const data = await res.json();
+    if (data.success && data.config) {
+      return data.config;
+    }
+  } catch (e) {
+    console.warn('Admin ICE server fetch notice:', e);
+  }
+  return RTC_CONFIG;
+}
+
+function playConnectChime() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15);
+    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.4);
+  } catch (e) {}
+}
 
 let peerConnection = null;
 let localStream = null;
@@ -1087,7 +1105,8 @@ async function acquireLocalMedia(isVideo) {
 }
 
 async function initPeerConnection(isVideo) {
-  peerConnection = new RTCPeerConnection(RTC_CONFIG);
+  const config = await getRtcConfiguration();
+  peerConnection = new RTCPeerConnection(config);
 
   if (localStream) {
     localStream.getTracks().forEach(track => {
@@ -1103,28 +1122,29 @@ async function initPeerConnection(isVideo) {
     }
   };
 
-  const remoteStream = new MediaStream();
+  const remoteAudioEl = document.getElementById('remoteAudio');
+  const remoteVideoEl = document.getElementById('remoteVideo');
 
   peerConnection.ontrack = (event) => {
-    console.log('Got remote track (admin):', event.track.kind);
-    const remoteAudioEl = document.getElementById('remoteAudio');
-    const remoteVideoEl = document.getElementById('remoteVideo');
+    console.log('📡 Got remote track (admin):', event.track.kind);
+    const track = event.track;
 
-    remoteStream.addTrack(event.track);
-    const stream = (event.streams && event.streams[0]) ? event.streams[0] : remoteStream;
-
-    if (remoteVideoEl) {
-      remoteVideoEl.srcObject = stream;
-      remoteVideoEl.muted = false;
-      remoteVideoEl.volume = 1.0;
-      remoteVideoEl.play().catch(e => console.warn('Video play notice:', e));
-    }
-
-    if (remoteAudioEl) {
-      remoteAudioEl.srcObject = stream;
-      remoteAudioEl.muted = false;
-      remoteAudioEl.volume = 1.0;
-      remoteAudioEl.play().catch(e => console.warn('Audio play notice:', e));
+    if (track.kind === 'audio') {
+      if (remoteAudioEl) {
+        const audioStream = (event.streams && event.streams[0]) ? event.streams[0] : new MediaStream([track]);
+        remoteAudioEl.srcObject = audioStream;
+        remoteAudioEl.muted = false;
+        remoteAudioEl.volume = 1.0;
+        remoteAudioEl.play().catch(e => console.warn('Audio play notice (admin):', e));
+      }
+    } else if (track.kind === 'video') {
+      if (remoteVideoEl) {
+        const videoStream = (event.streams && event.streams[0]) ? event.streams[0] : new MediaStream([track]);
+        remoteVideoEl.srcObject = videoStream;
+        // Keep video muted so it doesn't fight remoteAudio for speaker access!
+        remoteVideoEl.muted = true;
+        remoteVideoEl.play().catch(e => console.warn('Video play notice (admin):', e));
+      }
     }
   };
 
@@ -1132,9 +1152,12 @@ async function initPeerConnection(isVideo) {
     console.log('Peer connection state (admin):', peerConnection.connectionState);
     if (peerConnection.connectionState === 'connected') {
       startCallDurationTimer();
-      const remoteAudioEl = document.getElementById('remoteAudio');
-      const remoteVideoEl = document.getElementById('remoteVideo');
-      if (remoteAudioEl) remoteAudioEl.play().catch(() => {});
+      playConnectChime();
+      if (remoteAudioEl) {
+        remoteAudioEl.muted = false;
+        remoteAudioEl.volume = 1.0;
+        remoteAudioEl.play().catch(() => {});
+      }
       if (remoteVideoEl) remoteVideoEl.play().catch(() => {});
       showToast('1080p Ultra HD Connected • Encrypted');
     } else if (peerConnection.connectionState === 'failed') {
@@ -1148,9 +1171,11 @@ async function initPeerConnection(isVideo) {
     console.log('ICE connection state (admin):', peerConnection.iceConnectionState);
     if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') {
       startCallDurationTimer();
-      const remoteAudioEl = document.getElementById('remoteAudio');
-      const remoteVideoEl = document.getElementById('remoteVideo');
-      if (remoteAudioEl) remoteAudioEl.play().catch(() => {});
+      if (remoteAudioEl) {
+        remoteAudioEl.muted = false;
+        remoteAudioEl.volume = 1.0;
+        remoteAudioEl.play().catch(() => {});
+      }
       if (remoteVideoEl) remoteVideoEl.play().catch(() => {});
     }
   };
@@ -1201,7 +1226,10 @@ function startSignalPolling() {
 }
 
 async function handleIncomingSignal(sig) {
-  if (!peerConnection) return;
+  if (!peerConnection) {
+    if (sig.candidate) pendingCandidates.push(sig.candidate);
+    return;
+  }
 
   try {
     if (sig.sdp) {
@@ -1210,25 +1238,32 @@ async function handleIncomingSignal(sig) {
           console.warn('Admin signaling state not stable for offer:', peerConnection.signalingState);
         }
         await peerConnection.setRemoteDescription(new RTCSessionDescription(sig.sdp));
-        for (const cand of pendingCandidates) {
-          await peerConnection.addIceCandidate(new RTCIceCandidate(cand)).catch(() => {});
+        // Flush pending candidates now that remote description is set
+        while (pendingCandidates.length > 0) {
+          const cand = pendingCandidates.shift();
+          try { await peerConnection.addIceCandidate(new RTCIceCandidate(cand)); } catch (e) {}
         }
-        pendingCandidates = [];
 
         const answer = await peerConnection.createAnswer();
         await peerConnection.setLocalDescription(answer);
         await sendAdminCallSignal({ sdp: answer });
       } else if (sig.sdp.type === 'answer') {
         await peerConnection.setRemoteDescription(new RTCSessionDescription(sig.sdp));
-        for (const cand of pendingCandidates) {
-          await peerConnection.addIceCandidate(new RTCIceCandidate(cand)).catch(() => {});
+        // Flush pending candidates
+        while (pendingCandidates.length > 0) {
+          const cand = pendingCandidates.shift();
+          try { await peerConnection.addIceCandidate(new RTCIceCandidate(cand)); } catch (e) {}
         }
-        pendingCandidates = [];
         startCallDurationTimer();
+        playConnectChime();
       }
     } else if (sig.candidate) {
       if (peerConnection.remoteDescription && peerConnection.remoteDescription.type) {
-        await peerConnection.addIceCandidate(new RTCIceCandidate(sig.candidate)).catch(() => {});
+        try {
+          await peerConnection.addIceCandidate(new RTCIceCandidate(sig.candidate));
+        } catch (e) {
+          console.warn('ICE add notice (admin):', e);
+        }
       } else {
         pendingCandidates.push(sig.candidate);
       }
