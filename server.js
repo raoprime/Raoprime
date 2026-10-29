@@ -286,28 +286,38 @@ app.get('/api/call/status', (req, res) => {
   const chatId = req.query.chatId;
   const role = req.query.role; // 'admin' or 'client'
 
-  if (role === 'admin' || !chatId || chatId === 'all' || chatId === 'any') {
-    // If admin is checking, find ANY incoming call from a client that is ringing or connected!
-    const activeEntry = Object.entries(activeCalls).find(([cid, c]) => c && c.caller !== 'Raoprime' && (c.status === 'ringing' || c.status === 'connected'));
-    if (activeEntry) {
-      return res.json({ success: true, active: true, chatId: activeEntry[0], call: activeEntry[1] });
+  if (role === 'admin') {
+    // 1. Is there ANY incoming call from a client?
+    const clientCall = Object.entries(activeCalls).find(([cid, c]) => c && c.caller !== 'Raoprime' && (c.status === 'ringing' || c.status === 'connected'));
+    if (clientCall) {
+      return res.json({ success: true, active: true, chatId: clientCall[0], call: clientCall[1] });
     }
-    // Also check if Admin initiated a call on chatId
-    if (chatId && activeCalls[chatId]) {
-      return res.json({ success: true, active: true, chatId, call: activeCalls[chatId] });
+    // 2. Or is there an active call initiated by Admin?
+    const adminCall = Object.entries(activeCalls).find(([cid, c]) => c && c.caller === 'Raoprime' && (c.status === 'ringing' || c.status === 'connected'));
+    if (adminCall) {
+      return res.json({ success: true, active: true, chatId: adminCall[0], call: adminCall[1] });
     }
     return res.json({ success: true, active: false });
   }
 
   // Client polling:
-  let call = activeCalls[chatId];
+  let call = (chatId && activeCalls[chatId]) ? activeCalls[chatId] : null;
   if (!call || call.status === 'ended') {
-    call = activeCalls['default'];
+    const adminInitiated = Object.entries(activeCalls).find(([cid, c]) => c && c.caller === 'Raoprime' && (c.status === 'ringing' || c.status === 'connected') && (cid === chatId || cid === 'default' || !chatId));
+    if (adminInitiated) {
+      call = adminInitiated[1];
+    }
   }
+  if (!call || call.status === 'ended') {
+    if (activeCalls['default'] && activeCalls['default'].status !== 'ended') {
+      call = activeCalls['default'];
+    }
+  }
+
   if (!call || call.status === 'ended') {
     return res.json({ success: true, active: false });
   }
-  res.json({ success: true, active: true, chatId: call.chatId || chatId, call });
+  res.json({ success: true, active: true, chatId: call.chatId || chatId || 'default', call });
 });
 
 app.post('/api/call/signal', (req, res) => {
