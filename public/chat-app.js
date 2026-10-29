@@ -64,6 +64,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let lastTypingTime = 0;
   messageInput.addEventListener('input', () => {
+    // Auto-expand textarea dynamically up to 140px
+    messageInput.style.height = 'auto';
+    messageInput.style.height = Math.min(messageInput.scrollHeight, 140) + 'px';
+
     const now = Date.now();
     if (now - lastTypingTime > 1000) {
       lastTypingTime = now;
@@ -261,12 +265,46 @@ function renderMessageStatus(status, isOut) {
   if (!isOut) return '';
   const s = status || 'delivered';
   if (s === 'seen') {
-    return `<span class="inline-flex items-center gap-0.5 text-sky-400 font-semibold ml-1.5" title="Seen"><svg class="w-3.5 h-3.5 inline fill-current" viewBox="0 0 16 16"><path d="M12.354 4.354a.5.5 0 0 0-.708-.708L5 10.293 1.854 7.146a.5.5 0 1 0-.708.708l3.5 3.5a.5.5 0 0 0 .708 0l7-7zm-4.708 7.293L15.354 3.94a.5.5 0 1 0-.708-.708L7.646 10.94l-.708-.707a.5.5 0 0 0-.708.708l1.062 1.061a.5.5 0 0 0 .708 0z"/></svg><span class="text-[9px]">Seen</span></span>`;
+    return `<span class="inline-flex items-center gap-1 text-sky-400 font-semibold ml-1.5" title="Seen by recipient">
+      <svg class="w-4 h-4 inline" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 6L7 17l-5-5"></path>
+        <path d="M22 10l-7.5 7.5-2-2"></path>
+      </svg>
+      <span class="text-[10px]">Seen</span>
+    </span>`;
   }
   if (s === 'delivered') {
-    return `<span class="inline-flex items-center gap-0.5 text-slate-400 font-medium ml-1.5" title="Delivered"><svg class="w-3.5 h-3.5 inline fill-current" viewBox="0 0 16 16"><path d="M12.354 4.354a.5.5 0 0 0-.708-.708L5 10.293 1.854 7.146a.5.5 0 1 0-.708.708l3.5 3.5a.5.5 0 0 0 .708 0l7-7zm-4.708 7.293L15.354 3.94a.5.5 0 1 0-.708-.708L7.646 10.94l-.708-.707a.5.5 0 0 0-.708.708l1.062 1.061a.5.5 0 0 0 .708 0z"/></svg><span class="text-[9px]">Delivered</span></span>`;
+    return `<span class="inline-flex items-center gap-0.5 text-slate-400 ml-1.5" title="Delivered">
+      <svg class="w-4 h-4 inline" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 6L7 17l-5-5"></path>
+        <path d="M22 10l-7.5 7.5-2-2"></path>
+      </svg>
+    </span>`;
   }
-  return `<span class="inline-flex items-center gap-0.5 text-slate-500 font-medium ml-1.5" title="Sent"><svg class="w-3 h-3 inline fill-current" viewBox="0 0 16 16"><path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/></svg><span class="text-[9px]">Sent</span></span>`;
+  return `<span class="inline-flex items-center gap-0.5 text-slate-500 ml-1.5" title="Sent">
+    <svg class="w-3.5 h-3.5 inline" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="20 6 9 17 4 12"></polyline>
+    </svg>
+  </span>`;
+}
+
+function formatMessageText(text) {
+  if (!text) return '';
+  let escaped = escapeHtml(text);
+
+  // Auto-detect & format URLs with clean styling & external icon
+  const urlRegex = /(https?:\/\/[^\s<]+[^<.,:;"')\]\s])/g;
+  escaped = escaped.replace(urlRegex, (url) => {
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="underline decoration-rose-300/60 hover:decoration-rose-200 text-rose-200 font-medium inline-flex items-center gap-1 hover:text-white transition-colors" onclick="event.stopPropagation()">${url}<svg class="w-3.5 h-3.5 inline shrink-0 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a>`;
+  });
+
+  // Format bold **text**
+  escaped = escaped.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-white">$1</strong>');
+
+  // Format inline code `code`
+  escaped = escaped.replace(/`([^`]+)`/g, '<code class="bg-black/30 border border-white/10 px-1.5 py-0.5 rounded text-[13px] font-mono text-rose-200">$1</code>');
+
+  return escaped;
 }
 
 async function triggerMessagePoll() {
@@ -319,16 +357,40 @@ function renderMessages(messages) {
   const container = document.getElementById('messagesList');
   if (!container) return;
 
+  let lastDateStr = '';
+
   container.innerHTML = messages.map(msg => {
     const isOut = msg.sender === currentRole;
-    const timeFormatted = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const msgDate = new Date(msg.timestamp);
+    const dateFormatted = msgDate.toDateString();
+    let dateDividerHtml = '';
+
+    if (dateFormatted !== lastDateStr) {
+      lastDateStr = dateFormatted;
+      const now = new Date();
+      let label = msgDate.toLocaleDateString([], { month: 'short', day: 'numeric', year: msgDate.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
+      if (dateFormatted === now.toDateString()) label = 'Today';
+      const yesterday = new Date();
+      yesterday.setDate(now.getDate() - 1);
+      if (dateFormatted === yesterday.toDateString()) label = 'Yesterday';
+
+      dateDividerHtml = `
+        <div class="flex justify-center my-3 select-none">
+          <span class="px-3.5 py-1 rounded-full bg-[#111520]/80 border border-white/10 text-[11px] font-semibold text-slate-400 tracking-wider uppercase backdrop-blur-md shadow-sm">
+            ${label}
+          </span>
+        </div>
+      `;
+    }
+
+    const timeFormatted = msgDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const senderLabel = isOut ? 'You' : (msg.sender === 'Raoprime' || msg.sender === 'RP' ? 'Raoprime' : (msg.sender || 'Client'));
-    const editedBadge = msg.isEdited ? `<span class="text-[9px] text-slate-500 italic ml-1" title="Edited message">(edited)</span>` : '';
+    const editedBadge = msg.isEdited ? `<span class="text-[10px] text-slate-400/80 italic ml-1" title="Edited message">(edited)</span>` : '';
 
     let bubbleContent = '';
 
     if (msg.type === 'text') {
-      bubbleContent = `<div class="px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words">${escapeHtml(msg.text)}</div>`;
+      bubbleContent = `<div class="px-4 sm:px-5 py-2.5 sm:py-3 text-[15px] sm:text-[15.5px] leading-[1.65] font-normal whitespace-pre-wrap break-words tracking-[-0.01em] select-text">${formatMessageText(msg.text)}</div>`;
     } else if (msg.type === 'file' && msg.file) {
       const f = msg.file;
       const ext = (f.originalName.split('.').pop() || '').toLowerCase();
@@ -340,55 +402,60 @@ function renderMessages(messages) {
         bubbleContent = `
           <div class="overflow-hidden rounded-2xl">
             <a href="${f.downloadUrl}" target="_blank" rel="noopener">
-              <img src="${f.downloadUrl}?preview=1" alt="${escapeHtml(f.originalName)}" loading="lazy" class="max-w-[260px] sm:max-w-xs max-h-64 object-cover hover:opacity-95 transition-opacity">
+              <img src="${f.downloadUrl}?preview=1" alt="${escapeHtml(f.originalName)}" loading="lazy" class="max-w-[280px] sm:max-w-sm max-h-72 object-cover hover:scale-[1.01] transition-transform duration-300">
             </a>
-            <div class="p-2 sm:p-2.5 flex items-center justify-between text-xs border-t border-white/10 bg-black/20">
-              <span class="truncate max-w-[160px] sm:max-w-[180px] font-medium text-[11px] sm:text-xs">${escapeHtml(f.originalName)}</span>
-              <a href="${f.downloadUrl}" download class="hover:text-rose-300 ml-2 p-1.5 active:scale-90" aria-label="Download image"><i data-lucide="download" class="w-4 h-4"></i></a>
+            <div class="p-2.5 sm:p-3 flex items-center justify-between text-xs border-t border-white/10 bg-black/25 backdrop-blur-md">
+              <span class="truncate max-w-[170px] sm:max-w-[200px] font-semibold text-[13px] text-white">${escapeHtml(f.originalName)}</span>
+              <a href="${f.downloadUrl}" download class="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 active:scale-90 flex items-center justify-center text-white ml-2 transition-all" aria-label="Download image" title="Download">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              </a>
             </div>
           </div>
         `;
       } else if (isAudio) {
         bubbleContent = `
-          <div class="p-2.5 sm:p-3 space-y-2 max-w-[260px] sm:max-w-xs">
-            <div class="flex items-center gap-2">
-              <i data-lucide="music" class="w-4 h-4 text-rose-300"></i>
-              <span class="text-xs font-semibold truncate text-white">${escapeHtml(f.originalName)}</span>
+          <div class="p-3 sm:p-3.5 space-y-2.5 max-w-[280px] sm:max-w-sm">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-300 flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+              </div>
+              <span class="text-[13px] font-semibold truncate text-white">${escapeHtml(f.originalName)}</span>
             </div>
             <audio src="${f.downloadUrl}" controls preload="metadata" class="w-full h-8 rounded-lg"></audio>
             <div class="flex items-center justify-between text-[11px] opacity-80 pt-0.5">
-              <span class="font-mono">${f.formattedSize}</span>
+              <span class="font-mono text-slate-300">${f.formattedSize}</span>
               <a href="${f.downloadUrl}" download class="hover:underline flex items-center gap-1 font-semibold text-rose-300 p-1">
-                <i data-lucide="download" class="w-3 h-3"></i> Download
+                Download
               </a>
             </div>
           </div>
         `;
       } else if (isVideo) {
         bubbleContent = `
-          <div class="overflow-hidden rounded-2xl max-w-[260px] sm:max-w-sm">
-            <video src="${f.downloadUrl}" controls playsinline webkit-playsinline class="w-full max-h-64 object-cover bg-black"></video>
-            <div class="p-2 sm:p-2.5 flex items-center justify-between text-xs border-t border-white/10 bg-black/20">
-              <span class="truncate max-w-[150px] sm:max-w-[180px] font-medium text-[11px] sm:text-xs">${escapeHtml(f.originalName)}</span>
-              <span class="opacity-80 text-[10px] font-mono">${f.formattedSize}</span>
+          <div class="overflow-hidden rounded-2xl max-w-[280px] sm:max-w-sm">
+            <video src="${f.downloadUrl}" controls playsinline webkit-playsinline class="w-full max-h-72 object-cover bg-black"></video>
+            <div class="p-2.5 flex items-center justify-between text-xs border-t border-white/10 bg-black/25 backdrop-blur-md">
+              <span class="truncate max-w-[170px] sm:max-w-[200px] font-semibold text-[13px] text-white">${escapeHtml(f.originalName)}</span>
+              <span class="opacity-80 text-[11px] font-mono text-slate-300">${f.formattedSize}</span>
             </div>
           </div>
         `;
       } else {
         // Generic Document / Archive
+        const tag = (ext || 'FILE').toUpperCase().slice(0, 4);
         bubbleContent = `
-          <div class="p-2.5 sm:p-3 flex items-center justify-between gap-2.5 max-w-[260px] sm:max-w-xs">
-            <div class="flex items-center gap-2 sm:gap-2.5 min-w-0">
-              <div class="w-9 h-9 rounded-xl bg-black/30 flex items-center justify-center shrink-0">
-                <i data-lucide="file-text" class="w-5 h-5 text-rose-300"></i>
+          <div class="p-3 sm:p-3.5 flex items-center justify-between gap-3 max-w-[280px] sm:max-w-sm">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-300 flex flex-col items-center justify-center shrink-0 border border-rose-500/20">
+                <span class="text-[10px] font-black tracking-tighter uppercase">${tag}</span>
               </div>
               <div class="min-w-0">
-                <p class="text-xs font-semibold truncate text-white" title="${escapeHtml(f.originalName)}">${escapeHtml(f.originalName)}</p>
-                <p class="text-[10px] opacity-75 font-mono">${f.formattedSize}</p>
+                <p class="text-[13.5px] font-semibold truncate text-white leading-tight" title="${escapeHtml(f.originalName)}">${escapeHtml(f.originalName)}</p>
+                <p class="text-[11px] text-slate-300/80 font-mono mt-0.5">${f.formattedSize}</p>
               </div>
             </div>
-            <a href="${f.downloadUrl}" download class="w-8 h-8 rounded-xl bg-black/20 hover:bg-black/40 active:scale-95 text-white shrink-0 flex items-center justify-center transition-all" title="Download">
-              <i data-lucide="download" class="w-4 h-4"></i>
+            <a href="${f.downloadUrl}" download class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white shrink-0 flex items-center justify-center transition-all shadow-sm" title="Download">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
             </a>
           </div>
         `;
@@ -396,17 +463,22 @@ function renderMessages(messages) {
     }
 
     return `
-      <div class="message-row flex flex-col ${isOut ? 'items-end' : 'items-start'} group" data-msg-id="${msg.id}" data-msg-sender="${msg.sender}">
-        <div class="text-[10px] font-semibold text-slate-500 mb-1 px-1 flex items-center gap-1.5">
-          <span>${senderLabel}</span>
-          <button onclick="openMessageActionMenu(this.closest('.message-row'))" class="opacity-0 group-hover:opacity-100 transition-opacity text-slate-500 hover:text-white p-0.5 rounded cursor-pointer" title="Options">
-            <i data-lucide="more-horizontal" class="w-3.5 h-3.5"></i>
+      ${dateDividerHtml}
+      <div class="message-row flex flex-col ${isOut ? 'items-end' : 'items-start'} group mb-2" data-msg-id="${msg.id}" data-msg-sender="${msg.sender}">
+        <div class="text-[11px] font-medium text-slate-400 mb-1 px-1 flex items-center gap-1.5 select-none">
+          <span class="${isOut ? 'text-rose-300/90' : 'text-slate-300'} font-semibold">${senderLabel}</span>
+          <button onclick="openMessageActionMenu(this.closest('.message-row'))" class="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-white p-0.5 rounded cursor-pointer" title="Options">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="1.5"></circle>
+              <circle cx="19" cy="12" r="1.5"></circle>
+              <circle cx="5" cy="12" r="1.5"></circle>
+            </svg>
           </button>
         </div>
-        <div class="${isOut ? 'bubble-out' : 'bubble-in'} max-w-[85%] sm:max-w-md shadow-md cursor-pointer select-text transition-transform active:scale-[0.99]">
+        <div class="${isOut ? 'bubble-out' : 'bubble-in'} max-w-[88%] sm:max-w-lg shadow-md cursor-pointer select-text transition-transform active:scale-[0.995]">
           ${bubbleContent}
         </div>
-        <div class="text-[10px] text-slate-500 mt-1 px-1 flex items-center ${isOut ? 'justify-end' : 'justify-start'}">
+        <div class="text-[11px] text-slate-400/90 mt-1 px-1 flex items-center ${isOut ? 'justify-end' : 'justify-start'} select-none">
           <span>${timeFormatted}</span>
           ${editedBadge}
           ${renderMessageStatus(msg.status, isOut)}
@@ -451,6 +523,7 @@ async function sendTextMessage() {
   }
 
   input.value = '';
+  input.style.height = 'auto';
 
   // Reset typing state immediately
   clearTimeout(typingTimeout);
@@ -679,12 +752,14 @@ function startEditingMessage(msg) {
 
   if (input) {
     input.value = msg.text;
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 140) + 'px';
     input.focus();
     input.setSelectionRange(input.value.length, input.value.length);
   }
 
   if (sendBtn) {
-    sendBtn.innerHTML = '<i data-lucide="check" class="w-4 h-4 ml-0.5"></i>';
+    sendBtn.innerHTML = '<svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
     sendBtn.title = 'Save edited message';
   }
 
@@ -699,10 +774,13 @@ function cancelEditingMessage() {
   const sendBtn = document.getElementById('sendBtn');
 
   if (banner) banner.classList.add('hidden');
-  if (input) input.value = '';
+  if (input) {
+    input.value = '';
+    input.style.height = 'auto';
+  }
 
   if (sendBtn) {
-    sendBtn.innerHTML = '<i data-lucide="send" class="w-4 h-4 ml-0.5 fill-current"></i>';
+    sendBtn.innerHTML = '<svg class="w-5 h-5 transition-transform group-hover:-translate-y-0.5 group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>';
     sendBtn.title = 'Send Message';
   }
 
