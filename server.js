@@ -58,62 +58,78 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(path.join(ROOT_DIR, 'public')));
 
 // ──────────────────────────────────────────────────────────────
-// MongoDB Database & GridFS Cloud Storage Layer
+// Firebase Cloud Firestore Permanent Cloud Persistence Layer
+// Backed by Google Cloud Firebase: verfect-9d923
 // ──────────────────────────────────────────────────────────────
-let isMongoConnected = false;
-let gridfsBucket = null;
+let isFirebaseConnected = false;
+let firebaseDb = null;
 
-const MONGODB_URI = process.env.MONGODB_URI || process.env.DATABASE_URL;
-
-const MessageSchema = new mongoose.Schema({
-  id: { type: String, required: true, unique: true, index: true },
-  chatId: { type: String, required: true, index: true },
-  sender: { type: String, required: true },
-  type: { type: String, enum: ['text', 'file'], default: 'text' },
-  text: { type: String, default: '' },
-  file: {
-    fileId: String,
-    originalName: String,
-    storedName: String,
-    fileSize: Number,
-    formattedSize: String,
-    fileType: String,
-    downloadUrl: String,
-    gridFsId: String
-  },
-  timestamp: { type: String, default: () => new Date().toISOString() }
-});
-
-const ChatSchema = new mongoose.Schema({
-  chatId: { type: String, required: true, unique: true, index: true },
-  clientName: { type: String, required: true },
-  updatedAt: { type: Date, default: Date.now }
-});
-
-const Message = mongoose.models.Message || mongoose.model('Message', MessageSchema);
-const Chat = mongoose.models.Chat || mongoose.model('Chat', ChatSchema);
-
-async function connectDB() {
-  if (isMongoConnected) return true;
-  if (!MONGODB_URI) {
-    return false;
-  }
+function initFirebase() {
+  if (isFirebaseConnected) return true;
   try {
-    await mongoose.connect(MONGODB_URI, {
-      serverSelectionTimeoutMS: 5000,
-      connectTimeoutMS: 8000
+    let adminModule = null;
+    try {
+      adminModule = require('firebase-admin');
+    } catch (e1) {
+      try {
+        adminModule = require('C:/Users/DELL/.gemini/antigravity/scratch/verifect/node_modules/firebase-admin');
+      } catch (e2) {}
+    }
+
+    if (!adminModule) return false;
+
+    let getFirestore = null;
+    try {
+      getFirestore = require('firebase-admin/firestore').getFirestore;
+    } catch (e3) {
+      try {
+        getFirestore = require('C:/Users/DELL/.gemini/antigravity/scratch/verifect/node_modules/firebase-admin/lib/firestore').getFirestore;
+      } catch (e4) {}
+    }
+
+    if (!getFirestore) return false;
+
+    if (adminModule.apps && adminModule.apps.length > 0) {
+      firebaseDb = getFirestore(adminModule.apps[0]);
+      isFirebaseConnected = true;
+      return true;
+    }
+
+    let keyData = null;
+    const keyPath = path.join(__dirname, 'firebase-key.json');
+    if (fs.existsSync(keyPath)) {
+      try {
+        keyData = JSON.parse(fs.readFileSync(keyPath, 'utf8'));
+      } catch (e) {}
+    }
+
+    if (!keyData) {
+      const projectId = process.env.FIREBASE_PROJECT_ID || 'verfect-9d923';
+      const clientEmail = process.env.FIREBASE_CLIENT_EMAIL || 'firebase-adminsdk-fbsvc@verfect-9d923.iam.gserviceaccount.com';
+      let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+      if (privateKey) {
+        privateKey = privateKey.trim().replace(/\\n/g, '\n');
+        keyData = { projectId, clientEmail, privateKey };
+      }
+    }
+
+    if (!keyData) return false;
+
+    const app = adminModule.initializeApp({
+      credential: adminModule.cert(keyData),
+      databaseURL: 'https://verfect-9d923-default-rtdb.asia-southeast1.firebasedatabase.app'
     });
-    isMongoConnected = true;
-    gridfsBucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, { bucketName: 'rp_vault' });
-    console.log('🚀 Connected to MongoDB Cloud Database & GridFS Storage!');
+    firebaseDb = getFirestore(app);
+    isFirebaseConnected = true;
+    console.log('🚀 Connected to Firebase Cloud Firestore (verfect-9d923)!');
     return true;
   } catch (err) {
-    console.warn('⚠️ MongoDB connection notice, using local persistence fallback:', err.message);
+    console.warn('⚠️ Firebase init notice:', err.message);
     return false;
   }
 }
 
-connectDB().catch(() => {});
+initFirebase();
 
 // Helpers
 function sanitizeFilename(filename) {
@@ -146,15 +162,19 @@ function saveAllLocalChats(chats) {
   } catch (e) {}
 }
 
-// Database-Aware Message Operations
+// Firebase + Local Hybrid Message Operations
 async function getChatMessages(chatId) {
-  await connectDB();
-  if (isMongoConnected) {
+  initFirebase();
+  if (isFirebaseConnected && firebaseDb) {
     try {
-      const msgs = await Message.find({ chatId }).sort({ timestamp: 1 }).lean();
-      return msgs;
+      const snap = await firebaseDb.collection('raoprime_messages').where('chatId', '==', chatId).get();
+      if (!snap.empty) {
+        const msgs = snap.docs.map(d => d.data());
+        msgs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        return msgs;
+      }
     } catch (e) {
-      console.warn('Mongo read error, falling back:', e.message);
+      console.warn('Firebase read notice:', e.message);
     }
   }
   const localChats = getAllLocalChats();
@@ -162,15 +182,22 @@ async function getChatMessages(chatId) {
 }
 
 async function saveChatMessage(chatId, messageObj) {
-  await connectDB();
-  if (isMongoConnected) {
+  initFirebase();
+  const clientName = chatId === 'default' ? 'General Desk' : decodeURIComponent(chatId);
+  if (isFirebaseConnected && firebaseDb) {
     try {
-      await Message.create({ chatId, ...messageObj });
-      const clientName = chatId === 'default' ? 'General Desk' : decodeURIComponent(chatId);
-      await Chat.findOneAndUpdate({ chatId }, { clientName, updatedAt: new Date() }, { upsert: true });
-      return;
+      await firebaseDb.collection('raoprime_messages').doc(messageObj.id).set({
+        chatId,
+        ...messageObj
+      }, { merge: true });
+
+      await firebaseDb.collection('raoprime_chats').doc(chatId).set({
+        chatId,
+        clientName,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
     } catch (e) {
-      console.warn('Mongo write error, falling back:', e.message);
+      console.warn('Firebase write notice:', e.message);
     }
   }
   const localChats = getAllLocalChats();
@@ -459,42 +486,50 @@ app.get('/api/admin/verify', requireAdminAuth, (req, res) => {
 // List all active conversations for the Admin Portal
 app.get('/api/admin/chats', requireAdminAuth, async (req, res) => {
   try {
-    await connectDB();
+    initFirebase();
     const chatList = [];
     const now = Date.now();
 
-    if (isMongoConnected) {
-      const distinctChatIds = await Message.distinct('chatId');
-      for (const chatId of distinctChatIds) {
-        const messages = await Message.find({ chatId }).sort({ timestamp: 1 }).lean();
-        if (!Array.isArray(messages) || messages.length === 0) continue;
+    if (isFirebaseConnected && firebaseDb) {
+      try {
+        const chatsSnap = await firebaseDb.collection('raoprime_chats').get();
+        for (const doc of chatsSnap.docs) {
+          const cData = doc.data();
+          const chatId = cData.chatId || doc.id;
+          const messages = await getChatMessages(chatId);
+          if (!Array.isArray(messages) || messages.length === 0) continue;
 
-        const lastMsg = messages[messages.length - 1];
-        const files = messages.filter((m) => m.type === 'file' && m.file);
-        const clientName = chatId === 'default' ? 'General Desk' : decodeURIComponent(chatId);
+          const lastMsg = messages[messages.length - 1];
+          const files = messages.filter((m) => m.type === 'file' && m.file);
+          const clientName = cData.clientName || (chatId === 'default' ? 'General Desk' : decodeURIComponent(chatId));
 
-        const chatPresence = presenceStatus[chatId] || {};
-        const chatTyping = typingStatus[chatId] || {};
-        const isClientOnline = Boolean(chatPresence.Client && (now - chatPresence.Client < 7000));
-        const isClientTyping = Boolean(chatTyping.Client && (now - chatTyping.Client < 3500));
+          const chatPresence = presenceStatus[chatId] || {};
+          const chatTyping = typingStatus[chatId] || {};
+          const isClientOnline = Boolean(chatPresence.Client && (now - chatPresence.Client < 7000));
+          const isClientTyping = Boolean(chatTyping.Client && (now - chatTyping.Client < 3500));
 
-        chatList.push({
-          chatId,
-          clientName,
-          totalMessages: messages.length,
-          totalFiles: files.length,
-          files: files.map((f) => f.file),
-          isOnline: isClientOnline,
-          isTyping: isClientTyping,
-          lastMessage: {
-            sender: lastMsg.sender,
-            text: lastMsg.type === 'file' ? `📁 [File] ${lastMsg.file.originalName}` : lastMsg.text,
-            timestamp: lastMsg.timestamp,
-            type: lastMsg.type
-          }
-        });
+          chatList.push({
+            chatId,
+            clientName,
+            totalMessages: messages.length,
+            totalFiles: files.length,
+            files: files.map((f) => f.file),
+            isOnline: isClientOnline,
+            isTyping: isClientTyping,
+            lastMessage: {
+              sender: lastMsg.sender,
+              text: lastMsg.type === 'file' ? `📁 [File] ${lastMsg.file.originalName}` : lastMsg.text,
+              timestamp: lastMsg.timestamp,
+              type: lastMsg.type
+            }
+          });
+        }
+      } catch (fbErr) {
+        console.warn('Firebase admin chats query warning:', fbErr.message);
       }
-    } else {
+    }
+
+    if (chatList.length === 0) {
       const chats = getAllLocalChats();
       for (const [chatId, messages] of Object.entries(chats)) {
         if (!Array.isArray(messages) || messages.length === 0) continue;
@@ -583,24 +618,17 @@ app.delete('/api/admin/chat/:chatId', requireAdminAuth, async (req, res) => {
       return res.status(400).json({ success: false, error: 'Chat ID required' });
     }
 
-    // 1. Delete from MongoDB if connected
-    await connectDB();
-    if (isMongoConnected) {
+    // 1. Delete from Firebase Firestore if connected
+    initFirebase();
+    if (isFirebaseConnected && firebaseDb) {
       try {
-        const messages = await Message.find({ chatId }).lean();
-        if (gridfsBucket) {
-          for (const m of messages) {
-            if (m.type === 'file' && m.file && m.file.gridFsId) {
-              try {
-                await gridfsBucket.delete(new mongoose.Types.ObjectId(m.file.gridFsId));
-              } catch (e) {}
-            }
-          }
+        await firebaseDb.collection('raoprime_chats').doc(chatId).delete();
+        const msgs = await firebaseDb.collection('raoprime_messages').where('chatId', '==', chatId).get();
+        for (const doc of msgs.docs) {
+          await doc.ref.delete();
         }
-        await Message.deleteMany({ chatId });
-        await Chat.deleteOne({ chatId });
-      } catch (mErr) {
-        console.warn('MongoDB delete warning:', mErr.message);
+      } catch (fbErr) {
+        console.warn('Firebase delete warning:', fbErr.message);
       }
     }
 
