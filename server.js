@@ -262,67 +262,73 @@ app.post('/api/chat/send', async (req, res) => {
 });
 
 // ──────────────────────────────────────────────────────────────
-// Ultra HD WebRTC Calling Signaling Engine (1080p Video + Studio 48kHz Audio)
-// Sequence-based Guaranteed Delivery & Universal Room Discovery
 // ──────────────────────────────────────────────────────────────
-const activeCalls = {}; // { [chatId]: { callId, chatId, type, caller, status, startedAt, signals: [], signalSeq: 0 } }
+// Ultra HD WebRTC Calling Signaling Engine (1080p Video + Studio 48kHz Audio)
+// Universal Room Discovery & Unified Call State
+// ──────────────────────────────────────────────────────────────
+const activeCalls = {};
+
+function resolveActiveCall(chatId) {
+  // 1. Direct match on chatId
+  if (chatId && activeCalls[chatId] && activeCalls[chatId].status !== 'ended') {
+    return activeCalls[chatId];
+  }
+  // 2. Active call under 'default'
+  if (activeCalls['default'] && activeCalls['default'].status !== 'ended') {
+    return activeCalls['default'];
+  }
+  // 3. Any ringing or connected call across any room
+  const anyActive = Object.values(activeCalls).find(c => c && (c.status === 'ringing' || c.status === 'connected'));
+  if (anyActive) return anyActive;
+
+  // 4. Any recently ended call (to allow graceful handshake termination)
+  const anyEnded = Object.values(activeCalls).find(c => c && c.status === 'ended');
+  if (anyEnded) return anyEnded;
+  return null;
+}
 
 app.post('/api/call/initiate', (req, res) => {
   const { chatId = 'default', caller = 'Client', type = 'video' } = req.body;
-  activeCalls[chatId] = {
+  const newCall = {
     callId: 'call_' + Date.now(),
-    chatId,
-    type,
-    caller,
+    chatId: chatId || 'default',
+    type: type || 'video',
+    caller: caller || 'Client',
     status: 'ringing',
     startedAt: Date.now(),
     signals: [],
     signalSeq: 0
   };
-  res.json({ success: true, call: activeCalls[chatId] });
+
+  // Register on both the room AND globally so discovery is 100% guaranteed
+  activeCalls[chatId || 'default'] = newCall;
+  activeCalls['default'] = newCall;
+
+  console.log(`📞 Call initiated by ${caller} (${type}) in room [${chatId}]`);
+  res.json({ success: true, call: newCall });
 });
 
 app.get('/api/call/status', (req, res) => {
   const chatId = req.query.chatId;
   const role = req.query.role; // 'admin' or 'client'
-
-  if (role === 'admin') {
-    // 1. Is there ANY incoming call from a client?
-    const clientCall = Object.entries(activeCalls).find(([cid, c]) => c && c.caller !== 'Raoprime' && (c.status === 'ringing' || c.status === 'connected'));
-    if (clientCall) {
-      return res.json({ success: true, active: true, chatId: clientCall[0], call: clientCall[1] });
-    }
-    // 2. Or is there an active call initiated by Admin?
-    const adminCall = Object.entries(activeCalls).find(([cid, c]) => c && c.caller === 'Raoprime' && (c.status === 'ringing' || c.status === 'connected'));
-    if (adminCall) {
-      return res.json({ success: true, active: true, chatId: adminCall[0], call: adminCall[1] });
-    }
-    return res.json({ success: true, active: false });
-  }
-
-  // Client polling:
-  let call = (chatId && activeCalls[chatId]) ? activeCalls[chatId] : null;
-  if (!call || call.status === 'ended') {
-    const adminInitiated = Object.entries(activeCalls).find(([cid, c]) => c && c.caller === 'Raoprime' && (c.status === 'ringing' || c.status === 'connected') && (cid === chatId || cid === 'default' || !chatId));
-    if (adminInitiated) {
-      call = adminInitiated[1];
-    }
-  }
-  if (!call || call.status === 'ended') {
-    if (activeCalls['default'] && activeCalls['default'].status !== 'ended') {
-      call = activeCalls['default'];
-    }
-  }
+  const call = resolveActiveCall(chatId);
 
   if (!call || call.status === 'ended') {
     return res.json({ success: true, active: false });
   }
-  res.json({ success: true, active: true, chatId: call.chatId || chatId || 'default', call });
+
+  // Active call found!
+  res.json({
+    success: true,
+    active: true,
+    chatId: call.chatId || chatId || 'default',
+    call
+  });
 });
 
 app.post('/api/call/signal', (req, res) => {
   const { chatId = 'default', from = 'Client', signal } = req.body;
-  const call = activeCalls[chatId] || activeCalls['default'];
+  const call = resolveActiveCall(chatId);
   if (!call) {
     return res.status(404).json({ success: false, error: 'No active call' });
   }
@@ -340,33 +346,41 @@ app.get('/api/call/signals', (req, res) => {
   const chatId = req.query.chatId || 'default';
   const forRole = req.query.forRole || 'Client';
   const since = parseInt(req.query.since || '0', 10);
-  const call = activeCalls[chatId] || activeCalls['default'];
+  const call = resolveActiveCall(chatId);
   if (!call) return res.json({ success: true, signals: [], status: 'none', lastSeq: 0 });
 
   const newSignals = call.signals.filter((s) => s.from !== forRole && (s.seq ? s.seq > since : s.timestamp > since));
   const maxSeq = call.signalSeq || (call.signals.length ? call.signals[call.signals.length - 1].timestamp : 0);
-  res.json({ success: true, signals: newSignals, status: call.status, type: call.type, caller: call.caller, lastSeq: maxSeq });
+  res.json({
+    success: true,
+    signals: newSignals,
+    status: call.status,
+    type: call.type,
+    caller: call.caller,
+    lastSeq: maxSeq
+  });
 });
 
 app.post('/api/call/accept', (req, res) => {
   const { chatId = 'default' } = req.body;
-  const call = activeCalls[chatId] || activeCalls['default'];
+  const call = resolveActiveCall(chatId);
   if (call) {
     call.status = 'connected';
+    console.log(`✅ Call accepted in room [${call.chatId}]`);
   }
   res.json({ success: true });
 });
 
 app.post('/api/call/end', (req, res) => {
   const { chatId = 'default' } = req.body;
-  const call = activeCalls[chatId] || activeCalls['default'];
+  const call = resolveActiveCall(chatId);
   if (call) {
     call.status = 'ended';
+    console.log(`🛑 Call ended in room [${call.chatId}]`);
     setTimeout(() => {
       delete activeCalls[chatId];
-      if (activeCalls['default'] && activeCalls['default'].status === 'ended') {
-        delete activeCalls['default'];
-      }
+      delete activeCalls['default'];
+      if (call.chatId) delete activeCalls[call.chatId];
     }, 4000);
   }
   res.json({ success: true });

@@ -736,6 +736,8 @@ const RTC_CONFIG = {
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
     { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' },
     { urls: 'stun:stun.cloudflare.com:3478' }
   ]
 };
@@ -806,10 +808,6 @@ function showAdminIncomingModal(call, cid) {
 async function startAdminCall(type = 'video') {
   if (isCallActive) return;
   const targetChat = activeChatId || (allChats.length > 0 ? allChats[0].chatId : 'default');
-  if (!targetChat) {
-    showToast('Please select a client from the inbox first.');
-    return;
-  }
 
   currentCallType = type;
   isCallActive = true;
@@ -817,7 +815,7 @@ async function startAdminCall(type = 'video') {
   pendingCandidates = [];
   pendingCallChatId = targetChat;
 
-  // Unlock browser audio context on user interaction
+  // 1. Immediately unlock browser audio context on user interaction
   const remoteAudioEl = document.getElementById('remoteAudio');
   if (remoteAudioEl) {
     remoteAudioEl.muted = false;
@@ -861,10 +859,8 @@ async function startAdminCall(type = 'video') {
     if (flipBtn) flipBtn.classList.remove('hidden');
   }
 
+  // 2. Ring the client immediately on backend
   try {
-    await acquireLocalMedia(type === 'video');
-    await initPeerConnection(type === 'video');
-
     await fetch('/api/call/initiate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -874,6 +870,14 @@ async function startAdminCall(type = 'video') {
         type
       })
     });
+  } catch (e) {
+    console.warn('Admin call initiate API notice:', e);
+  }
+
+  // 3. Acquire media and start WebRTC offer
+  try {
+    await acquireLocalMedia(type === 'video');
+    await initPeerConnection(type === 'video');
 
     const offer = await peerConnection.createOffer({
       offerToReceiveAudio: true,
@@ -885,9 +889,8 @@ async function startAdminCall(type = 'video') {
     startSignalPolling();
     showToast(`HD ${type === 'video' ? 'Video' : 'Voice'} Call started...`);
   } catch (err) {
-    console.error('Admin call error:', err);
-    showToast('Permission or connection error: ' + err.message);
-    cleanupCall();
+    console.error('Admin call media setup warning:', err);
+    startSignalPolling();
   }
 }
 
@@ -948,22 +951,23 @@ async function acceptIncomingCall() {
     if (flipBtn) flipBtn.classList.remove('hidden');
   }
 
+  // Notify backend call is accepted immediately
   try {
-    await acquireLocalMedia(currentCallType === 'video');
-    await initPeerConnection(currentCallType === 'video');
-
     await fetch('/api/call/accept', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chatId: callChatId })
     });
+  } catch (e) {}
 
+  try {
+    await acquireLocalMedia(currentCallType === 'video');
+    await initPeerConnection(currentCallType === 'video');
     startSignalPolling();
     showToast('Ultra HD connected!');
   } catch (err) {
-    console.error('Admin accept error:', err);
-    showToast('Failed to connect: ' + err.message);
-    cleanupCall();
+    console.error('Admin accept setup warning:', err);
+    startSignalPolling();
   }
 }
 
@@ -1006,7 +1010,11 @@ async function acquireLocalMedia(isVideo) {
       try {
         stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
       } catch (e2) {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch (e3) {
+          console.warn('Admin mic & camera permission notice:', e3);
+        }
       }
     }
   } else {
@@ -1015,13 +1023,32 @@ async function acquireLocalMedia(isVideo) {
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
       });
     } catch (e1) {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (e2) {
+        console.warn('Admin mic permission notice:', e2);
+      }
+    }
+  }
+
+  // Graceful synthetic track fallback so WebRTC never crashes
+  if (!stream) {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) {
+        const ctx = new AudioCtx();
+        const dest = ctx.createMediaStreamDestination();
+        stream = dest.stream;
+      }
+    } catch (e) {}
+    if (!stream) {
+      try { stream = new MediaStream(); } catch (e) {}
     }
   }
 
   localStream = stream;
   const localVideoEl = document.getElementById('localVideo');
-  if (localVideoEl && localStream.getVideoTracks().length > 0) {
+  if (localVideoEl && localStream && localStream.getVideoTracks().length > 0) {
     localVideoEl.srcObject = localStream;
   }
 }
@@ -1118,7 +1145,7 @@ function startSignalPolling() {
         }
       }
     } catch (e) {}
-  }, 1000);
+  }, 600);
 }
 
 async function handleIncomingSignal(sig) {
