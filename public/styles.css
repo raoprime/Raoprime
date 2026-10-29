@@ -1,0 +1,125 @@
+/* RP Media & Records — Signature Crimson Luxury Dark Theme */
+
+:root {
+  --rp-red: #e50914;
+  --rp-red-hover: #f40d1a;
+  --rp-red-glow: rgba(229, 9, 20, 0.35);
+  --rp-dark: #07080b;
+  --rp-surface: #0f121a;
+  --rp-surface-elevated: #151924;
+  --rp-border: rgba(255, 255, 255, 0.08);
+  --rp-border-red: rgba(229, 9, 20, 0.3);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes redPulse {
+  0%, 100% { box-shadow: 0 0 15px rgba(229, 9, 20, 0.3); }
+  50% { box-shadow: 0 0 25px rgba(229, 9, 20, 0.6); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-scale-up {
+  animation: scaleUp 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.rp-glow {
+  box-shadow: 0 0 20px var(--rp-red-glow);
+}
+
+.rp-glow-hover:hover {
+  box-shadow: 0 0 25px rgba(229, 9, 20, 0.5);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #07080b;
+}
+::-webkit-scrollbar-thumb {
+  background: #222736;
+  border-radius: 9999px;
+  border: 2px solid #07080b;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #e50914;
+}
+
+/* Tab button states */
+.tab-btn {
+  color: #94a3b8;
+  border: 1px solid transparent;
+}
+.tab-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+}
+.tab-btn.active {
+  color: #ffffff;
+  background: linear-gradient(135deg, #e50914 0%, #b91c1c 100%);
+  box-shadow: 0 4px 18px 0 rgba(229, 9, 20, 0.45);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Progress bar animated gradient (Crimson & Rose) */
+.progress-bar-animated {
+  background-size: 1.25rem 1.25rem;
+  background-image: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.2) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 255, 255, 0.2) 75%,
+    transparent 75%,
+    transparent
+  );
+  animation: progress-stripe 1s linear infinite;
+}
+
+@keyframes progress-stripe {
+  0% { background-position: 1.25rem 0; }
+  100% { background-position: 0 0; }
+}
+
+/* Dropzone dragover effect */
+#dropzone.dragover {
+  border-color: #e50914 !important;
+  background-color: rgba(229, 9, 20, 0.08) !important;
+  box-shadow: 0 0 30px rgba(229, 9, 20, 0.25);
+  transform: scale(1.008);
+}
+
+/* Clean input focus: subtle crimson border without harsh outline */
+input:focus, textarea:focus, select:focus {
+  outline: none !important;
+}
+
+/* Custom button styles */
+.btn-primary-rp {
+  background: linear-gradient(135deg, #e50914 0%, #c10712 100%);
+  box-shadow: 0 4px 16px rgba(229, 9, 20, 0.4);
+  transition: all 0.2s ease-in-out;
+}
+.btn-primary-rp:hover {
+  background: linear-gradient(135deg, #f40d1a 0%, #d10814 100%);
+  box-shadow: 0 6px 22px rgba(229, 9, 20, 0.55);
+  transform: translateY(-1px);
+}
+.btn-primary-rp:active {
+  transform: translateY(0);
+}

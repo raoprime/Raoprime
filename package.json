@@ -1,0 +1,29 @@
+{
+  "name": "client-document-portal",
+  "version": "1.0.0",
+  "description": "Enterprise-grade Client Document Upload Portal with Chunked Streaming & Zero-Error Handling",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "document-upload",
+    "chunked-upload",
+    "resumable",
+    "enterprise",
+    "client-portal"
+  ],
+  "author": "Antigravity",
+  "license": "ISC",
+  "dependencies": {
+    "archiver": "^7.0.1",
+    "busboy": "^1.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^18.0.9",
+    "express": "^4.21.2",
+    "mime-types": "^2.1.35",
+    "mongodb": "^7.7.0",
+    "mongoose": "^9.11.4"
+  }
+}

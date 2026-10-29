@@ -1,0 +1,19 @@
+{
+  "companyName": "RP Media & Production",
+  "portalTitle": "Secure Client Document & Media Portal",
+  "tagline": "Enterprise TLS 256-Bit Encrypted • Zero Data Loss Resumable Protocol",
+  "activeLogo": "/assets/rp-logo.jpg",
+  "supportEmail": "management@rp-records.com",
+  "enablePublicTracking": true,
+  "maxSimultaneousUploads": 3,
+  "themeColor": "#e50914",
+  "allowedCategories": [
+    { "id": "identity", "name": "Client Identity & KYC Proofs", "desc": "Passport, National ID, Driving License, Resident Permit" },
+    { "id": "audio", "name": "Master Audio & Stem Sessions", "desc": "High-Res WAV, FLAC, AIFF, Logic/ProTools Session Zips" },
+    { "id": "video", "name": "4K/8K Video Footage & RAW Renders", "desc": "Uncompressed ProRes, MP4, MOV, Raw Camera Footage" },
+    { "id": "contracts", "name": "Legal, Contracts & Copyright Deeds", "desc": "Splitsheets, Royalty Deeds, Licensing, NDAs, Notarized Forms" },
+    { "id": "corporate", "name": "Corporate, Tax & Invoicing Records", "desc": "Invoices, Tax Declarations, GST, Company Incorporation" },
+    { "id": "artwork", "name": "Artwork & High-Res Graphics", "desc": "PSD, TIFF, Vector, 300DPI Album Covers, Posters" },
+    { "id": "general", "name": "General & Supporting Documents", "desc": "Any supplementary documents or project notes" }
+  ]
+}

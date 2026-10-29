@@ -1,0 +1,8 @@
+node_modules/
+.env
+.vercel/
+storage/vault/*
+storage/chunks/*
+!storage/vault/.gitkeep
+!storage/chunks/.gitkeep
+*.log
