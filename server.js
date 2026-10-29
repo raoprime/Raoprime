@@ -262,6 +262,84 @@ app.post('/api/chat/send', async (req, res) => {
 });
 
 // ──────────────────────────────────────────────────────────────
+// Ultra HD WebRTC Calling Signaling Engine (1080p Video + Studio 48kHz Audio)
+// ──────────────────────────────────────────────────────────────
+const activeCalls = {}; // { [chatId]: { callId, type: 'audio'|'video', caller, status, startedAt, signals: [] } }
+
+app.post('/api/call/initiate', (req, res) => {
+  const { chatId = 'default', caller = 'Client', type = 'video' } = req.body;
+  activeCalls[chatId] = {
+    callId: 'call_' + Date.now(),
+    type,
+    caller,
+    status: 'ringing',
+    startedAt: Date.now(),
+    signals: []
+  };
+  res.json({ success: true, call: activeCalls[chatId] });
+});
+
+app.get('/api/call/status', (req, res) => {
+  const chatId = req.query.chatId;
+  if (!chatId || chatId === 'all' || chatId === 'any') {
+    const activeEntry = Object.entries(activeCalls).find(([cid, c]) => c && (c.status === 'ringing' || c.status === 'connected'));
+    if (activeEntry) {
+      return res.json({ success: true, active: true, chatId: activeEntry[0], call: activeEntry[1] });
+    }
+    return res.json({ success: true, active: false });
+  }
+
+  const call = activeCalls[chatId];
+  if (!call || call.status === 'ended') {
+    return res.json({ success: true, active: false });
+  }
+  res.json({ success: true, active: true, chatId, call });
+});
+
+app.post('/api/call/signal', (req, res) => {
+  const { chatId = 'default', from = 'Client', signal } = req.body;
+  if (!activeCalls[chatId]) {
+    return res.status(404).json({ success: false, error: 'No active call' });
+  }
+  activeCalls[chatId].signals.push({
+    from,
+    signal,
+    timestamp: Date.now()
+  });
+  res.json({ success: true });
+});
+
+app.get('/api/call/signals', (req, res) => {
+  const chatId = req.query.chatId || 'default';
+  const forRole = req.query.forRole || 'Client';
+  const since = parseInt(req.query.since || '0', 10);
+  const call = activeCalls[chatId];
+  if (!call) return res.json({ success: true, signals: [], status: 'none' });
+
+  const newSignals = call.signals.filter((s) => s.from !== forRole && s.timestamp > since);
+  res.json({ success: true, signals: newSignals, status: call.status, type: call.type, caller: call.caller });
+});
+
+app.post('/api/call/accept', (req, res) => {
+  const { chatId = 'default' } = req.body;
+  if (activeCalls[chatId]) {
+    activeCalls[chatId].status = 'connected';
+  }
+  res.json({ success: true });
+});
+
+app.post('/api/call/end', (req, res) => {
+  const { chatId = 'default' } = req.body;
+  if (activeCalls[chatId]) {
+    activeCalls[chatId].status = 'ended';
+    setTimeout(() => {
+      delete activeCalls[chatId];
+    }, 4000);
+  }
+  res.json({ success: true });
+});
+
+// ──────────────────────────────────────────────────────────────
 // Admin Authentication Endpoints (Unbreakable Security)
 // Password: rdmy
 // ──────────────────────────────────────────────────────────────

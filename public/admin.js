@@ -663,3 +663,639 @@ function escapeHtml(string) {
   const entityMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
   return String(string).replace(/[&<>"']/g, s => entityMap[s]);
 }
+
+// ──────────────────────────────────────────────────────────────
+// Ultra HD WebRTC Calling Engine (Admin / Raoprime Console)
+// 1080p Video + Studio 48kHz Stereo Audio
+// ──────────────────────────────────────────────────────────────
+const RTC_CONFIG = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' }
+  ]
+};
+
+let peerConnection = null;
+let localStream = null;
+let pendingCall = null;
+let pendingCallChatId = null;
+let isCallActive = false;
+let isMicMuted = false;
+let isCamOff = false;
+let currentFacingMode = 'user';
+let callPollInterval = null;
+let lastSignalTimestamp = 0;
+let pendingCandidates = [];
+let ringtoneAudioCtx = null;
+let ringtoneInterval = null;
+let callStartTime = null;
+let callDurationTimer = null;
+let currentCallType = 'video';
+
+// Background incoming call polling for Admin
+setInterval(checkAdminIncomingCalls, 1500);
+
+async function checkAdminIncomingCalls() {
+  if (isCallActive || !adminToken) return;
+  try {
+    const queryChat = activeChatId || 'all';
+    const res = await fetch(`/api/call/status?chatId=${encodeURIComponent(queryChat)}`);
+    const data = await res.json();
+    if (data.success && data.active && data.call) {
+      if (data.call.caller !== 'Raoprime' && data.call.status === 'ringing') {
+        if (!pendingCall) {
+          pendingCall = data.call;
+          pendingCallChatId = data.chatId || activeChatId;
+          showAdminIncomingModal(data.call, pendingCallChatId);
+        }
+      } else if (data.call.status === 'ended') {
+        cleanupCall();
+      }
+    } else {
+      if (pendingCall && !isCallActive) {
+        cleanupCall();
+      }
+    }
+  } catch (e) {}
+}
+
+function showAdminIncomingModal(call, cid) {
+  const modal = document.getElementById('incomingCallModal');
+  if (!modal) return;
+
+  const callerNameEl = document.getElementById('incomingCallerName');
+  const callTypeEl = document.getElementById('incomingCallType');
+  const callerInitEl = document.getElementById('incomingCallerInitial');
+
+  const name = call.caller || cid || 'Client';
+  if (callerNameEl) callerNameEl.textContent = name;
+  if (callerInitEl) callerInitEl.textContent = name.charAt(0).toUpperCase();
+  if (callTypeEl) {
+    const isVid = call.type === 'video';
+    callTypeEl.innerHTML = `<i data-lucide="${isVid ? 'video' : 'phone'}" class="w-4 h-4"></i> Incoming HD ${isVid ? 'Video' : 'Voice'} Call...`;
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  modal.classList.remove('hidden');
+  playRingtone();
+}
+
+async function startAdminCall(type = 'video') {
+  if (isCallActive) return;
+  if (!activeChatId) {
+    showToast('Please select a client from the inbox first.');
+    return;
+  }
+
+  currentCallType = type;
+  isCallActive = true;
+  lastSignalTimestamp = 0;
+  pendingCandidates = [];
+
+  const peerName = document.getElementById('activeClientName')?.textContent || activeChatId;
+  const initial = peerName.charAt(0).toUpperCase();
+
+  const overlay = document.getElementById('callOverlay');
+  const durationEl = document.getElementById('callDuration');
+  const peerNameEl = document.getElementById('callOverlayPeerName');
+  const visualizerEl = document.getElementById('audioCallVisualizer');
+  const remoteVideoEl = document.getElementById('remoteVideo');
+  const localContainer = document.getElementById('localVideoContainer');
+  const camBtn = document.getElementById('camToggleBtn');
+  const flipBtn = document.getElementById('flipCamBtn');
+  const clientInitEl = document.getElementById('callOverlayClientInitial');
+  const audioInitEl = document.getElementById('audioCallInitial');
+  const audioPeerNameEl = document.getElementById('audioCallPeerName');
+
+  if (overlay) overlay.classList.remove('hidden');
+  if (peerNameEl) peerNameEl.textContent = peerName;
+  if (clientInitEl) clientInitEl.textContent = initial;
+  if (audioPeerNameEl) audioPeerNameEl.textContent = peerName;
+  if (audioInitEl) audioInitEl.textContent = initial;
+  if (durationEl) durationEl.textContent = 'Calling client...';
+
+  if (type === 'audio') {
+    if (visualizerEl) visualizerEl.classList.remove('hidden');
+    if (remoteVideoEl) remoteVideoEl.classList.add('hidden');
+    if (localContainer) localContainer.classList.add('hidden');
+    if (camBtn) camBtn.classList.add('hidden');
+    if (flipBtn) flipBtn.classList.add('hidden');
+  } else {
+    if (visualizerEl) visualizerEl.classList.add('hidden');
+    if (remoteVideoEl) remoteVideoEl.classList.remove('hidden');
+    if (localContainer) localContainer.classList.remove('hidden');
+    if (camBtn) camBtn.classList.remove('hidden');
+    if (flipBtn) flipBtn.classList.remove('hidden');
+  }
+
+  try {
+    await acquireLocalMedia(type === 'video');
+    await initPeerConnection(type === 'video');
+
+    await fetch('/api/call/initiate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chatId: activeChatId,
+        caller: 'Raoprime',
+        type
+      })
+    });
+
+    const offer = await peerConnection.createOffer({
+      offerToReceiveAudio: true,
+      offerToReceiveVideo: type === 'video'
+    });
+    await peerConnection.setLocalDescription(offer);
+    await sendAdminCallSignal({ sdp: offer });
+
+    startSignalPolling();
+    showToast(`HD ${type === 'video' ? 'Video' : 'Voice'} Call started...`);
+  } catch (err) {
+    showToast('Permission or connection error: ' + err.message);
+    cleanupCall();
+  }
+}
+
+async function acceptIncomingCall() {
+  stopRingtone();
+  const modal = document.getElementById('incomingCallModal');
+  if (modal) modal.classList.add('hidden');
+
+  if (!pendingCall) return;
+  const call = pendingCall;
+  const callChatId = pendingCallChatId || activeChatId;
+  currentCallType = call.type || 'video';
+  isCallActive = true;
+  lastSignalTimestamp = 0;
+  pendingCandidates = [];
+
+  const peerName = call.caller || callChatId || 'Client';
+  const initial = peerName.charAt(0).toUpperCase();
+
+  const overlay = document.getElementById('callOverlay');
+  const durationEl = document.getElementById('callDuration');
+  const peerNameEl = document.getElementById('callOverlayPeerName');
+  const visualizerEl = document.getElementById('audioCallVisualizer');
+  const remoteVideoEl = document.getElementById('remoteVideo');
+  const localContainer = document.getElementById('localVideoContainer');
+  const camBtn = document.getElementById('camToggleBtn');
+  const flipBtn = document.getElementById('flipCamBtn');
+  const clientInitEl = document.getElementById('callOverlayClientInitial');
+  const audioInitEl = document.getElementById('audioCallInitial');
+  const audioPeerNameEl = document.getElementById('audioCallPeerName');
+
+  if (overlay) overlay.classList.remove('hidden');
+  if (peerNameEl) peerNameEl.textContent = peerName;
+  if (clientInitEl) clientInitEl.textContent = initial;
+  if (audioPeerNameEl) audioPeerNameEl.textContent = peerName;
+  if (audioInitEl) audioInitEl.textContent = initial;
+  if (durationEl) durationEl.textContent = 'Connecting HD...';
+
+  if (currentCallType === 'audio') {
+    if (visualizerEl) visualizerEl.classList.remove('hidden');
+    if (remoteVideoEl) remoteVideoEl.classList.add('hidden');
+    if (localContainer) localContainer.classList.add('hidden');
+    if (camBtn) camBtn.classList.add('hidden');
+    if (flipBtn) flipBtn.classList.add('hidden');
+  } else {
+    if (visualizerEl) visualizerEl.classList.add('hidden');
+    if (remoteVideoEl) remoteVideoEl.classList.remove('hidden');
+    if (localContainer) localContainer.classList.remove('hidden');
+    if (camBtn) camBtn.classList.remove('hidden');
+    if (flipBtn) flipBtn.classList.remove('hidden');
+  }
+
+  try {
+    await acquireLocalMedia(currentCallType === 'video');
+    await initPeerConnection(currentCallType === 'video');
+
+    await fetch('/api/call/accept', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chatId: callChatId })
+    });
+
+    startSignalPolling();
+    showToast('Ultra HD connected!');
+  } catch (err) {
+    showToast('Failed to connect: ' + err.message);
+    cleanupCall();
+  }
+}
+
+async function declineCall() {
+  stopRingtone();
+  const modal = document.getElementById('incomingCallModal');
+  if (modal) modal.classList.add('hidden');
+
+  const callChatId = pendingCallChatId || activeChatId;
+  if (callChatId) {
+    await fetch('/api/call/end', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chatId: callChatId })
+    }).catch(() => {});
+  }
+  pendingCall = null;
+  pendingCallChatId = null;
+}
+
+async function endCall() {
+  const callChatId = pendingCallChatId || activeChatId;
+  if (callChatId) {
+    await fetch('/api/call/end', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chatId: callChatId })
+    }).catch(() => {});
+  }
+  cleanupCall();
+  showToast('Call ended');
+}
+
+async function acquireLocalMedia(isVideo) {
+  const mediaConstraints = {
+    audio: {
+      sampleRate: { ideal: 48000 },
+      channelCount: { ideal: 2 },
+      echoCancellation: true,
+      noiseSuppression: true,
+      autoGainControl: true
+    },
+    video: isVideo ? {
+      width: { ideal: 1920, max: 3840 },
+      height: { ideal: 1080, max: 2160 },
+      frameRate: { ideal: 30, max: 60 },
+      facingMode: currentFacingMode
+    } : false
+  };
+
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
+  } catch (e) {
+    localStream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: isVideo ? { facingMode: currentFacingMode } : false
+    });
+  }
+
+  const localVideoEl = document.getElementById('localVideo');
+  if (localVideoEl && isVideo) {
+    localVideoEl.srcObject = localStream;
+  }
+}
+
+async function initPeerConnection(isVideo) {
+  peerConnection = new RTCPeerConnection(RTC_CONFIG);
+
+  if (localStream) {
+    localStream.getTracks().forEach(track => {
+      peerConnection.addTrack(track, localStream);
+    });
+  }
+
+  peerConnection.onicecandidate = (event) => {
+    if (event.candidate) {
+      sendAdminCallSignal({ candidate: event.candidate });
+    }
+  };
+
+  peerConnection.ontrack = (event) => {
+    const remoteVideoEl = document.getElementById('remoteVideo');
+    if (remoteVideoEl && event.streams && event.streams[0]) {
+      remoteVideoEl.srcObject = event.streams[0];
+    }
+  };
+
+  peerConnection.onconnectionstatechange = () => {
+    if (peerConnection.connectionState === 'connected') {
+      startCallDurationTimer();
+      optimizeHDQuality();
+      showToast('1080p Ultra HD Connected • P2P Direct');
+    } else if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
+      cleanupCall();
+    }
+  };
+}
+
+function optimizeHDQuality() {
+  if (!peerConnection || !peerConnection.getSenders) return;
+  peerConnection.getSenders().forEach(sender => {
+    if (sender.track && sender.track.kind === 'video') {
+      const p = sender.getParameters();
+      if (!p.encodings) p.encodings = [{}];
+      p.encodings[0].maxBitrate = 4000000;
+      sender.setParameters(p).catch(() => {});
+    } else if (sender.track && sender.track.kind === 'audio') {
+      const p = sender.getParameters();
+      if (!p.encodings) p.encodings = [{}];
+      p.encodings[0].maxBitrate = 128000;
+      sender.setParameters(p).catch(() => {});
+    }
+  });
+}
+
+async function sendAdminCallSignal(signal) {
+  const targetChatId = pendingCallChatId || activeChatId;
+  if (!targetChatId) return;
+  try {
+    await fetch('/api/call/signal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chatId: targetChatId,
+        from: 'Raoprime',
+        signal
+      })
+    });
+  } catch (e) {}
+}
+
+function startSignalPolling() {
+  if (callPollInterval) clearInterval(callPollInterval);
+  callPollInterval = setInterval(async () => {
+    if (!isCallActive) {
+      clearInterval(callPollInterval);
+      return;
+    }
+    const targetChatId = pendingCallChatId || activeChatId;
+    if (!targetChatId) return;
+
+    try {
+      const res = await fetch(`/api/call/signals?chatId=${encodeURIComponent(targetChatId)}&forRole=Raoprime&since=${lastSignalTimestamp}`);
+      const data = await res.json();
+      if (data.status === 'ended') {
+        cleanupCall();
+        showToast('Call ended by client');
+        return;
+      }
+      if (data.signals && data.signals.length > 0) {
+        for (const item of data.signals) {
+          if (item.timestamp > lastSignalTimestamp) {
+            lastSignalTimestamp = item.timestamp;
+          }
+          await handleIncomingSignal(item.signal);
+        }
+      }
+    } catch (e) {}
+  }, 1000);
+}
+
+async function handleIncomingSignal(sig) {
+  if (!peerConnection) return;
+
+  if (sig.sdp) {
+    if (sig.sdp.type === 'offer') {
+      await peerConnection.setRemoteDescription(new RTCSessionDescription(sig.sdp));
+      for (const cand of pendingCandidates) {
+        await peerConnection.addIceCandidate(new RTCIceCandidate(cand)).catch(() => {});
+      }
+      pendingCandidates = [];
+
+      const answer = await peerConnection.createAnswer();
+      await peerConnection.setLocalDescription(answer);
+      await sendAdminCallSignal({ sdp: answer });
+    } else if (sig.sdp.type === 'answer') {
+      await peerConnection.setRemoteDescription(new RTCSessionDescription(sig.sdp));
+      for (const cand of pendingCandidates) {
+        await peerConnection.addIceCandidate(new RTCIceCandidate(cand)).catch(() => {});
+      }
+      pendingCandidates = [];
+      startCallDurationTimer();
+    }
+  } else if (sig.candidate) {
+    if (peerConnection.remoteDescription && peerConnection.remoteDescription.type) {
+      await peerConnection.addIceCandidate(new RTCIceCandidate(sig.candidate)).catch(() => {});
+    } else {
+      pendingCandidates.push(sig.candidate);
+    }
+  }
+}
+
+function toggleCallMic() {
+  if (!localStream) return;
+  const audioTrack = localStream.getAudioTracks()[0];
+  if (audioTrack) {
+    audioTrack.enabled = !audioTrack.enabled;
+    isMicMuted = !audioTrack.enabled;
+    const btn = document.getElementById('micToggleBtn');
+    const icon = document.getElementById('micIcon');
+    if (isMicMuted) {
+      btn.classList.add('bg-red-600', 'text-white');
+      btn.classList.remove('bg-white/10');
+      icon.setAttribute('data-lucide', 'mic-off');
+    } else {
+      btn.classList.remove('bg-red-600');
+      btn.classList.add('bg-white/10');
+      icon.setAttribute('data-lucide', 'mic');
+    }
+    if (window.lucide) window.lucide.createIcons();
+    showToast(isMicMuted ? 'Microphone Muted' : 'Microphone Unmuted');
+  }
+}
+
+function toggleCallCamera() {
+  if (!localStream) return;
+  const videoTrack = localStream.getVideoTracks()[0];
+  if (videoTrack) {
+    videoTrack.enabled = !videoTrack.enabled;
+    isCamOff = !videoTrack.enabled;
+    const btn = document.getElementById('camToggleBtn');
+    const icon = document.getElementById('camIcon');
+    if (isCamOff) {
+      btn.classList.add('bg-red-600', 'text-white');
+      btn.classList.remove('bg-white/10');
+      icon.setAttribute('data-lucide', 'video-off');
+    } else {
+      btn.classList.remove('bg-red-600');
+      btn.classList.add('bg-white/10');
+      icon.setAttribute('data-lucide', 'video');
+    }
+    if (window.lucide) window.lucide.createIcons();
+    showToast(isCamOff ? 'Camera Turned Off' : 'Camera Turned On');
+  }
+}
+
+async function flipCamera() {
+  if (!localStream || currentCallType !== 'video') return;
+  currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+
+  try {
+    const newStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        width: { ideal: 1920, max: 3840 },
+        height: { ideal: 1080, max: 2160 },
+        facingMode: currentFacingMode
+      }
+    });
+
+    const newVideoTrack = newStream.getVideoTracks()[0];
+    const oldVideoTrack = localStream.getVideoTracks()[0];
+
+    if (oldVideoTrack) {
+      oldVideoTrack.stop();
+      localStream.removeTrack(oldVideoTrack);
+    }
+    localStream.addTrack(newVideoTrack);
+
+    const localVideoEl = document.getElementById('localVideo');
+    if (localVideoEl) {
+      localVideoEl.srcObject = localStream;
+      if (currentFacingMode === 'user') {
+        localVideoEl.classList.add('mirror');
+      } else {
+        localVideoEl.classList.remove('mirror');
+      }
+    }
+
+    if (peerConnection && peerConnection.getSenders) {
+      const sender = peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
+      if (sender) {
+        await sender.replaceTrack(newVideoTrack);
+      }
+    }
+    showToast(`Camera flipped (${currentFacingMode === 'user' ? 'Front' : 'Back'})`);
+  } catch (err) {
+    showToast('Failed to switch camera: ' + err.message);
+  }
+}
+
+function startCallDurationTimer() {
+  if (callDurationTimer) clearInterval(callDurationTimer);
+  callStartTime = Date.now();
+  const el = document.getElementById('callDuration');
+  callDurationTimer = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - callStartTime) / 1000);
+    const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+    const secs = String(elapsed % 60).padStart(2, '0');
+    if (el) el.textContent = `${mins}:${secs}`;
+  }, 1000);
+}
+
+function stopCallDurationTimer() {
+  if (callDurationTimer) {
+    clearInterval(callDurationTimer);
+    callDurationTimer = null;
+  }
+  const el = document.getElementById('callDuration');
+  if (el) el.textContent = '00:00';
+}
+
+function playRingtone() {
+  try {
+    stopRingtone();
+    ringtoneAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    const playChime = () => {
+      if (!ringtoneAudioCtx || ringtoneAudioCtx.state === 'closed') return;
+      const now = ringtoneAudioCtx.currentTime;
+      
+      const osc1 = ringtoneAudioCtx.createOscillator();
+      const gain1 = ringtoneAudioCtx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(587.33, now);
+      gain1.gain.setValueAtTime(0.15, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+      osc1.connect(gain1);
+      gain1.connect(ringtoneAudioCtx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.5);
+
+      const osc2 = ringtoneAudioCtx.createOscillator();
+      const gain2 = ringtoneAudioCtx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(880, now + 0.2);
+      gain2.gain.setValueAtTime(0.18, now + 0.2);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+      osc2.connect(gain2);
+      gain2.connect(ringtoneAudioCtx.destination);
+      osc2.start(now + 0.2);
+      osc2.stop(now + 0.8);
+
+      const osc3 = ringtoneAudioCtx.createOscillator();
+      const gain3 = ringtoneAudioCtx.createGain();
+      osc3.type = 'sine';
+      osc3.frequency.setValueAtTime(1174.66, now + 0.4);
+      gain3.gain.setValueAtTime(0.2, now + 0.4);
+      gain3.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+      osc3.connect(gain3);
+      gain3.connect(ringtoneAudioCtx.destination);
+      osc3.start(now + 0.4);
+      osc3.stop(now + 1.2);
+    };
+
+    playChime();
+    ringtoneInterval = setInterval(playChime, 2500);
+  } catch (e) {}
+}
+
+function stopRingtone() {
+  if (ringtoneInterval) {
+    clearInterval(ringtoneInterval);
+    ringtoneInterval = null;
+  }
+  if (ringtoneAudioCtx) {
+    try { ringtoneAudioCtx.close(); } catch (e) {}
+    ringtoneAudioCtx = null;
+  }
+}
+
+function cleanupCall() {
+  stopRingtone();
+  stopCallDurationTimer();
+
+  if (callPollInterval) {
+    clearInterval(callPollInterval);
+    callPollInterval = null;
+  }
+
+  if (localStream) {
+    localStream.getTracks().forEach(t => t.stop());
+    localStream = null;
+  }
+
+  if (peerConnection) {
+    try { peerConnection.close(); } catch (e) {}
+    peerConnection = null;
+  }
+
+  isCallActive = false;
+  pendingCall = null;
+  pendingCallChatId = null;
+  isMicMuted = false;
+  isCamOff = false;
+
+  const overlay = document.getElementById('callOverlay');
+  if (overlay) overlay.classList.add('hidden');
+
+  const modal = document.getElementById('incomingCallModal');
+  if (modal) modal.classList.add('hidden');
+
+  const remoteVideoEl = document.getElementById('remoteVideo');
+  if (remoteVideoEl) remoteVideoEl.srcObject = null;
+
+  const localVideoEl = document.getElementById('localVideo');
+  if (localVideoEl) localVideoEl.srcObject = null;
+
+  const micBtn = document.getElementById('micToggleBtn');
+  const micIcon = document.getElementById('micIcon');
+  if (micBtn) {
+    micBtn.classList.remove('bg-red-600');
+    micBtn.classList.add('bg-white/10');
+  }
+  if (micIcon) micIcon.setAttribute('data-lucide', 'mic');
+
+  const camBtn = document.getElementById('camToggleBtn');
+  const camIcon = document.getElementById('camIcon');
+  if (camBtn) {
+    camBtn.classList.remove('bg-red-600');
+    camBtn.classList.add('bg-white/10');
+  }
+  if (camIcon) camIcon.setAttribute('data-lucide', 'video');
+
+  if (window.lucide) window.lucide.createIcons();
+}
