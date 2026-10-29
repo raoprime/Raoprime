@@ -14,6 +14,12 @@ let isCurrentlyTyping = false;
 let adminToken = localStorage.getItem('raoprime_admin_token') || '';
 let pollIntervals = [];
 
+// WhatsApp-grade Action States
+let adminEditingMessageId = null;
+let adminReplyingMessageId = null;
+let adminContextTargetMessage = null;
+let adminIgnoreNextClickUntil = 0;
+
 document.addEventListener('DOMContentLoaded', async () => {
   if (window.lucide) window.lucide.createIcons();
 
@@ -314,7 +320,8 @@ async function loadAdminChats() {
 
       const isSearchActive = document.activeElement === document.getElementById('searchInput');
 
-      if (currentSig !== lastChatsSig || activeChatId !== lastRenderedActiveChatId) {
+      const isInitialLoading = Boolean(document.getElementById('chatsContainer')?.textContent.includes('Loading conversations'));
+      if (currentSig !== lastChatsSig || activeChatId !== lastRenderedActiveChatId || isInitialLoading) {
         lastChatsSig = currentSig;
         lastRenderedActiveChatId = activeChatId;
         if (!isSearchActive) {
@@ -453,7 +460,7 @@ function selectChat(chatId, isUserTap = false) {
   // Reset poll lock and trigger immediate fetch
   if (activeMsgsPollTimer) clearTimeout(activeMsgsPollTimer);
   isPollingActiveMsgs = false;
-  loadActiveMessages();
+  triggerActiveMsgsPoll();
 
   // On mobile: switch views only if explicitly tapped
   if (window.innerWidth < 768 && isUserTap) {
@@ -587,7 +594,7 @@ async function loadActiveMessages() {
       }
     }
   } catch (err) {
-    // Silent fail
+    console.error('loadActiveMessages error:', err);
   }
 }
 
@@ -606,7 +613,8 @@ function renderAdminMessages(messages) {
 
   let lastDateStr = '';
 
-  container.innerHTML = messages.map(msg => {
+  try {
+    container.innerHTML = messages.map(msg => {
     const isRaoprime = msg.sender === 'Raoprime' || msg.sender === 'RP';
     const msgDate = new Date(msg.timestamp);
     const dateFormatted = msgDate.toDateString();
@@ -782,6 +790,14 @@ function renderAdminMessages(messages) {
       </div>
     `;
   }).join('');
+  } catch (renderErr) {
+    console.error('renderAdminMessages error:', renderErr);
+    container.innerHTML = `
+      <div class="py-16 text-center text-slate-500 text-xs">
+        <p class="text-rose-400 font-semibold">Unable to display messages</p>
+        <p class="text-[11px] text-slate-600 mt-1">Please select another conversation or retry.</p>
+      </div>`;
+  }
 
   if (window.lucide) window.lucide.createIcons();
 }
