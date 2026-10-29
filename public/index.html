@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
   <meta name="theme-color" content="#050608">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -31,14 +31,17 @@
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       height: 100%;
-      height: -webkit-fill-available;
       height: 100dvh;
+      width: 100%;
+      max-width: 100%;
+      position: fixed;
+      inset: 0;
       margin: 0;
       padding: 0;
       overflow: hidden;
       touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
-      overscroll-behavior-y: none;
+      overscroll-behavior: none;
     }
     
     /* Enforce 16px on inputs to prevent iOS Safari auto-zoom */
@@ -197,7 +200,7 @@
     }
   </style>
 </head>
-<body class="h-[100dvh] w-screen flex flex-col bg-[#050608] text-slate-100 overflow-hidden select-none">
+<body class="h-[100dvh] w-full max-w-full flex flex-col bg-[#050608] text-slate-100 overflow-hidden select-none">
 
   <!-- Ambient Deep Wine Backlight -->
   <div class="fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[350px] bg-rose-950/20 rounded-full blur-[140px] pointer-events-none"></div>
@@ -223,13 +226,13 @@
       </div>
       <div class="min-w-0">
         <div class="flex items-center gap-1.5">
-          <h2 id="chatHeading" class="font-extrabold text-sm sm:text-base text-white tracking-tight truncate">Raoprime</h2>
+          <h2 id="chatHeading" class="font-extrabold text-sm sm:text-base text-white tracking-tight truncate max-w-[100px] xs:max-w-[160px] sm:max-w-none">Raoprime</h2>
           <svg class="w-4 h-4 text-rose-500 fill-current shrink-0" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
         </div>
         <!-- Status / Real-time Typing Text -->
         <p id="headerStatus" class="text-[11px] text-slate-400 flex items-center gap-1.5 truncate">
           <span class="text-emerald-400 font-semibold flex items-center gap-1 shrink-0">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Active now
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Active
           </span>
           <span class="text-slate-600 hidden xs:inline">•</span>
           <span class="hidden sm:inline text-slate-400">Encrypted Client Desk</span>
@@ -240,7 +243,7 @@
     <!-- Header Actions -->
     <div class="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
       <!-- HD Voice Call Button -->
-      <button onclick="startCall('audio')" class="h-10 px-3 sm:px-3.5 rounded-2xl bg-[#131722] hover:bg-[#1a2030] text-slate-200 hover:text-white border border-white/10 hover:border-emerald-500/40 flex items-center gap-2 transition-all active:scale-95 shadow-sm cursor-pointer group" title="HD Voice Call" aria-label="Voice Call">
+      <button onclick="startCall('audio')" class="h-9 sm:h-10 px-2.5 sm:px-3.5 rounded-2xl bg-[#131722] hover:bg-[#1a2030] text-slate-200 hover:text-white border border-white/10 hover:border-emerald-500/40 flex items-center gap-1.5 sm:gap-2 transition-all active:scale-95 shadow-sm cursor-pointer group" title="HD Voice Call" aria-label="Voice Call">
         <div class="w-2 h-2 rounded-full bg-emerald-400 group-hover:animate-ping"></div>
         <svg class="w-4 h-4 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
@@ -249,7 +252,7 @@
       </button>
 
       <!-- HD 1080p Video Call Button -->
-      <button onclick="startCall('video')" class="h-10 px-3 sm:px-3.5 rounded-2xl bg-[#131722] hover:bg-[#1a2030] text-slate-200 hover:text-white border border-white/10 hover:border-rose-500/40 flex items-center gap-2 transition-all active:scale-95 shadow-sm cursor-pointer group" title="HD 1080p Video Call" aria-label="Video Call">
+      <button onclick="startCall('video')" class="h-9 sm:h-10 px-2.5 sm:px-3.5 rounded-2xl bg-[#131722] hover:bg-[#1a2030] text-slate-200 hover:text-white border border-white/10 hover:border-rose-500/40 flex items-center gap-1.5 sm:gap-2 transition-all active:scale-95 shadow-sm cursor-pointer group" title="HD 1080p Video Call" aria-label="Video Call">
         <div class="w-2 h-2 rounded-full bg-rose-400 group-hover:animate-ping"></div>
         <svg class="w-4 h-4 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polygon points="23 7 16 12 23 17 23 7"></polygon>
@@ -259,7 +262,7 @@
       </button>
 
       <!-- Copy Client Link -->
-      <button onclick="copyClientChatLink()" id="shareLinkBtn" class="h-10 px-3 sm:px-4 rounded-2xl maroon-btn text-white text-xs font-semibold flex items-center gap-2 transition-all active:scale-95 shadow-lg shadow-rose-950/40 cursor-pointer" aria-label="Copy Chat Link">
+      <button onclick="copyClientChatLink()" id="shareLinkBtn" class="h-9 sm:h-10 px-2.5 sm:px-4 rounded-2xl maroon-btn text-white text-xs font-semibold flex items-center gap-1.5 sm:gap-2 transition-all active:scale-95 shadow-lg shadow-rose-950/40 cursor-pointer" aria-label="Copy Chat Link">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
           <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
@@ -378,87 +381,6 @@
 
     </div>
   </footer>
-
-  <!-- Floating Client Service Feedback Card (App Automated QA Check) -->
-  <div id="clientFeedbackCard" class="hidden fixed bottom-20 sm:bottom-24 right-3 sm:right-6 max-w-sm sm:max-w-md w-[calc(100%-1.5rem)] z-40 bg-[#0e111a]/95 backdrop-blur-2xl border border-rose-500/30 rounded-3xl shadow-2xl p-5 text-slate-100 transition-all duration-300 transform translate-y-4 opacity-0 pointer-events-none">
-    
-    <!-- Active Feedback Form Container -->
-    <div id="clientFeedbackForm" class="space-y-4">
-      <!-- Automated System Header -->
-      <div class="flex items-center justify-between pb-3 border-b border-white/10">
-        <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 shrink-0">
-            <i data-lucide="shield-check" class="w-4 h-4"></i>
-          </div>
-          <div>
-            <div class="flex items-center gap-1.5">
-              <h4 class="font-extrabold text-xs text-white uppercase tracking-wider">Raoprime System QA</h4>
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-            </div>
-            <p class="text-[10px] text-slate-400">Automated Service Quality Check</p>
-          </div>
-        </div>
-        <button type="button" onclick="dismissClientFeedback()" class="w-7 h-7 rounded-full hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer" title="Dismiss">
-          <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
-      </div>
-
-      <!-- Rating Prompt & Stars -->
-      <div class="text-center space-y-2 py-1">
-        <p class="text-xs font-semibold text-slate-200">How would you rate your experience today?</p>
-        
-        <!-- Interactive 5-Star Row -->
-        <div id="clientFeedbackStars" class="flex items-center justify-center gap-2 select-none">
-          <button type="button" onclick="setFeedbackRating(1)" onmouseenter="previewFeedbackRating(1)" onmouseleave="resetFeedbackRatingPreview()" class="text-2xl sm:text-3xl text-amber-400 transition-transform hover:scale-125 cursor-pointer focus:outline-none" data-star="1">★</button>
-          <button type="button" onclick="setFeedbackRating(2)" onmouseenter="previewFeedbackRating(2)" onmouseleave="resetFeedbackRatingPreview()" class="text-2xl sm:text-3xl text-amber-400 transition-transform hover:scale-125 cursor-pointer focus:outline-none" data-star="2">★</button>
-          <button type="button" onclick="setFeedbackRating(3)" onmouseenter="previewFeedbackRating(3)" onmouseleave="resetFeedbackRatingPreview()" class="text-2xl sm:text-3xl text-amber-400 transition-transform hover:scale-125 cursor-pointer focus:outline-none" data-star="3">★</button>
-          <button type="button" onclick="setFeedbackRating(4)" onmouseenter="previewFeedbackRating(4)" onmouseleave="resetFeedbackRatingPreview()" class="text-2xl sm:text-3xl text-amber-400 transition-transform hover:scale-125 cursor-pointer focus:outline-none" data-star="4">★</button>
-          <button type="button" onclick="setFeedbackRating(5)" onmouseenter="previewFeedbackRating(5)" onmouseleave="resetFeedbackRatingPreview()" class="text-2xl sm:text-3xl text-amber-400 transition-transform hover:scale-125 cursor-pointer focus:outline-none" data-star="5">★</button>
-        </div>
-
-        <p id="clientFeedbackRatingLabel" class="text-[11px] font-bold text-amber-300">★ 5.0 - Exceptional Service</p>
-      </div>
-
-      <!-- Feedback Highlight Chips -->
-      <div class="space-y-1.5">
-        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Service Highlights (Tap all that apply)</label>
-        <div id="feedbackTagChips" class="flex flex-wrap gap-1.5">
-          <button type="button" onclick="toggleFeedbackChip(this)" data-tag="Instant Response" class="px-2.5 py-1 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-[11px] font-medium border border-white/10 transition-all cursor-pointer">⚡ Instant Response</button>
-          <button type="button" onclick="toggleFeedbackChip(this)" data-tag="Accurate Guidance" class="px-2.5 py-1 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-[11px] font-medium border border-white/10 transition-all cursor-pointer">🎯 Accurate Guidance</button>
-          <button type="button" onclick="toggleFeedbackChip(this)" data-tag="Professional" class="px-2.5 py-1 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-[11px] font-medium border border-white/10 transition-all cursor-pointer">💼 Professional</button>
-          <button type="button" onclick="toggleFeedbackChip(this)" data-tag="Fast Resolution" class="px-2.5 py-1 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-[11px] font-medium border border-white/10 transition-all cursor-pointer">🚀 Fast Resolution</button>
-          <button type="button" onclick="toggleFeedbackChip(this)" data-tag="Secure Portal" class="px-2.5 py-1 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-[11px] font-medium border border-white/10 transition-all cursor-pointer">🔒 Secure Portal</button>
-        </div>
-      </div>
-
-      <!-- Comment Box -->
-      <div class="space-y-1">
-        <textarea id="clientFeedbackComment" rows="2" placeholder="Any additional comments or notes? (Optional)" class="w-full bg-[#131722] border border-white/10 rounded-2xl p-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-rose-500/80 transition-all resize-none"></textarea>
-      </div>
-
-      <!-- Action Buttons -->
-      <div class="flex items-center gap-2 pt-1">
-        <button type="button" onclick="dismissClientFeedback()" class="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-semibold transition-colors cursor-pointer text-center">
-          Maybe Later
-        </button>
-        <button type="button" onclick="submitClientFeedback()" id="submitFeedbackBtn" class="flex-1 py-2.5 rounded-xl maroon-btn text-white text-xs font-semibold transition-all cursor-pointer shadow-lg shadow-rose-950/40 text-center">
-          Submit Rating
-        </button>
-      </div>
-    </div>
-
-    <!-- Feedback Submitted / Thank You Success Screen -->
-    <div id="clientFeedbackSuccess" class="hidden py-6 text-center space-y-3">
-      <div class="w-12 h-12 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mx-auto">
-        <i data-lucide="check" class="w-6 h-6"></i>
-      </div>
-      <div class="space-y-1">
-        <h4 class="font-extrabold text-sm text-white">Thank You!</h4>
-        <p class="text-xs text-slate-300 max-w-xs mx-auto">Your rating has been recorded by Raoprime QA to ensure continuous premium service.</p>
-      </div>
-    </div>
-
-  </div>
 
   <!-- Floating Message Context Menu (WhatsApp Style: Long-press, Chevron, Right-click) -->
   <div id="contextMenuBackdrop" class="fixed inset-0 z-40 hidden bg-black/20 backdrop-blur-[1px] transition-opacity" onclick="closeMessageContextMenu()"></div>

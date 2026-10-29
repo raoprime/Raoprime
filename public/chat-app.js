@@ -121,14 +121,9 @@ function sendHeartbeat() {
 function setupMobileViewport() {
   if (window.visualViewport) {
     const handleViewport = () => {
-      const vh = window.visualViewport.height;
-      document.body.style.height = `${vh}px`;
       scrollToBottom();
     };
     window.visualViewport.addEventListener('resize', handleViewport);
-    window.visualViewport.addEventListener('scroll', () => {
-      window.scrollTo(0, 0);
-    });
   }
 }
 
@@ -349,10 +344,6 @@ async function loadMessages() {
         lastTypingSig = currentTypingSig;
         updateTypingUI(isOtherOnline, isOtherTyping);
       }
-
-      if (data.feedback !== undefined) {
-        handleClientFeedbackState(data.feedback);
-      }
     }
   } catch (err) {
     // Silent fail on poll
@@ -504,13 +495,13 @@ function renderMessages(messages) {
         
         <div class="relative flex items-center gap-1.5 ${isOut ? 'flex-row-reverse' : 'flex-row'} max-w-full">
           <!-- Main Bubble -->
-          <div class="${isOut ? 'bubble-out' : 'bubble-in'} max-w-[88%] sm:max-w-lg shadow-md cursor-pointer select-text transition-all active:scale-[0.995] relative group/bubble ${isEditingThis ? 'ring-2 ring-rose-400 shadow-rose-500/30' : ''}">
+          <div class="${isOut ? 'bubble-out' : 'bubble-in'} max-w-[88%] sm:max-w-lg shadow-md cursor-pointer select-text relative group/bubble ${isEditingThis ? 'ring-2 ring-rose-400 shadow-rose-500/30' : ''}">
             ${quotedReplyHtml}
             ${bubbleContent}
             ${reactionBadgeHtml}
 
-            <!-- WhatsApp Bubble Chevron Button (Top-Right of Bubble) -->
-            <button type="button" onclick="openMessageContextMenuById('${msg.id}', event)" class="message-action-btn absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/40 hover:bg-black/70 text-slate-300 hover:text-white opacity-80 sm:opacity-0 sm:group-hover/bubble:opacity-100 flex items-center justify-center transition-all shadow-sm cursor-pointer z-10" title="Options">
+            <!-- WhatsApp Bubble Chevron Button (Desktop Hover Only) -->
+            <button type="button" onclick="openMessageContextMenuById('${msg.id}', event)" class="message-action-btn absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/40 hover:bg-black/70 text-slate-300 hover:text-white opacity-0 sm:group-hover/bubble:opacity-100 flex items-center justify-center transition-all shadow-sm cursor-pointer z-10" title="Options">
               <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="6 9 12 15 18 9"></polyline>
               </svg>
@@ -1985,205 +1976,4 @@ function cleanupCall() {
   if (camIcon) camIcon.setAttribute('data-lucide', 'video');
 
   if (window.lucide) window.lucide.createIcons();
-}
-
-// ──────────────────────────────────────────────────────────────
-// Client Automated Service Quality Feedback Suite
-// (Automated System Check - 100% App QA branded)
-// ──────────────────────────────────────────────────────────────
-let activeClientFeedback = null;
-let selectedFeedbackRating = 5;
-const selectedFeedbackTags = new Set();
-let isFeedbackSubmitting = false;
-
-const FEEDBACK_RATING_LABELS = {
-  1: '★ 1.0 - Poor / Unsatisfactory',
-  2: '★ 2.0 - Fair / Needs Improvement',
-  3: '★ 3.0 - Standard Service',
-  4: '★ 4.0 - Very Good / Highly Helpful',
-  5: '★ 5.0 - Exceptional / Executive Grade'
-};
-
-function handleClientFeedbackState(feedback) {
-  if (!feedback) {
-    hideClientFeedbackCard();
-    return;
-  }
-
-  activeClientFeedback = feedback;
-
-  if (feedback.status === 'pending') {
-    // Check if client dismissed or submitted this specific survey
-    const isDismissed = sessionStorage.getItem('rp_fb_dismissed_' + feedback.id);
-    const isDone = sessionStorage.getItem('rp_fb_completed_' + feedback.id);
-    if (!isDismissed && !isDone) {
-      showClientFeedbackCard();
-    }
-  } else if (feedback.status === 'completed') {
-    // If completed elsewhere or already done, close unless currently animating
-    const card = document.getElementById('clientFeedbackCard');
-    const isSuccessShowing = !document.getElementById('clientFeedbackSuccess')?.classList.contains('hidden');
-    if (card && !isSuccessShowing) {
-      hideClientFeedbackCard();
-    }
-  }
-}
-
-function showClientFeedbackCard() {
-  const card = document.getElementById('clientFeedbackCard');
-  if (!card) return;
-  if (!card.classList.contains('hidden') && card.classList.contains('opacity-100')) return;
-
-  // Reset form to pristine state
-  selectedFeedbackRating = 5;
-  selectedFeedbackTags.clear();
-  renderClientFeedbackStars(5);
-
-  const commentEl = document.getElementById('clientFeedbackComment');
-  if (commentEl) commentEl.value = '';
-
-  const formEl = document.getElementById('clientFeedbackForm');
-  const successEl = document.getElementById('clientFeedbackSuccess');
-  if (formEl) formEl.classList.remove('hidden');
-  if (successEl) successEl.classList.add('hidden');
-
-  // Reset chip button styles
-  const chips = document.querySelectorAll('#feedbackTagChips button');
-  chips.forEach(btn => {
-    btn.classList.remove('bg-rose-950/60', 'text-rose-200', 'border-rose-500/60');
-    btn.classList.add('bg-white/5', 'text-slate-300', 'border-white/10');
-  });
-
-  // Reveal card
-  card.classList.remove('hidden');
-  // Trigger animation next tick
-  requestAnimationFrame(() => {
-    card.classList.remove('translate-y-4', 'opacity-0', 'pointer-events-none');
-    card.classList.add('translate-y-0', 'opacity-100', 'pointer-events-auto');
-  });
-
-  if (window.lucide) window.lucide.createIcons();
-}
-
-function hideClientFeedbackCard() {
-  const card = document.getElementById('clientFeedbackCard');
-  if (!card || card.classList.contains('hidden')) return;
-
-  card.classList.remove('translate-y-0', 'opacity-100', 'pointer-events-auto');
-  card.classList.add('translate-y-4', 'opacity-0', 'pointer-events-none');
-
-  setTimeout(() => {
-    card.classList.add('hidden');
-  }, 300);
-}
-
-function dismissClientFeedback() {
-  if (activeClientFeedback && activeClientFeedback.id) {
-    sessionStorage.setItem('rp_fb_dismissed_' + activeClientFeedback.id, 'true');
-  }
-  hideClientFeedbackCard();
-}
-
-function setFeedbackRating(val) {
-  selectedFeedbackRating = val;
-  renderClientFeedbackStars(val);
-}
-
-function previewFeedbackRating(val) {
-  renderClientFeedbackStars(val);
-}
-
-function resetFeedbackRatingPreview() {
-  renderClientFeedbackStars(selectedFeedbackRating);
-}
-
-function renderClientFeedbackStars(ratingVal) {
-  const stars = document.querySelectorAll('#clientFeedbackStars button[data-star]');
-  stars.forEach(btn => {
-    const starNum = Number(btn.getAttribute('data-star'));
-    if (starNum <= ratingVal) {
-      btn.classList.remove('text-slate-600');
-      btn.classList.add('text-amber-400', 'scale-110');
-    } else {
-      btn.classList.remove('text-amber-400', 'scale-110');
-      btn.classList.add('text-slate-600');
-    }
-  });
-
-  const labelEl = document.getElementById('clientFeedbackRatingLabel');
-  if (labelEl) {
-    labelEl.textContent = FEEDBACK_RATING_LABELS[ratingVal] || `★ ${ratingVal}.0`;
-  }
-}
-
-function toggleFeedbackChip(btn) {
-  const tag = btn.getAttribute('data-tag');
-  if (!tag) return;
-
-  if (selectedFeedbackTags.has(tag)) {
-    selectedFeedbackTags.delete(tag);
-    btn.classList.remove('bg-rose-950/60', 'text-rose-200', 'border-rose-500/60');
-    btn.classList.add('bg-white/5', 'text-slate-300', 'border-white/10');
-  } else {
-    selectedFeedbackTags.add(tag);
-    btn.classList.remove('bg-white/5', 'text-slate-300', 'border-white/10');
-    btn.classList.add('bg-rose-950/60', 'text-rose-200', 'border-rose-500/60');
-  }
-}
-
-async function submitClientFeedback() {
-  if (isFeedbackSubmitting) return;
-  const submitBtn = document.getElementById('submitFeedbackBtn');
-  const comment = (document.getElementById('clientFeedbackComment')?.value || '').trim();
-
-  isFeedbackSubmitting = true;
-  if (submitBtn) {
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Submitting...';
-  }
-
-  try {
-    const res = await fetch('/api/chat/feedback/submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chatId: currentChatId,
-        rating: selectedFeedbackRating,
-        tags: Array.from(selectedFeedbackTags),
-        comment,
-        clientName: currentClientName || currentChatId
-      })
-    });
-
-    const data = await res.json();
-    if (data.success) {
-      if (activeClientFeedback?.id) {
-        sessionStorage.setItem('rp_fb_completed_' + activeClientFeedback.id, 'true');
-      }
-
-      // Transition to success screen
-      const formEl = document.getElementById('clientFeedbackForm');
-      const successEl = document.getElementById('clientFeedbackSuccess');
-      if (formEl) formEl.classList.add('hidden');
-      if (successEl) successEl.classList.remove('hidden');
-      if (window.lucide) window.lucide.createIcons();
-
-      // Automatically hide card after 2.5 seconds
-      setTimeout(() => {
-        hideClientFeedbackCard();
-      }, 2500);
-    } else {
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Submit Rating';
-      }
-    }
-  } catch (err) {
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Submit Rating';
-    }
-  } finally {
-    isFeedbackSubmitting = false;
-  }
 }

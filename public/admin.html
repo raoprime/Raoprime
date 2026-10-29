@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
   <meta name="theme-color" content="#050608">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -31,14 +31,17 @@
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       height: 100%;
-      height: -webkit-fill-available;
       height: 100dvh;
+      width: 100%;
+      max-width: 100%;
+      position: fixed;
+      inset: 0;
       margin: 0;
       padding: 0;
       overflow: hidden;
       touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
-      overscroll-behavior-y: none;
+      overscroll-behavior: none;
     }
 
     /* Enforce 16px on inputs to prevent iOS Safari auto-zoom */
@@ -187,7 +190,7 @@
     }
   </style>
 </head>
-<body class="h-[100dvh] w-screen flex bg-[#050608] text-slate-100 overflow-hidden select-none">
+<body class="h-[100dvh] w-full max-w-full flex bg-[#050608] text-slate-100 overflow-hidden select-none">
 
   <!-- ======================================================== -->
   <!-- LEFT SIDEBAR: CLIENT INBOX LIST                          -->
@@ -240,16 +243,16 @@
   <main id="chatWorkspace" class="hidden md:flex flex-1 h-full flex-col bg-[#050608] relative">
 
     <!-- Active Chat Top Header -->
-    <header class="h-16 px-3.5 sm:px-6 bg-[#0a0c12]/95 border-b border-slate-800/80 backdrop-blur-xl flex items-center justify-between z-20 shrink-0 safe-top">
+    <header class="h-16 px-2.5 sm:px-6 bg-[#0a0c12]/95 border-b border-slate-800/80 backdrop-blur-xl flex items-center justify-between z-20 shrink-0 safe-top">
       
-      <div class="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+      <div class="flex items-center gap-2 sm:gap-3.5 min-w-0">
         <!-- Back button on mobile -->
-        <button onclick="showInboxOnMobile()" class="md:hidden p-2 -ml-1 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 active:scale-95 transition-all flex items-center justify-center shrink-0" aria-label="Back to conversations">
-          <i data-lucide="chevron-left" class="w-6 h-6 text-rose-400"></i>
+        <button onclick="showInboxOnMobile()" class="md:hidden p-1.5 -ml-1 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 active:scale-95 transition-all flex items-center justify-center shrink-0" aria-label="Back to conversations">
+          <i data-lucide="chevron-left" class="w-5 h-5 text-rose-400"></i>
         </button>
 
         <div class="relative shrink-0">
-          <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-rose-900 to-red-700 border border-rose-500/40 flex items-center justify-center text-white font-extrabold text-sm shadow-md ring-1 ring-black">
+          <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-tr from-rose-900 to-red-700 border border-rose-500/40 flex items-center justify-center text-white font-extrabold text-xs sm:text-sm shadow-md ring-1 ring-black">
             <span id="activeClientAvatar">C</span>
           </div>
           <!-- Live Activity Radar Ping -->
@@ -257,51 +260,42 @@
         </div>
 
         <div class="min-w-0">
-          <h2 id="activeClientName" class="font-extrabold text-sm sm:text-base text-white truncate max-w-[120px] sm:max-w-xs">Select a Client</h2>
-          <p id="activeClientMeta" class="text-[11px] text-slate-400 flex items-center gap-1.5 truncate">
+          <h2 id="activeClientName" class="font-extrabold text-xs sm:text-base text-white truncate max-w-[95px] xs:max-w-[150px] sm:max-w-xs">Select a Client</h2>
+          <p id="activeClientMeta" class="text-[10px] sm:text-[11px] text-slate-400 flex items-center gap-1.5 truncate">
             <span class="text-emerald-400 font-semibold flex items-center gap-1 shrink-0">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Active conversation
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Active
             </span>
           </p>
         </div>
       </div>
 
       <!-- Action Buttons for Selected Client -->
-      <div id="chatActions" class="flex items-center gap-1.5 sm:gap-2 shrink-0">
-        <!-- Feedback Request / Result Badge -->
-        <button id="adminFeedbackBtn" onclick="requestClientFeedback()" class="h-9 px-2.5 sm:px-3 rounded-full bg-[#12151f] hover:bg-amber-950/40 text-amber-300 hover:text-amber-200 border border-amber-500/30 flex items-center gap-1.5 transition-all active:scale-95 shadow-sm cursor-pointer" title="Request Client Feedback / Rating" aria-label="Request Feedback">
-          <i data-lucide="star" class="w-3.5 h-3.5 text-amber-400 fill-amber-400/20"></i>
-          <span id="adminFeedbackBtnText" class="hidden md:inline text-xs font-semibold">Feedback</span>
-        </button>
-
-        <button id="adminFeedbackBadge" onclick="showAdminFeedbackDetails()" class="hidden h-9 px-2.5 sm:px-3 rounded-full bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition-all active:scale-95 shadow-sm cursor-pointer" title="Click to view client feedback details">
-          <i data-lucide="star" class="w-3.5 h-3.5 text-amber-400 fill-amber-400"></i>
-          <span id="adminFeedbackScore" class="text-xs font-bold">5.0</span>
-        </button>
-
+      <div id="chatActions" class="flex items-center gap-1 sm:gap-2 shrink-0">
         <!-- HD Voice Call Button -->
-        <button onclick="startAdminCall('audio')" class="w-9 h-9 rounded-full bg-[#12151f] hover:bg-[#1c2232] text-slate-300 hover:text-white border border-white/10 flex items-center justify-center transition-all active:scale-95 shadow-sm cursor-pointer" title="HD Voice Call" aria-label="Voice Call">
-          <i data-lucide="phone" class="w-4 h-4 text-emerald-400"></i>
+        <button onclick="startAdminCall('audio')" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#12151f] hover:bg-[#1c2232] text-slate-300 hover:text-white border border-white/10 flex items-center justify-center transition-all active:scale-95 shadow-sm cursor-pointer shrink-0" title="HD Voice Call" aria-label="Voice Call">
+          <i data-lucide="phone" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400"></i>
         </button>
 
         <!-- HD 1080p Video Call Button -->
-        <button onclick="startAdminCall('video')" class="w-9 h-9 rounded-full bg-[#12151f] hover:bg-[#1c2232] text-slate-300 hover:text-white border border-white/10 flex items-center justify-center transition-all active:scale-95 shadow-sm cursor-pointer" title="HD 1080p Video Call" aria-label="Video Call">
-          <i data-lucide="video" class="w-4 h-4 text-rose-400"></i>
+        <button onclick="startAdminCall('video')" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#12151f] hover:bg-[#1c2232] text-slate-300 hover:text-white border border-white/10 flex items-center justify-center transition-all active:scale-95 shadow-sm cursor-pointer shrink-0" title="HD 1080p Video Call" aria-label="Video Call">
+          <i data-lucide="video" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-rose-400"></i>
         </button>
 
-        <button onclick="downloadClientZip()" id="zipBtn" class="h-9 px-2.5 sm:px-3 rounded-full bg-[#12151f] hover:bg-[#1c2232] text-slate-200 text-xs font-semibold flex items-center gap-1.5 border border-white/10 transition-all shadow-sm active:scale-95" title="Download all documents sent by this client as a ZIP" aria-label="Download ZIP">
+        <!-- Download ZIP Button -->
+        <button onclick="downloadClientZip()" id="zipBtn" class="w-8 h-8 sm:w-auto sm:h-9 px-0 sm:px-3 rounded-full bg-[#12151f] hover:bg-[#1c2232] text-slate-200 text-xs font-semibold flex items-center justify-center sm:justify-start gap-1.5 border border-white/10 transition-all shadow-sm active:scale-95 shrink-0" title="Download all documents sent by this client as a ZIP" aria-label="Download ZIP">
           <i data-lucide="download" class="w-3.5 h-3.5 text-rose-400"></i>
-          <span class="hidden sm:inline">Download (ZIP)</span>
+          <span class="hidden sm:inline">Download</span>
         </button>
 
-        <button onclick="copyClientLink()" class="h-9 px-2.5 sm:px-3 rounded-full maroon-btn text-white text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95" title="Copy client chat link" aria-label="Copy Client Link">
+        <!-- Copy Link Button -->
+        <button onclick="copyClientLink()" class="w-8 h-8 sm:w-auto sm:h-9 px-0 sm:px-3 rounded-full maroon-btn text-white text-xs font-semibold flex items-center justify-center sm:justify-start gap-1.5 transition-all active:scale-95 shrink-0" title="Copy client chat link" aria-label="Copy Client Link">
           <i data-lucide="link" class="w-3.5 h-3.5"></i>
           <span class="hidden sm:inline">Copy Link</span>
         </button>
 
         <!-- Delete Chat Button -->
-        <button onclick="confirmDeleteActiveChat()" class="w-9 h-9 rounded-full bg-red-950/40 hover:bg-red-900/80 text-red-400 hover:text-white border border-red-800/40 flex items-center justify-center transition-all active:scale-95 shadow-sm" title="Delete this chat & files" aria-label="Delete Chat">
-          <i data-lucide="trash-2" class="w-4 h-4"></i>
+        <button onclick="confirmDeleteActiveChat()" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-red-950/40 hover:bg-red-900/80 text-red-400 hover:text-white border border-red-800/40 flex items-center justify-center transition-all active:scale-95 shadow-sm shrink-0" title="Delete this chat & files" aria-label="Delete Chat">
+          <i data-lucide="trash-2" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
         </button>
       </div>
 
@@ -639,63 +633,6 @@
       </div>
     </div>
 
-  </div>
-
-  <!-- Feedback Details Modal for Admin -->
-  <div id="adminFeedbackModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-[#0e1118] border border-amber-500/30 rounded-3xl p-6 sm:p-7 max-w-md w-full space-y-4 shadow-2xl relative">
-      <div class="flex items-center justify-between pb-3 border-b border-white/10">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
-            <i data-lucide="star" class="w-5 h-5 fill-amber-400"></i>
-          </div>
-          <div>
-            <h3 class="font-extrabold text-sm sm:text-base text-white">Client Service Feedback</h3>
-            <p id="feedbackModalClientName" class="text-xs text-slate-400">Client Name</p>
-          </div>
-        </div>
-        <button onclick="closeAdminFeedbackModal()" class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition-colors">
-          <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
-      </div>
-
-      <div class="space-y-4">
-        <!-- Rating Display Card -->
-        <div class="text-center py-3 px-4 bg-[#141824] rounded-2xl border border-white/5">
-          <div id="feedbackModalStars" class="flex items-center justify-center gap-1.5 text-amber-400 text-2xl mb-1">
-            <!-- Dynamic Stars -->
-          </div>
-          <p id="feedbackModalRatingText" class="text-xs font-bold text-amber-300">5.0 / 5.0 • Exceptional Service</p>
-          <p id="feedbackModalDate" class="text-[11px] text-slate-500 mt-1">Submitted: Just now</p>
-        </div>
-
-        <!-- Highlight Tags -->
-        <div id="feedbackModalTagsSection" class="space-y-1.5">
-          <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Service Highlights</label>
-          <div id="feedbackModalTags" class="flex flex-wrap gap-1.5">
-            <!-- Dynamic Tags -->
-          </div>
-        </div>
-
-        <!-- Client Written Review -->
-        <div class="space-y-1.5">
-          <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Client Notes & Comments</label>
-          <div id="feedbackModalComment" class="p-3.5 bg-[#141824] rounded-2xl border border-white/5 text-xs sm:text-sm text-slate-200 min-h-[60px] leading-relaxed break-words italic">
-            "No written review provided."
-          </div>
-        </div>
-      </div>
-
-      <div class="pt-2 flex items-center justify-between gap-3">
-        <button onclick="reRequestFeedbackFromModal()" class="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-amber-300 hover:text-amber-200 border border-amber-500/20 text-xs font-semibold transition-all flex items-center gap-1.5">
-          <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
-          <span>Request Again</span>
-        </button>
-        <button onclick="closeAdminFeedbackModal()" class="px-5 py-2.5 rounded-xl maroon-btn text-white text-xs font-semibold transition-all">
-          Done
-        </button>
-      </div>
-    </div>
   </div>
 
   <!-- Delete Chat Confirmation Modal -->

@@ -42,7 +42,6 @@ const VAULT_DIR = path.join(BASE_STORAGE, 'vault');
 const CHUNKS_DIR = path.join(BASE_STORAGE, 'chunks');
 const ASSETS_DIR = path.join(ROOT_DIR, 'public', 'assets');
 const MESSAGES_FILE = path.join(BASE_STORAGE, 'messages.json');
-const FEEDBACK_FILE = path.join(BASE_STORAGE, 'feedback.json');
 
 try {
   [BASE_STORAGE, VAULT_DIR, CHUNKS_DIR].forEach((dir) => {
@@ -279,52 +278,6 @@ async function syncFirestoreIntoMemory() {
 setTimeout(syncFirestoreIntoMemory, 500);
 setInterval(syncFirestoreIntoMemory, 600000); // 10 minutes interval to conserve quota
 
-// ──────────────────────────────────────────────────────────────
-// System Service Feedback Store (Client QA Ratings & Reviews)
-// ──────────────────────────────────────────────────────────────
-let feedbackStore = {};
-
-function loadFeedbackStore() {
-  try {
-    if (fs.existsSync(FEEDBACK_FILE)) {
-      const data = JSON.parse(fs.readFileSync(FEEDBACK_FILE, 'utf8'));
-      feedbackStore = data || {};
-    }
-  } catch (e) {
-    console.warn('Feedback store load notice:', e.message);
-  }
-}
-loadFeedbackStore();
-
-function saveFeedbackStore() {
-  try {
-    fs.writeFileSync(FEEDBACK_FILE, JSON.stringify(feedbackStore, null, 2), 'utf8');
-  } catch (e) {
-    console.warn('Feedback store save notice:', e.message);
-  }
-}
-
-async function syncFirestoreFeedback() {
-  initFirebase();
-  if (!isFirebaseConnected || !firebaseDb) return;
-  try {
-    const snap = await firebaseDb.collection('raoprime_feedback').get();
-    if (!snap.empty) {
-      snap.docs.forEach(doc => {
-        const fb = doc.data();
-        const cid = normalizeChatId(fb.chatId || doc.id);
-        if (!feedbackStore[cid] || new Date(fb.requestedAt || 0) > new Date(feedbackStore[cid].requestedAt || 0)) {
-          feedbackStore[cid] = { ...fb, chatId: cid };
-        }
-      });
-      saveFeedbackStore();
-    }
-  } catch (e) {
-    console.warn('Firestore feedback sync notice:', e.message);
-  }
-}
-setTimeout(syncFirestoreFeedback, 800);
-
 // Instant RAM read
 function getChatMessages(rawChatId) {
   const chatId = normalizeChatId(rawChatId);
@@ -492,8 +445,7 @@ app.get('/api/chat/messages', async (req, res) => {
       chatId,
       messages,
       typing: activeTyping,
-      online: onlineStatus,
-      feedback: feedbackStore[chatId] || null
+      online: onlineStatus
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -683,110 +635,6 @@ app.post('/api/chat/message/react', async (req, res) => {
   }
 });
 
-// ──────────────────────────────────────────────────────────────
-// System Service Feedback APIs (Automated Executive Quality Assurance)
-// ──────────────────────────────────────────────────────────────
-
-// Admin triggers automated feedback survey for a client
-app.post('/api/chat/feedback/request', requireAdminAuth, (req, res) => {
-  try {
-    const { chatId: rawChatId = 'default' } = req.body;
-    const chatId = normalizeChatId(rawChatId);
-    const clientName = chatId === 'default' ? 'General Desk' : decodeURIComponent(chatId);
-
-    const feedbackObj = {
-      id: 'fb_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-      chatId,
-      clientName,
-      status: 'pending',
-      requestedAt: new Date().toISOString(),
-      rating: null,
-      tags: [],
-      comment: '',
-      submittedAt: null
-    };
-
-    feedbackStore[chatId] = feedbackObj;
-    saveFeedbackStore();
-
-    // Async Cloud sync
-    setImmediate(async () => {
-      initFirebase();
-      if (isFirebaseConnected && firebaseDb) {
-        try {
-          await firebaseDb.collection('raoprime_feedback').doc(chatId).set(feedbackObj, { merge: true });
-        } catch (e) {
-          console.warn('Async firestore feedback request notice:', e.message);
-        }
-      }
-    });
-
-    console.log(`⭐ Service Feedback survey triggered for [${chatId}] (${clientName})`);
-    res.json({ success: true, feedback: feedbackObj });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// Client submits ratings & comments
-app.post('/api/chat/feedback/submit', (req, res) => {
-  try {
-    const { chatId: rawChatId = 'default', rating, tags = [], comment = '', clientName = '' } = req.body;
-    const chatId = normalizeChatId(rawChatId);
-
-    const existing = feedbackStore[chatId] || {
-      id: 'fb_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-      chatId,
-      requestedAt: new Date().toISOString()
-    };
-
-    const finalClientName = clientName || (chatId === 'default' ? 'General Desk' : decodeURIComponent(chatId));
-    const finalRating = Math.max(1, Math.min(5, Number(rating) || 5));
-
-    const updatedFeedback = {
-      ...existing,
-      chatId,
-      clientName: finalClientName,
-      status: 'completed',
-      rating: finalRating,
-      tags: Array.isArray(tags) ? tags.map(t => String(t).trim()).filter(Boolean) : [],
-      comment: (comment || '').trim().slice(0, 1000),
-      submittedAt: new Date().toISOString()
-    };
-
-    feedbackStore[chatId] = updatedFeedback;
-    saveFeedbackStore();
-
-    // Async Cloud sync
-    setImmediate(async () => {
-      initFirebase();
-      if (isFirebaseConnected && firebaseDb) {
-        try {
-          await firebaseDb.collection('raoprime_feedback').doc(chatId).set(updatedFeedback, { merge: true });
-        } catch (e) {
-          console.warn('Async firestore feedback submit notice:', e.message);
-        }
-      }
-    });
-
-    console.log(`🌟 Client Feedback submitted for [${chatId}]: ${finalRating} Stars - "${updatedFeedback.comment.slice(0, 40)}"`);
-    res.json({ success: true, feedback: updatedFeedback });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// Get feedback for a specific chat or all feedbacks (Admin)
-app.get('/api/chat/feedback', (req, res) => {
-  const { chatId: rawChatId } = req.query;
-  if (rawChatId) {
-    const chatId = normalizeChatId(rawChatId);
-    return res.json({ success: true, feedback: feedbackStore[chatId] || null });
-  }
-  res.json({ success: true, feedbacks: feedbackStore });
-});
-
-// ──────────────────────────────────────────────────────────────
 // ──────────────────────────────────────────────────────────────
 // Ultra HD WebRTC Calling Signaling Engine (1080p Video + Studio 48kHz Audio)
 // Universal Room Discovery & Unified Call State
@@ -1092,7 +940,6 @@ app.get('/api/admin/chats', requireAdminAuth, async (req, res) => {
         isOnline: isClientOnline,
         isTyping: isClientTyping,
         unseenCount,
-        feedback: feedbackStore[chatId] || null,
         lastMessage: {
           sender: lastMsg.sender,
           text: lastMsg.type === 'file' ? `📁 [File] ${lastMsg.file.originalName}` : lastMsg.text,
