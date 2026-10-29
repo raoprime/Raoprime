@@ -564,7 +564,7 @@ async function loadActiveMessages() {
 
     if (data.success && data.messages) {
       window.currentAdminCachedMessages = data.messages;
-      const currentSig = data.messages.map(m => `${m.id}:${m.status || ''}:${m.isEdited ? '1' : '0'}:${m.text || ''}`).join('|');
+      const currentSig = data.messages.map(m => `${m.id}:${m.status || ''}:${m.isEdited ? '1' : '0'}:${JSON.stringify(m.reactions || {})}:${m.text || ''}`).join('|');
       if (currentSig !== lastAdminMsgSig) {
         const isNewLength = data.messages.length !== lastMsgCount;
         lastAdminMsgSig = currentSig;
@@ -625,8 +625,26 @@ function renderAdminMessages(messages) {
     }
 
     const timeFormatted = msgDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const senderTitle = isRaoprime ? 'Raoprime (You)' : (document.getElementById('activeClientName').textContent || 'Client');
+    const senderTitle = isRaoprime ? 'Raoprime (You)' : (document.getElementById('activeClientName')?.textContent || 'Client');
     const editedBadge = msg.isEdited ? `<span class="text-[10px] text-slate-400/80 italic ml-1" title="Edited message">(edited)</span>` : '';
+    const canEdit = Boolean(msg && msg.type === 'text');
+    const isEditingThis = adminEditingMessageId === msg.id;
+
+    // WhatsApp Quoted Reply card
+    const quotedReplyHtml = msg.replyTo ? `
+      <div class="mb-2 p-2 rounded-xl bg-black/30 border-l-[3.5px] border-rose-400 text-xs select-none">
+        <div class="font-bold text-rose-300 text-[11px]">${escapeHtml(msg.replyTo.sender)}</div>
+        <div class="text-slate-300 truncate text-[12px] mt-0.5">${escapeHtml(msg.replyTo.text)}</div>
+      </div>
+    ` : '';
+
+    // WhatsApp Reaction pill
+    const reactionEntries = Object.entries(msg.reactions || {});
+    const reactionBadgeHtml = reactionEntries.length ? `
+      <div class="absolute -bottom-2.5 ${isRaoprime ? 'right-2' : 'left-2'} z-10 flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#111520] border border-white/20 text-xs shadow-md select-none hover:scale-105 transition-transform" title="Reactions: ${reactionEntries.map(([s, e]) => `${s}: ${e}`).join(', ')}">
+        ${Array.from(new Set(reactionEntries.map(([, e]) => e))).map(e => `<span>${e}</span>`).join('')}
+      </div>
+    ` : '';
 
     let bubbleContent = '';
 
@@ -704,20 +722,52 @@ function renderAdminMessages(messages) {
 
     return `
       ${dateDividerHtml}
-      <div class="admin-message-row flex flex-col ${isRaoprime ? 'items-end' : 'items-start'} group mb-2" data-msg-id="${msg.id}" data-msg-sender="${msg.sender}">
+      <div class="admin-message-row flex flex-col ${isRaoprime ? 'items-end' : 'items-start'} group mb-2.5 relative" data-msg-id="${msg.id}" data-msg-sender="${msg.sender}">
         <div class="text-[11px] font-medium text-slate-400 mb-1 px-1 flex items-center gap-1.5 select-none">
           <span class="${isRaoprime ? 'text-rose-300/90' : 'text-slate-300'} font-semibold">${senderTitle}</span>
-          <button onclick="openAdminMessageActionMenu(this.closest('.admin-message-row'))" class="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-white p-0.5 rounded cursor-pointer" title="Options">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="1.5"></circle>
-              <circle cx="19" cy="12" r="1.5"></circle>
-              <circle cx="5" cy="12" r="1.5"></circle>
-            </svg>
-          </button>
         </div>
-        <div class="${isRaoprime ? 'bubble-admin-out' : 'bubble-admin-in'} max-w-[88%] sm:max-w-lg shadow-md cursor-pointer select-text transition-transform active:scale-[0.995]">
-          ${bubbleContent}
+
+        <div class="relative flex items-center gap-1.5 ${isRaoprime ? 'flex-row-reverse' : 'flex-row'} max-w-full">
+          <!-- Main Bubble -->
+          <div class="${isRaoprime ? 'bubble-admin-out' : 'bubble-admin-in'} max-w-[88%] sm:max-w-lg shadow-md cursor-pointer select-text transition-all active:scale-[0.995] relative group/bubble ${isEditingThis ? 'ring-2 ring-rose-400 shadow-rose-500/30' : ''}">
+            ${quotedReplyHtml}
+            ${bubbleContent}
+            ${reactionBadgeHtml}
+
+            <!-- WhatsApp Bubble Chevron Button (Top-Right of Bubble) -->
+            <button type="button" onclick="openAdminMessageContextMenuById('${msg.id}', event)" class="message-action-btn absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/40 hover:bg-black/70 text-slate-300 hover:text-white opacity-80 sm:opacity-0 sm:group-hover/bubble:opacity-100 flex items-center justify-center transition-all shadow-sm cursor-pointer z-10" title="Options">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Desktop Quick Actions Pill (1-Click Copy, Edit, Reply, React) -->
+          <div class="hidden sm:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity select-none z-10 px-1 py-0.5 rounded-full bg-[#121622]/95 border border-white/10 backdrop-blur-md shadow-lg shrink-0">
+            <button type="button" onclick="quickAdminReactMessage('${msg.id}', '👍', event)" class="p-1 hover:scale-125 transition-transform text-xs" title="React 👍">👍</button>
+            <button type="button" onclick="quickAdminCopyMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-sky-300 hover:bg-white/10 rounded-full transition-colors cursor-pointer" title="Copy Text">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+            </button>
+            ${canEdit ? `
+              <button type="button" onclick="quickAdminEditMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-rose-300 hover:bg-white/10 rounded-full transition-colors cursor-pointer" title="Edit Message">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 20h9"></path>
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                </svg>
+              </button>
+            ` : ''}
+            <button type="button" onclick="quickAdminReplyMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-emerald-300 hover:bg-white/10 rounded-full transition-colors cursor-pointer" title="Reply">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 17 4 12 9 7"></polyline>
+                <path d="M20 18v-2a4 4 0 0 0-4-4H4"></path>
+              </svg>
+            </button>
+          </div>
         </div>
+
         <div class="text-[11px] text-slate-400/90 mt-1 px-1 flex items-center ${isRaoprime ? 'justify-end' : 'justify-start'} select-none">
           <span>${timeFormatted}</span>
           ${editedBadge}
@@ -746,7 +796,10 @@ async function sendAdminTextMessage() {
     try {
       const res = await fetch('/api/chat/message/edit', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-token': adminToken
+        },
         body: JSON.stringify({
           chatId: activeChatId,
           messageId: adminEditingMessageId,
@@ -762,11 +815,25 @@ async function sendAdminTextMessage() {
       cancelAdminEditingMessage();
       triggerActiveMsgsPoll();
       triggerAdminChatsPoll();
-      showToast('Message updated');
+      showToast('✓ Message updated');
     } catch (err) {
       showToast('Failed to edit message: ' + err.message);
     }
     return;
+  }
+
+  // Quoted reply payload if replying
+  let replyPayload = undefined;
+  if (adminReplyingMessageId) {
+    const rMsg = (window.currentAdminCachedMessages || []).find(m => m.id === adminReplyingMessageId);
+    if (rMsg) {
+      replyPayload = {
+        id: rMsg.id,
+        sender: (rMsg.sender === 'Raoprime' || rMsg.sender === 'RP') ? 'Raoprime' : (rMsg.sender || 'Client'),
+        text: rMsg.type === 'text' ? rMsg.text : (rMsg.file ? `[File] ${rMsg.file.originalName}` : 'Attachment')
+      };
+    }
+    cancelAdminReplyMessage();
   }
 
   input.value = '';
@@ -780,11 +847,15 @@ async function sendAdminTextMessage() {
   try {
     await fetch('/api/chat/send', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-admin-token': adminToken
+      },
       body: JSON.stringify({
         chatId: activeChatId,
         sender: 'Raoprime',
-        text
+        text,
+        replyTo: replyPayload
       })
     });
     triggerActiveMsgsPoll();
@@ -795,11 +866,102 @@ async function sendAdminTextMessage() {
 }
 
 // ──────────────────────────────────────────────────────────────
-// Admin Message Context Menu & Edit Suite (Long-Press & Right-Click)
+// WhatsApp-grade Admin Actions (Copy, Edit, Reply, Reactions)
 // ──────────────────────────────────────────────────────────────
 
-let adminContextTargetMessage = null;
-let adminEditingMessageId = null;
+async function copyAdminTextToClipboard(text) {
+  if (!text) return false;
+
+  // 1. Modern Async Clipboard API
+  if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (err) {
+      console.warn('Admin clipboard API failed, attempting fallback:', err);
+    }
+  }
+
+  // 2. Synchronous textarea fallback (tested on iOS Safari & Android WebView)
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.top = '0';
+    ta.style.left = '-9999px';
+    ta.style.width = '2em';
+    ta.style.height = '2em';
+    ta.style.padding = '0';
+    ta.style.border = 'none';
+    ta.style.outline = 'none';
+    ta.style.boxShadow = 'none';
+    ta.style.background = 'transparent';
+    ta.style.fontSize = '16px';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+    const successful = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return successful;
+  } catch (err) {
+    console.error('All admin copy methods failed:', err);
+    return false;
+  }
+}
+
+async function quickAdminCopyMessage(msgId, event) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+  const msg = (window.currentAdminCachedMessages || []).find(m => m.id === msgId);
+  if (!msg) return;
+
+  let textToCopy = '';
+  if (msg.type === 'text') {
+    textToCopy = msg.text;
+  } else if (msg.type === 'file' && msg.file) {
+    textToCopy = window.location.origin + msg.file.downloadUrl;
+  }
+  if (!textToCopy) return;
+
+  const ok = await copyAdminTextToClipboard(textToCopy);
+  if (ok) {
+    showToast('✓ Message copied to clipboard');
+  } else {
+    showToast('Failed to copy');
+  }
+}
+
+function quickAdminEditMessage(msgId, event) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+  const msg = (window.currentAdminCachedMessages || []).find(m => m.id === msgId);
+  if (!msg) return;
+  startAdminEditingMessage(msg);
+}
+
+function quickAdminReplyMessage(msgId, event) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+  const msg = (window.currentAdminCachedMessages || []).find(m => m.id === msgId);
+  if (!msg) return;
+  startAdminReplyingMessage(msg);
+}
+
+async function quickAdminReactMessage(msgId, emoji, event) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+  await reactToAdminMessage(msgId, emoji);
+}
 
 function setupAdminMessageContextMenu() {
   const container = document.getElementById('adminMessagesList');
@@ -810,20 +972,20 @@ function setupAdminMessageContextMenu() {
     const row = e.target.closest('.admin-message-row');
     if (!row) return;
     const msgId = row.dataset.msgId;
-    const msg = (window.currentAdminCachedMessages || []).find(m => m.id === msgId);
-    if (!msg) return;
+    if (!msgId) return;
 
     e.preventDefault();
-    openAdminMessageContextMenu(msg, e.clientX, e.clientY);
+    openAdminMessageContextMenuById(msgId, e);
   });
 
-  // 2. Mobile Touch Long-Press (450ms)
+  // 2. Mobile Touch Long-Press (380ms)
   let touchTimer = null;
   let touchStartX = 0;
   let touchStartY = 0;
   let touchTargetRow = null;
 
   container.addEventListener('touchstart', (e) => {
+    if (e.target.closest('button, a, input, audio, video')) return;
     const row = e.target.closest('.admin-message-row');
     if (!row) return;
     const touch = e.touches[0];
@@ -835,15 +997,15 @@ function setupAdminMessageContextMenu() {
     touchTimer = setTimeout(() => {
       if (touchTargetRow) {
         const msgId = touchTargetRow.dataset.msgId;
-        const msg = (window.currentAdminCachedMessages || []).find(m => m.id === msgId);
-        if (msg) {
+        if (msgId) {
           if (navigator.vibrate) {
             try { navigator.vibrate(40); } catch (err) {}
           }
-          openAdminMessageContextMenu(msg, touchStartX, touchStartY);
+          adminIgnoreNextClickUntil = Date.now() + 450;
+          openAdminMessageContextMenuById(msgId, { clientX: touchStartX, clientY: touchStartY });
         }
       }
-    }, 450);
+    }, 380);
   }, { passive: true });
 
   container.addEventListener('touchmove', (e) => {
@@ -851,7 +1013,7 @@ function setupAdminMessageContextMenu() {
     const touch = e.touches[0];
     const dx = Math.abs(touch.clientX - touchStartX);
     const dy = Math.abs(touch.clientY - touchStartY);
-    if (dx > 10 || dy > 10) {
+    if (dx > 8 || dy > 8) {
       clearTimeout(touchTimer);
       touchTimer = null;
       touchTargetRow = null;
@@ -874,13 +1036,20 @@ function setupAdminMessageContextMenu() {
     touchTargetRow = null;
   });
 
-  // Close context menu on outside click, window scroll, or Escape
+  // Suppress synthetic clicks immediately after long-press release
   document.addEventListener('click', (e) => {
-    const menu = document.getElementById('adminMessageContextMenu');
-    if (menu && !menu.contains(e.target) && !e.target.closest('.admin-message-row')) {
-      closeAdminMessageContextMenu();
+    if (Date.now() < adminIgnoreNextClickUntil) {
+      e.stopPropagation();
+      e.preventDefault();
+      return;
     }
-  });
+    const menu = document.getElementById('adminMessageContextMenu');
+    if (menu && !menu.classList.contains('hidden')) {
+      if (!menu.contains(e.target) && !e.target.closest('.message-action-btn')) {
+        closeAdminMessageContextMenu();
+      }
+    }
+  }, true);
 
   const chatStream = document.getElementById('adminChatStream');
   if (chatStream) {
@@ -888,28 +1057,29 @@ function setupAdminMessageContextMenu() {
   }
   window.addEventListener('scroll', closeAdminMessageContextMenu, true);
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeAdminMessageContextMenu();
+    if (e.key === 'Escape') {
+      closeAdminMessageContextMenu();
+      if (adminEditingMessageId) cancelAdminEditingMessage();
+      if (adminReplyingMessageId) cancelAdminReplyMessage();
+    }
   });
 }
 
-function openAdminMessageActionMenu(rowEl) {
-  if (!rowEl) return;
-  const msgId = rowEl.dataset.msgId;
+function openAdminMessageContextMenuById(msgId, event) {
+  if (event) {
+    if (typeof event.stopPropagation === 'function') event.stopPropagation();
+    if (typeof event.preventDefault === 'function' && event.cancelable) event.preventDefault();
+  }
   const msg = (window.currentAdminCachedMessages || []).find(m => m.id === msgId);
   if (!msg) return;
-  const rect = rowEl.getBoundingClientRect();
-  openAdminMessageContextMenu(msg, Math.min(rect.right - 40, window.innerWidth - 160), rect.top + 25);
-}
 
-function openAdminMessageContextMenu(msg, x, y) {
   adminContextTargetMessage = msg;
   const menu = document.getElementById('adminMessageContextMenu');
+  const backdrop = document.getElementById('adminContextMenuBackdrop');
   if (!menu) return;
 
   const editBtn = document.getElementById('adminCtxEditBtn');
-  // Can only edit own messages (sent by Raoprime)
-  const isRaoprime = msg.sender === 'Raoprime' || msg.sender === 'RP';
-  const canEdit = msg.type === 'text' && isRaoprime;
+  const canEdit = canAdminEditMessage(msg);
   if (editBtn) {
     if (canEdit) {
       editBtn.classList.remove('hidden');
@@ -918,13 +1088,29 @@ function openAdminMessageContextMenu(msg, x, y) {
     }
   }
 
+  if (backdrop) backdrop.classList.remove('hidden');
   menu.classList.remove('hidden');
 
-  // Viewport bounds safe positioning
-  const menuWidth = 150;
-  const menuHeight = canEdit ? 85 : 45;
-  let posX = x;
-  let posY = y;
+  let targetX = 0;
+  let targetY = 0;
+
+  if (event && event.clientX && event.clientY) {
+    targetX = event.clientX;
+    targetY = event.clientY;
+  } else {
+    const row = document.querySelector(`.admin-message-row[data-msg-id="${msgId}"]`);
+    if (row) {
+      const rect = row.getBoundingClientRect();
+      targetX = rect.left + rect.width / 2;
+      targetY = rect.top + 25;
+    }
+  }
+
+  const menuWidth = 200;
+  const menuHeight = canEdit ? 180 : 135;
+
+  let posX = targetX;
+  let posY = targetY;
 
   if (posX + menuWidth > window.innerWidth - 12) {
     posX = window.innerWidth - menuWidth - 12;
@@ -932,7 +1118,7 @@ function openAdminMessageContextMenu(msg, x, y) {
   if (posX < 12) posX = 12;
 
   if (posY + menuHeight > window.innerHeight - 12) {
-    posY = posY - menuHeight - 10;
+    posY = Math.max(12, posY - menuHeight - 10);
   }
   if (posY < 12) posY = 12;
 
@@ -944,45 +1130,33 @@ function openAdminMessageContextMenu(msg, x, y) {
 
 function closeAdminMessageContextMenu() {
   const menu = document.getElementById('adminMessageContextMenu');
+  const backdrop = document.getElementById('adminContextMenuBackdrop');
   if (menu && !menu.classList.contains('hidden')) {
     menu.classList.add('hidden');
   }
+  if (backdrop && !backdrop.classList.contains('hidden')) {
+    backdrop.classList.add('hidden');
+  }
 }
 
-function handleAdminContextCopy() {
+async function handleAdminContextCopy() {
   if (!adminContextTargetMessage) return;
-  closeAdminMessageContextMenu();
+  const msg = adminContextTargetMessage;
 
   let textToCopy = '';
-  if (adminContextTargetMessage.type === 'text') {
-    textToCopy = adminContextTargetMessage.text;
-  } else if (adminContextTargetMessage.type === 'file' && adminContextTargetMessage.file) {
-    textToCopy = window.location.origin + adminContextTargetMessage.file.downloadUrl;
+  if (msg.type === 'text') {
+    textToCopy = msg.text;
+  } else if (msg.type === 'file' && msg.file) {
+    textToCopy = window.location.origin + msg.file.downloadUrl;
   }
+  if (!textToCopy) return;
 
-  if (textToCopy) {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(textToCopy).then(() => {
-        showToast('Copied to clipboard!');
-      }).catch(() => fallbackAdminCopy(textToCopy));
-    } else {
-      fallbackAdminCopy(textToCopy);
-    }
-  }
-}
+  const ok = await copyAdminTextToClipboard(textToCopy);
+  closeAdminMessageContextMenu();
 
-function fallbackAdminCopy(text) {
-  try {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-    showToast('Copied to clipboard!');
-  } catch (e) {
+  if (ok) {
+    showToast('✓ Message copied to clipboard');
+  } else {
     showToast('Failed to copy');
   }
 }
@@ -994,8 +1168,47 @@ function handleAdminContextEdit() {
   startAdminEditingMessage(msg);
 }
 
+function handleAdminContextReply() {
+  if (!adminContextTargetMessage) return;
+  const msg = adminContextTargetMessage;
+  closeAdminMessageContextMenu();
+  startAdminReplyingMessage(msg);
+}
+
+async function handleAdminContextReact(emoji) {
+  if (!adminContextTargetMessage) return;
+  const msgId = adminContextTargetMessage.id;
+  closeAdminMessageContextMenu();
+  await reactToAdminMessage(msgId, emoji);
+}
+
+async function reactToAdminMessage(msgId, emoji) {
+  try {
+    const res = await fetch('/api/chat/message/react', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-admin-token': adminToken
+      },
+      body: JSON.stringify({
+        chatId: activeChatId,
+        messageId: msgId,
+        emoji,
+        sender: 'Raoprime'
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      triggerActiveMsgsPoll();
+    }
+  } catch (e) {
+    console.warn('React error:', e);
+  }
+}
+
 function startAdminEditingMessage(msg) {
   if (!msg || msg.type !== 'text') return;
+  if (adminReplyingMessageId) cancelAdminReplyMessage();
   adminEditingMessageId = msg.id;
 
   const banner = document.getElementById('adminEditBanner');
@@ -1012,11 +1225,18 @@ function startAdminEditingMessage(msg) {
     input.style.height = Math.min(input.scrollHeight, 140) + 'px';
     input.focus();
     input.setSelectionRange(input.value.length, input.value.length);
+    setTimeout(() => {
+      input.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 50);
   }
 
   if (sendBtn) {
-    sendBtn.innerHTML = '<svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+    sendBtn.innerHTML = '<svg class="w-5 h-5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
     sendBtn.title = 'Save edited message';
+  }
+
+  if (window.currentAdminCachedMessages) {
+    renderAdminMessages(window.currentAdminCachedMessages);
   }
 
   if (window.lucide) window.lucide.createIcons();
@@ -1040,7 +1260,40 @@ function cancelAdminEditingMessage() {
     sendBtn.title = 'Send Reply';
   }
 
+  if (window.currentAdminCachedMessages) {
+    renderAdminMessages(window.currentAdminCachedMessages);
+  }
+
   if (window.lucide) window.lucide.createIcons();
+}
+
+function startAdminReplyingMessage(msg) {
+  if (!msg) return;
+  if (adminEditingMessageId) cancelAdminEditingMessage();
+  adminReplyingMessageId = msg.id;
+
+  const banner = document.getElementById('adminReplyBanner');
+  const senderLabel = document.getElementById('adminReplySenderLabel');
+  const preview = document.getElementById('adminReplyPreviewText');
+  const input = document.getElementById('adminMessageInput');
+
+  if (banner) banner.classList.remove('hidden');
+  const name = (msg.sender === 'Raoprime' || msg.sender === 'RP') ? 'Raoprime' : (msg.sender || 'Client');
+  if (senderLabel) senderLabel.textContent = `Replying to ${name}`;
+  if (preview) preview.textContent = msg.type === 'text' ? msg.text : (msg.file ? `[File] ${msg.file.originalName}` : 'Attachment');
+
+  if (input) {
+    input.focus();
+    setTimeout(() => {
+      input.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 50);
+  }
+}
+
+function cancelAdminReplyMessage() {
+  adminReplyingMessageId = null;
+  const banner = document.getElementById('adminReplyBanner');
+  if (banner) banner.classList.add('hidden');
 }
 
 // ──────────────────────────────────────────────────────────────

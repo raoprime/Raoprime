@@ -465,7 +465,7 @@ app.post('/api/chat/typing', (req, res) => {
 // Post Text Message
 app.post('/api/chat/send', async (req, res) => {
   try {
-    const { chatId: rawChatId = 'default', sender = 'Client', text = '' } = req.body;
+    const { chatId: rawChatId = 'default', sender = 'Client', text = '', replyTo } = req.body;
     const chatId = normalizeChatId(rawChatId);
     if (!text.trim()) {
       return res.status(400).json({ success: false, error: 'Empty message' });
@@ -494,6 +494,14 @@ app.post('/api/chat/send', async (req, res) => {
       status: isOtherOnline ? 'delivered' : 'sent',
       timestamp: new Date().toISOString()
     };
+
+    if (replyTo && replyTo.id) {
+      newMsg.replyTo = {
+        id: replyTo.id,
+        sender: replyTo.sender || 'Client',
+        text: (replyTo.text || '').slice(0, 200)
+      };
+    }
 
     await saveChatMessage(chatId, newMsg);
 
@@ -526,12 +534,14 @@ app.post('/api/chat/message/edit', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Only text messages can be edited' });
     }
 
-    // Permission check: only sender can edit their own message
-    if (sender) {
-      const isOwner = (sender === 'Raoprime' || sender === 'RP')
-        ? (msg.sender === 'Raoprime' || msg.sender === 'RP')
-        : (msg.sender !== 'Raoprime' && msg.sender !== 'RP');
-      if (!isOwner) {
+    const adminToken = req.headers['x-admin-token'];
+    const isAdmin = adminToken && activeAdminSessions.has(adminToken);
+
+    // Permission check: Admin can edit any message; Client can edit client-sent messages
+    if (!isAdmin && sender) {
+      const isSenderRaoprime = (sender === 'Raoprime' || sender === 'RP');
+      const isMsgRaoprime = (msg.sender === 'Raoprime' || msg.sender === 'RP');
+      if (isSenderRaoprime !== isMsgRaoprime) {
         return res.status(403).json({ success: false, error: 'Unauthorized to edit this message' });
       }
     }
@@ -563,6 +573,57 @@ app.post('/api/chat/message/edit', async (req, res) => {
     });
 
     res.json({ success: true, message: msg });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Emoji Reaction Endpoint (WhatsApp Style)
+app.post('/api/chat/message/react', async (req, res) => {
+  try {
+    const { chatId: rawChatId = 'default', messageId, emoji, sender = 'Client' } = req.body;
+    const chatId = normalizeChatId(rawChatId);
+    if (!messageId || !emoji) {
+      return res.status(400).json({ success: false, error: 'Message ID and emoji are required' });
+    }
+
+    const store = ensureMemoryStore();
+    if (!store[chatId]) {
+      return res.status(404).json({ success: false, error: 'Chat not found' });
+    }
+
+    const msg = store[chatId].find(m => m.id === messageId);
+    if (!msg) {
+      return res.status(404).json({ success: false, error: 'Message not found' });
+    }
+
+    if (!msg.reactions) msg.reactions = {};
+    const key = (sender === 'Raoprime' || sender === 'RP') ? 'Raoprime' : 'Client';
+    if (msg.reactions[key] === emoji) {
+      delete msg.reactions[key];
+    } else {
+      msg.reactions[key] = emoji;
+    }
+
+    if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
+    saveDebounceTimer = setTimeout(() => {
+      saveAllLocalChats(store);
+    }, 250);
+
+    setImmediate(async () => {
+      initFirebase();
+      if (isFirebaseConnected && firebaseDb) {
+        try {
+          await firebaseDb.collection('raoprime_messages').doc(messageId).set({
+            reactions: msg.reactions
+          }, { merge: true });
+        } catch (e) {
+          console.warn('Async reaction Firestore notice:', e.message);
+        }
+      }
+    });
+
+    res.json({ success: true, reactions: msg.reactions });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

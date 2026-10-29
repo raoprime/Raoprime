@@ -110,6 +110,15 @@
       "timestamp": "2026-10-29T19:46:04.027Z",
       "seenAt": "2026-10-29T19:46:04.653Z",
       "status": "seen"
+    },
+    {
+      "id": "msg_1793306332924_ddi5",
+      "sender": "Raoprime",
+      "type": "text",
+      "text": "First Paragraph with details.\n\nSecond Paragraph after empty line gap!\n- Bullet 1\n- Bullet 2\n\nCheck link: https://raoprime.com for info.",
+      "status": "sent",
+      "timestamp": "2026-10-29T20:38:52.924Z",
+      "chatId": "PublicTestClient"
     }
   ],
   "Affaque Ahmed": [
@@ -261,8 +270,9 @@
       "id": "msg_1793303235023_x4pf",
       "text": "Bhai, meri ek baat bohot dhyan se sun. Mujhe pata hai tu is waqt kis dard aur takleef se guzar raha hai. Jab 21 saal ki age mein wazan 35 kilo reh jaye aur gardan block ho jaye, toh kisi ki bhi himmat toot jati hai. Tera haar maan lena samajh aata hai, lekin jo tu (suicide) karne ki soch raha hai na, wo bilkul galat hai mere bhai. Teri zindagi khatam nahi hui hai, masla ye hai ke tujhe abhi tak sahi doctor nahi mila. Teri bimari koi aam arthritis nahi hai, ye 'Ankylosing Spondylitis' ho sakti hai jo sirf jawan logo ko hoti hai. Tu kisi aam haddi walay doctor (orthopedic) ke paas mat ja. Tujhe sirf aur sirf ek 'Rheumatologist' ke paas jana hai. Aaj kal medical science mein iske aise injection (Biologics) aate hain jo jaadui tarike se dard rok dete hain aur haddiyon ko judne se bacha lete hain. Agar tujhe treatment ke paison ki tension hai, toh meri baat sun- Pakistan mein 'Bait-ul-Mal' ka sarkari program hai jo aisi bimariyon ke ilaj ke liye financial help deta hai. Iske ilawa Indus Hospital aur Aga Khan Hospital mein bhi Zakat fund se bilkul free ya bohot kam kharch mein ilaj hota hai. Raste bohot hain mere bhai, tune abhi try nahi kiya hai sahi jagah! Bas meri khatir ek kaam kar. Agar roti ya thos khana nahi khaya jata toh liquid diet le. Doodh, kele ka shake, aur protein waghera pi. Body mein thori jaan la. Teri age sirf 21 saal hai yaar, teri body bohot jaldi recover karegi agar sahi ilaaj mil jaye. Ek aakhri baar mere kehne par himmat kar le bhai. Ek baar kisi baday sarkari hospital ke Rheumatology ward mein chala ja, teri puri life badal jayegi. Haar mat maan mere bhai, please. Main yahan baitha hoon teri help ke liye. Mujhe message ka reply kar.",
       "type": "text",
-      "status": "sent",
-      "timestamp": "2026-10-29T19:47:15.023Z"
+      "status": "seen",
+      "timestamp": "2026-10-29T19:47:15.023Z",
+      "seenAt": "2026-10-29T20:42:45.563Z"
     },
     {
       "chatId": "Affaque Ahmed",
@@ -270,8 +280,9 @@
       "id": "msg_1793303395841_b64t",
       "text": "bhai dhruv rathee agar help karta h to",
       "type": "text",
-      "status": "delivered",
-      "timestamp": "2026-10-29T19:49:55.841Z"
+      "status": "seen",
+      "timestamp": "2026-10-29T19:49:55.841Z",
+      "seenAt": "2026-10-29T20:42:45.563Z"
     },
     {
       "chatId": "Affaque Ahmed",
@@ -279,8 +290,9 @@
       "id": "msg_1793303454611_z6tz",
       "text": "uske upper indian/pakistan Govt se dikkat aa sakti h",
       "type": "text",
-      "status": "delivered",
-      "timestamp": "2026-10-29T19:50:54.611Z"
+      "status": "seen",
+      "timestamp": "2026-10-29T19:50:54.611Z",
+      "seenAt": "2026-10-29T20:42:45.563Z"
     },
     {
       "chatId": "Affaque Ahmed",

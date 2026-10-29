@@ -260,6 +260,8 @@ let isPollingMessages = false;
 let messagePollTimer = null;
 let contextTargetMessage = null;
 let editingMessageId = null;
+let replyingMessageId = null;
+let ignoreNextClickUntil = 0;
 
 function renderMessageStatus(status, isOut) {
   if (!isOut) return '';
@@ -327,7 +329,7 @@ async function loadMessages() {
     const data = await res.json();
     if (data.success && data.messages) {
       window.currentCachedMessages = data.messages;
-      const currentSig = data.messages.map(m => `${m.id}:${m.status || ''}:${m.isEdited ? '1' : '0'}:${m.text || ''}`).join('|');
+      const currentSig = data.messages.map(m => `${m.id}:${m.status || ''}:${m.isEdited ? '1' : '0'}:${JSON.stringify(m.reactions || {})}:${m.text || ''}`).join('|');
       if (currentSig !== lastMessageSig) {
         const isNewLength = data.messages.length !== lastMessagesCount;
         lastMessageSig = currentSig;
@@ -350,6 +352,16 @@ async function loadMessages() {
     }
   } catch (err) {
     // Silent fail on poll
+  }
+}
+
+function canEditMessage(msg) {
+  if (!msg || msg.type !== 'text') return false;
+  const isRaoprime = msg.sender === 'Raoprime' || msg.sender === 'RP';
+  if (currentRole === 'Raoprime') {
+    return isRaoprime;
+  } else {
+    return !isRaoprime || msg.sender === currentRole;
   }
 }
 
@@ -386,6 +398,24 @@ function renderMessages(messages) {
     const timeFormatted = msgDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const senderLabel = isOut ? 'You' : (msg.sender === 'Raoprime' || msg.sender === 'RP' ? 'Raoprime' : (msg.sender || 'Client'));
     const editedBadge = msg.isEdited ? `<span class="text-[10px] text-slate-400/80 italic ml-1" title="Edited message">(edited)</span>` : '';
+    const canEdit = canEditMessage(msg);
+    const isEditingThis = editingMessageId === msg.id;
+
+    // WhatsApp Quoted Reply card
+    const quotedReplyHtml = msg.replyTo ? `
+      <div class="mb-2 p-2 rounded-xl bg-black/30 border-l-[3.5px] border-rose-400 text-xs select-none">
+        <div class="font-bold text-rose-300 text-[11px]">${escapeHtml(msg.replyTo.sender)}</div>
+        <div class="text-slate-300 truncate text-[12px] mt-0.5">${escapeHtml(msg.replyTo.text)}</div>
+      </div>
+    ` : '';
+
+    // WhatsApp Reaction pill
+    const reactionEntries = Object.entries(msg.reactions || {});
+    const reactionBadgeHtml = reactionEntries.length ? `
+      <div class="absolute -bottom-2.5 ${isOut ? 'right-2' : 'left-2'} z-10 flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#111520] border border-white/20 text-xs shadow-md select-none hover:scale-105 transition-transform" title="Reactions: ${reactionEntries.map(([s, e]) => `${s}: ${e}`).join(', ')}">
+        ${Array.from(new Set(reactionEntries.map(([, e]) => e))).map(e => `<span>${e}</span>`).join('')}
+      </div>
+    ` : '';
 
     let bubbleContent = '';
 
@@ -441,7 +471,6 @@ function renderMessages(messages) {
           </div>
         `;
       } else {
-        // Generic Document / Archive
         const tag = (ext || 'FILE').toUpperCase().slice(0, 4);
         bubbleContent = `
           <div class="p-3 sm:p-3.5 flex items-center justify-between gap-3 max-w-[280px] sm:max-w-sm">
@@ -464,20 +493,52 @@ function renderMessages(messages) {
 
     return `
       ${dateDividerHtml}
-      <div class="message-row flex flex-col ${isOut ? 'items-end' : 'items-start'} group mb-2" data-msg-id="${msg.id}" data-msg-sender="${msg.sender}">
+      <div class="message-row flex flex-col ${isOut ? 'items-end' : 'items-start'} group mb-2.5 relative" data-msg-id="${msg.id}" data-msg-sender="${msg.sender}">
         <div class="text-[11px] font-medium text-slate-400 mb-1 px-1 flex items-center gap-1.5 select-none">
           <span class="${isOut ? 'text-rose-300/90' : 'text-slate-300'} font-semibold">${senderLabel}</span>
-          <button onclick="openMessageActionMenu(this.closest('.message-row'))" class="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-white p-0.5 rounded cursor-pointer" title="Options">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="1.5"></circle>
-              <circle cx="19" cy="12" r="1.5"></circle>
-              <circle cx="5" cy="12" r="1.5"></circle>
-            </svg>
-          </button>
         </div>
-        <div class="${isOut ? 'bubble-out' : 'bubble-in'} max-w-[88%] sm:max-w-lg shadow-md cursor-pointer select-text transition-transform active:scale-[0.995]">
-          ${bubbleContent}
+        
+        <div class="relative flex items-center gap-1.5 ${isOut ? 'flex-row-reverse' : 'flex-row'} max-w-full">
+          <!-- Main Bubble -->
+          <div class="${isOut ? 'bubble-out' : 'bubble-in'} max-w-[88%] sm:max-w-lg shadow-md cursor-pointer select-text transition-all active:scale-[0.995] relative group/bubble ${isEditingThis ? 'ring-2 ring-rose-400 shadow-rose-500/30' : ''}">
+            ${quotedReplyHtml}
+            ${bubbleContent}
+            ${reactionBadgeHtml}
+
+            <!-- WhatsApp Bubble Chevron Button (Top-Right of Bubble) -->
+            <button type="button" onclick="openMessageContextMenuById('${msg.id}', event)" class="message-action-btn absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/40 hover:bg-black/70 text-slate-300 hover:text-white opacity-80 sm:opacity-0 sm:group-hover/bubble:opacity-100 flex items-center justify-center transition-all shadow-sm cursor-pointer z-10" title="Options">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Desktop Quick Actions Pill (1-Click Copy, Edit, Reply, React) -->
+          <div class="hidden sm:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity select-none z-10 px-1 py-0.5 rounded-full bg-[#121622]/95 border border-white/10 backdrop-blur-md shadow-lg shrink-0">
+            <button type="button" onclick="quickReactMessage('${msg.id}', '👍', event)" class="p-1 hover:scale-125 transition-transform text-xs" title="React 👍">👍</button>
+            <button type="button" onclick="quickCopyMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-sky-300 hover:bg-white/10 rounded-full transition-colors cursor-pointer" title="Copy Text">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+            </button>
+            ${canEdit ? `
+              <button type="button" onclick="quickEditMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-rose-300 hover:bg-white/10 rounded-full transition-colors cursor-pointer" title="Edit Message">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 20h9"></path>
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                </svg>
+              </button>
+            ` : ''}
+            <button type="button" onclick="quickReplyMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-emerald-300 hover:bg-white/10 rounded-full transition-colors cursor-pointer" title="Reply">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 17 4 12 9 7"></polyline>
+                <path d="M20 18v-2a4 4 0 0 0-4-4H4"></path>
+              </svg>
+            </button>
+          </div>
         </div>
+
         <div class="text-[11px] text-slate-400/90 mt-1 px-1 flex items-center ${isOut ? 'justify-end' : 'justify-start'} select-none">
           <span>${timeFormatted}</span>
           ${editedBadge}
@@ -515,11 +576,25 @@ async function sendTextMessage() {
       }
       cancelEditingMessage();
       triggerMessagePoll();
-      showToast('Message updated');
+      showToast('✓ Message updated');
     } catch (err) {
       showToast('Failed to edit message: ' + err.message);
     }
     return;
+  }
+
+  // Quoted reply payload if replying
+  let replyPayload = undefined;
+  if (replyingMessageId) {
+    const rMsg = (window.currentCachedMessages || []).find(m => m.id === replyingMessageId);
+    if (rMsg) {
+      replyPayload = {
+        id: rMsg.id,
+        sender: (rMsg.sender === 'Raoprime' || rMsg.sender === 'RP') ? 'Raoprime' : (rMsg.sender || 'Client'),
+        text: rMsg.type === 'text' ? rMsg.text : (rMsg.file ? `[File] ${rMsg.file.originalName}` : 'Attachment')
+      };
+    }
+    cancelReplyMessage();
   }
 
   input.value = '';
@@ -537,7 +612,8 @@ async function sendTextMessage() {
       body: JSON.stringify({
         chatId: currentChatId,
         sender: currentRole,
-        text
+        text,
+        replyTo: replyPayload
       })
     });
     triggerMessagePoll();
@@ -547,8 +623,102 @@ async function sendTextMessage() {
 }
 
 // ──────────────────────────────────────────────────────────────
-// Message Context Menu & Edit Suite (Long-Press & Right-Click)
+// WhatsApp-grade Message Actions (Copy, Edit, Reply, Reactions)
 // ──────────────────────────────────────────────────────────────
+
+async function copyTextToClipboard(text) {
+  if (!text) return false;
+
+  // 1. Try modern async clipboard API
+  if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (err) {
+      console.warn('Modern clipboard API failed, falling back:', err);
+    }
+  }
+
+  // 2. Synchronous textarea fallback (tested on iOS Safari & Android WebView)
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.top = '0';
+    ta.style.left = '-9999px';
+    ta.style.width = '2em';
+    ta.style.height = '2em';
+    ta.style.padding = '0';
+    ta.style.border = 'none';
+    ta.style.outline = 'none';
+    ta.style.boxShadow = 'none';
+    ta.style.background = 'transparent';
+    ta.style.fontSize = '16px';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+    const successful = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return successful;
+  } catch (err) {
+    console.error('All copy operations failed:', err);
+    return false;
+  }
+}
+
+async function quickCopyMessage(msgId, event) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+  const msg = (window.currentCachedMessages || []).find(m => m.id === msgId);
+  if (!msg) return;
+
+  let textToCopy = '';
+  if (msg.type === 'text') {
+    textToCopy = msg.text;
+  } else if (msg.type === 'file' && msg.file) {
+    textToCopy = window.location.origin + msg.file.downloadUrl;
+  }
+  if (!textToCopy) return;
+
+  const ok = await copyTextToClipboard(textToCopy);
+  if (ok) {
+    showToast('✓ Message copied to clipboard');
+  } else {
+    showToast('Failed to copy');
+  }
+}
+
+function quickEditMessage(msgId, event) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+  const msg = (window.currentCachedMessages || []).find(m => m.id === msgId);
+  if (!msg) return;
+  startEditingMessage(msg);
+}
+
+function quickReplyMessage(msgId, event) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+  const msg = (window.currentCachedMessages || []).find(m => m.id === msgId);
+  if (!msg) return;
+  startReplyingMessage(msg);
+}
+
+async function quickReactMessage(msgId, emoji, event) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+  await reactToMessage(msgId, emoji);
+}
 
 function setupMessageContextMenu() {
   const container = document.getElementById('messagesList');
@@ -559,20 +729,20 @@ function setupMessageContextMenu() {
     const row = e.target.closest('.message-row');
     if (!row) return;
     const msgId = row.dataset.msgId;
-    const msg = (window.currentCachedMessages || []).find(m => m.id === msgId);
-    if (!msg) return;
+    if (!msgId) return;
 
     e.preventDefault();
-    openMessageContextMenu(msg, e.clientX, e.clientY);
+    openMessageContextMenuById(msgId, e);
   });
 
-  // 2. Mobile Touch Long-Press (450ms)
+  // 2. Mobile Touch Long-Press (380ms)
   let touchTimer = null;
   let touchStartX = 0;
   let touchStartY = 0;
   let touchTargetRow = null;
 
   container.addEventListener('touchstart', (e) => {
+    if (e.target.closest('button, a, input, audio, video')) return;
     const row = e.target.closest('.message-row');
     if (!row) return;
     const touch = e.touches[0];
@@ -584,15 +754,15 @@ function setupMessageContextMenu() {
     touchTimer = setTimeout(() => {
       if (touchTargetRow) {
         const msgId = touchTargetRow.dataset.msgId;
-        const msg = (window.currentCachedMessages || []).find(m => m.id === msgId);
-        if (msg) {
+        if (msgId) {
           if (navigator.vibrate) {
             try { navigator.vibrate(40); } catch (err) {}
           }
-          openMessageContextMenu(msg, touchStartX, touchStartY);
+          ignoreNextClickUntil = Date.now() + 450;
+          openMessageContextMenuById(msgId, { clientX: touchStartX, clientY: touchStartY });
         }
       }
-    }, 450);
+    }, 380);
   }, { passive: true });
 
   container.addEventListener('touchmove', (e) => {
@@ -600,7 +770,7 @@ function setupMessageContextMenu() {
     const touch = e.touches[0];
     const dx = Math.abs(touch.clientX - touchStartX);
     const dy = Math.abs(touch.clientY - touchStartY);
-    if (dx > 10 || dy > 10) {
+    if (dx > 8 || dy > 8) {
       clearTimeout(touchTimer);
       touchTimer = null;
       touchTargetRow = null;
@@ -623,37 +793,46 @@ function setupMessageContextMenu() {
     touchTargetRow = null;
   });
 
-  // Close context menu on outside click, window scroll, or Escape
+  // Suppress synthetic clicks immediately after long-press release
   document.addEventListener('click', (e) => {
-    const menu = document.getElementById('messageContextMenu');
-    if (menu && !menu.contains(e.target) && !e.target.closest('.message-row')) {
-      closeMessageContextMenu();
+    if (Date.now() < ignoreNextClickUntil) {
+      e.stopPropagation();
+      e.preventDefault();
+      return;
     }
-  });
+    const menu = document.getElementById('messageContextMenu');
+    if (menu && !menu.classList.contains('hidden')) {
+      if (!menu.contains(e.target) && !e.target.closest('.message-action-btn')) {
+        closeMessageContextMenu();
+      }
+    }
+  }, true);
 
   window.addEventListener('scroll', closeMessageContextMenu, true);
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeMessageContextMenu();
+    if (e.key === 'Escape') {
+      closeMessageContextMenu();
+      if (editingMessageId) cancelEditingMessage();
+      if (replyingMessageId) cancelReplyMessage();
+    }
   });
 }
 
-function openMessageActionMenu(rowEl) {
-  if (!rowEl) return;
-  const msgId = rowEl.dataset.msgId;
+function openMessageContextMenuById(msgId, event) {
+  if (event) {
+    if (typeof event.stopPropagation === 'function') event.stopPropagation();
+    if (typeof event.preventDefault === 'function' && event.cancelable) event.preventDefault();
+  }
   const msg = (window.currentCachedMessages || []).find(m => m.id === msgId);
   if (!msg) return;
-  const rect = rowEl.getBoundingClientRect();
-  openMessageContextMenu(msg, Math.min(rect.right - 40, window.innerWidth - 160), rect.top + 25);
-}
 
-function openMessageContextMenu(msg, x, y) {
   contextTargetMessage = msg;
   const menu = document.getElementById('messageContextMenu');
+  const backdrop = document.getElementById('contextMenuBackdrop');
   if (!menu) return;
 
   const editBtn = document.getElementById('ctxEditBtn');
-  // Can only edit own text messages
-  const canEdit = msg.type === 'text' && msg.sender === currentRole;
+  const canEdit = canEditMessage(msg);
   if (editBtn) {
     if (canEdit) {
       editBtn.classList.remove('hidden');
@@ -662,13 +841,29 @@ function openMessageContextMenu(msg, x, y) {
     }
   }
 
+  if (backdrop) backdrop.classList.remove('hidden');
   menu.classList.remove('hidden');
 
-  // Viewport bounds safe positioning
-  const menuWidth = 150;
-  const menuHeight = canEdit ? 85 : 45;
-  let posX = x;
-  let posY = y;
+  let targetX = 0;
+  let targetY = 0;
+
+  if (event && event.clientX && event.clientY) {
+    targetX = event.clientX;
+    targetY = event.clientY;
+  } else {
+    const row = document.querySelector(`.message-row[data-msg-id="${msgId}"]`);
+    if (row) {
+      const rect = row.getBoundingClientRect();
+      targetX = rect.left + rect.width / 2;
+      targetY = rect.top + 25;
+    }
+  }
+
+  const menuWidth = 200;
+  const menuHeight = canEdit ? 180 : 135;
+
+  let posX = targetX;
+  let posY = targetY;
 
   if (posX + menuWidth > window.innerWidth - 12) {
     posX = window.innerWidth - menuWidth - 12;
@@ -676,7 +871,7 @@ function openMessageContextMenu(msg, x, y) {
   if (posX < 12) posX = 12;
 
   if (posY + menuHeight > window.innerHeight - 12) {
-    posY = posY - menuHeight - 10;
+    posY = Math.max(12, posY - menuHeight - 10);
   }
   if (posY < 12) posY = 12;
 
@@ -688,45 +883,33 @@ function openMessageContextMenu(msg, x, y) {
 
 function closeMessageContextMenu() {
   const menu = document.getElementById('messageContextMenu');
+  const backdrop = document.getElementById('contextMenuBackdrop');
   if (menu && !menu.classList.contains('hidden')) {
     menu.classList.add('hidden');
   }
+  if (backdrop && !backdrop.classList.contains('hidden')) {
+    backdrop.classList.add('hidden');
+  }
 }
 
-function handleContextCopy() {
+async function handleContextCopy() {
   if (!contextTargetMessage) return;
-  closeMessageContextMenu();
+  const msg = contextTargetMessage;
 
   let textToCopy = '';
-  if (contextTargetMessage.type === 'text') {
-    textToCopy = contextTargetMessage.text;
-  } else if (contextTargetMessage.type === 'file' && contextTargetMessage.file) {
-    textToCopy = window.location.origin + contextTargetMessage.file.downloadUrl;
+  if (msg.type === 'text') {
+    textToCopy = msg.text;
+  } else if (msg.type === 'file' && msg.file) {
+    textToCopy = window.location.origin + msg.file.downloadUrl;
   }
+  if (!textToCopy) return;
 
-  if (textToCopy) {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(textToCopy).then(() => {
-        showToast('Copied to clipboard!');
-      }).catch(() => fallbackCopy(textToCopy));
-    } else {
-      fallbackCopy(textToCopy);
-    }
-  }
-}
+  const ok = await copyTextToClipboard(textToCopy);
+  closeMessageContextMenu();
 
-function fallbackCopy(text) {
-  try {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-    showToast('Copied to clipboard!');
-  } catch (e) {
+  if (ok) {
+    showToast('✓ Message copied to clipboard');
+  } else {
     showToast('Failed to copy');
   }
 }
@@ -738,8 +921,44 @@ function handleContextEdit() {
   startEditingMessage(msg);
 }
 
+function handleContextReply() {
+  if (!contextTargetMessage) return;
+  const msg = contextTargetMessage;
+  closeMessageContextMenu();
+  startReplyingMessage(msg);
+}
+
+async function handleContextReact(emoji) {
+  if (!contextTargetMessage) return;
+  const msgId = contextTargetMessage.id;
+  closeMessageContextMenu();
+  await reactToMessage(msgId, emoji);
+}
+
+async function reactToMessage(msgId, emoji) {
+  try {
+    const res = await fetch('/api/chat/message/react', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chatId: currentChatId,
+        messageId: msgId,
+        emoji,
+        sender: currentRole
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      triggerMessagePoll();
+    }
+  } catch (e) {
+    console.warn('React error:', e);
+  }
+}
+
 function startEditingMessage(msg) {
   if (!msg || msg.type !== 'text') return;
+  if (replyingMessageId) cancelReplyMessage();
   editingMessageId = msg.id;
 
   const banner = document.getElementById('editBanner');
@@ -756,11 +975,18 @@ function startEditingMessage(msg) {
     input.style.height = Math.min(input.scrollHeight, 140) + 'px';
     input.focus();
     input.setSelectionRange(input.value.length, input.value.length);
+    setTimeout(() => {
+      input.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 50);
   }
 
   if (sendBtn) {
-    sendBtn.innerHTML = '<svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+    sendBtn.innerHTML = '<svg class="w-5 h-5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
     sendBtn.title = 'Save edited message';
+  }
+
+  if (window.currentCachedMessages) {
+    renderMessages(window.currentCachedMessages);
   }
 
   if (window.lucide) window.lucide.createIcons();
@@ -784,7 +1010,40 @@ function cancelEditingMessage() {
     sendBtn.title = 'Send Message';
   }
 
+  if (window.currentCachedMessages) {
+    renderMessages(window.currentCachedMessages);
+  }
+
   if (window.lucide) window.lucide.createIcons();
+}
+
+function startReplyingMessage(msg) {
+  if (!msg) return;
+  if (editingMessageId) cancelEditingMessage();
+  replyingMessageId = msg.id;
+
+  const banner = document.getElementById('replyBanner');
+  const senderLabel = document.getElementById('replySenderLabel');
+  const preview = document.getElementById('replyPreviewText');
+  const input = document.getElementById('messageInput');
+
+  if (banner) banner.classList.remove('hidden');
+  const name = (msg.sender === 'Raoprime' || msg.sender === 'RP') ? 'Raoprime' : (msg.sender || 'Client');
+  if (senderLabel) senderLabel.textContent = `Replying to ${name}`;
+  if (preview) preview.textContent = msg.type === 'text' ? msg.text : (msg.file ? `[File] ${msg.file.originalName}` : 'Attachment');
+
+  if (input) {
+    input.focus();
+    setTimeout(() => {
+      input.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 50);
+  }
+}
+
+function cancelReplyMessage() {
+  replyingMessageId = null;
+  const banner = document.getElementById('replyBanner');
+  if (banner) banner.classList.add('hidden');
 }
 
 // ──────────────────────────────────────────────────────────────
