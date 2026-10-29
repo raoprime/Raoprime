@@ -878,8 +878,8 @@ app.post('/api/upload/finalize', async (req, res) => {
   }
 });
 
-// Download / Preview File Endpoint
-app.get('/api/download/:storedName', async (req, res) => {
+// Download / Preview File Endpoint (Supports both /api/download and /api/vault/download)
+app.get(['/api/download/:storedName', '/api/vault/download/:storedName'], async (req, res) => {
   try {
     const storedName = req.params.storedName;
     const filePath = path.join(VAULT_DIR, storedName);

@@ -45,7 +45,7 @@
         "size": 262889,
         "formattedSize": "256.7 KB",
         "type": "image/jpeg",
-        "downloadUrl": "/api/vault/download/file_000000004dc0820890df628c3609fffa_2_4fk8.jpg"
+        "downloadUrl": "/api/download/file_000000004dc0820890df628c3609fffa_2_4fk8.jpg"
       },
       "timestamp": "2026-10-29T17:13:56.000Z"
     },
@@ -60,7 +60,7 @@
         "size": 148690,
         "formattedSize": "145.2 KB",
         "type": "image/png",
-        "downloadUrl": "/api/vault/download/Screenshot_20261029-222456_7_zm89.png"
+        "downloadUrl": "/api/download/Screenshot_20261029-222456_7_zm89.png"
       },
       "timestamp": "2026-10-29T17:25:24.000Z"
     },
@@ -91,7 +91,7 @@
         "size": 262889,
         "formattedSize": "256.7 KB",
         "type": "image/jpeg",
-        "downloadUrl": "/api/vault/download/file_000000004dc0820890df628c3609fffa_2_4fk8.jpg"
+        "downloadUrl": "/api/download/file_000000004dc0820890df628c3609fffa_2_4fk8.jpg"
       },
       "timestamp": "2026-10-29T17:13:56.000Z"
     },
@@ -106,7 +106,7 @@
         "size": 148690,
         "formattedSize": "145.2 KB",
         "type": "image/png",
-        "downloadUrl": "/api/vault/download/Screenshot_20261029-222456_7_zm89.png"
+        "downloadUrl": "/api/download/Screenshot_20261029-222456_7_zm89.png"
       },
       "timestamp": "2026-10-29T17:25:24.000Z"
     },
