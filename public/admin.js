@@ -7,6 +7,74 @@ const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB chunks (Optimized for Vercel Serverle
 
 let allChats = [];
 let activeChatId = null;
+let activeChatIsEnded = false;
+
+// End Chat & Session Conclusion Control
+async function toggleAdminEndChat() {
+  if (!activeChatId) {
+    showToast('Please select a client chat first.');
+    return;
+  }
+  const isCurrentlyEnded = Boolean(window.activeChatIsEnded);
+  const action = isCurrentlyEnded ? 'reopen' : 'end';
+  
+  const clientName = document.getElementById('activeClientName')?.textContent || activeChatId;
+  const confirmMsg = isCurrentlyEnded
+    ? `Reopen consultation with ${clientName}? The client will be able to send messages and documents again.`
+    : `Conclude consultation with ${clientName}? The client will see 'Your chat Ends' and their typing & document attachments will be disabled.`;
+    
+  if (!confirm(confirmMsg)) return;
+
+  try {
+    const res = await fetch('/api/admin/chat/end', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-admin-token': adminToken
+      },
+      body: JSON.stringify({ chatId: activeChatId, action })
+    });
+    const data = await res.json();
+    if (data.success) {
+      window.activeChatIsEnded = data.isEnded;
+      updateAdminEndChatButton(data.isEnded);
+      showToast(data.isEnded ? '🔒 Consultation ended for client' : '🔓 Consultation reopened for client');
+      loadActiveAdminMessages();
+      loadAdminChats();
+    } else {
+      showToast('Error: ' + (data.error || 'Failed to update'));
+    }
+  } catch (err) {
+    showToast('Failed to update session: ' + err.message);
+  }
+}
+
+function updateAdminEndChatButton(isEnded) {
+  window.activeChatIsEnded = Boolean(isEnded);
+  const btn = document.getElementById('endChatBtn');
+  const txt = document.getElementById('endChatBtnText');
+  const icon = document.getElementById('endChatBtnIcon');
+  if (!btn || !txt) return;
+
+  if (isEnded) {
+    txt.textContent = 'Reopen Chat';
+    btn.className = 'h-8 sm:h-9 px-2.5 sm:px-3 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 active:bg-emerald-500/30 text-emerald-300 hover:text-emerald-200 border border-emerald-500/20 backdrop-blur-md text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 shrink-0 cursor-pointer';
+    btn.title = 'Reopen chat for this client';
+    if (icon) {
+      icon.className = 'w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400';
+      icon.innerHTML = '<path d="M7 11V7a5 5 0 0 1 9.9-1"/><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>';
+    }
+  } else {
+    txt.textContent = 'End Chat';
+    btn.className = 'h-8 sm:h-9 px-2.5 sm:px-3 rounded-full bg-rose-500/10 hover:bg-rose-500/20 active:bg-rose-500/30 text-rose-300 hover:text-red-200 border border-rose-500/20 backdrop-blur-md text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 shrink-0 cursor-pointer';
+    btn.title = 'End conversation with this client';
+    if (icon) {
+      icon.className = 'w-3.5 h-3.5 sm:w-4 sm:h-4 text-rose-400';
+      icon.innerHTML = '<circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>';
+    }
+  }
+}
+
 // Native OS Notification Alerts for Admin Desk
 function initAdminNotifications() {
   if ('serviceWorker' in navigator) {
@@ -140,6 +208,15 @@ async function handleAdminWsEvent(payload) {
   const normActiveChatId = (activeChatId || '').toLowerCase().trim();
 
   switch (event) {
+    case 'chat:ended': {
+      if (normChatId === normActiveChatId) {
+        updateAdminEndChatButton(payload.isEnded);
+        loadActiveAdminMessages();
+      }
+      loadAdminChats();
+      break;
+    }
+
     case 'chat:message': {
       const msg = payload.message;
       if (!msg) return;
@@ -680,6 +757,7 @@ function selectChat(chatId, isUserTap = false) {
   lastRenderedActiveChatId = chatId;
 
   const current = allChats.find(c => c.chatId === chatId);
+  updateAdminEndChatButton(current?.isEnded);
   const clientName = current ? current.clientName : decodeURIComponent(chatId);
 
   document.getElementById('activeClientName').textContent = clientName;
@@ -826,6 +904,7 @@ async function loadActiveMessages() {
 
     if (data.success && data.messages) {
       window.currentAdminCachedMessages = data.messages;
+      if (typeof data.isEnded !== 'undefined') updateAdminEndChatButton(data.isEnded);
       const currentSig = data.messages.map(m => `${m.id}:${m.status || ''}:${m.isEdited ? '1' : '0'}:${JSON.stringify(m.reactions || {})}:${m.text || ''}`).join('|');
       if (currentSig !== lastAdminMsgSig) {
         const isNewLength = data.messages.length !== lastMsgCount;
@@ -926,6 +1005,18 @@ function renderAdminMessages(messages) {
         ${renderAdminMessageStatus(msg.status, isRaoprime)}
       </span>
     `;
+
+    if (msg.type === 'system') {
+      return `
+        ${dateDividerHtml}
+        <div class="flex justify-center my-4 select-none animate-in fade-in zoom-in-95 duration-200">
+          <div class="px-4 py-2 rounded-2xl bg-rose-950/40 border border-rose-500/30 text-rose-200 text-xs font-semibold flex items-center gap-2 backdrop-blur-md shadow-lg">
+            <span class="w-2 h-2 rounded-full bg-rose-400 animate-pulse"></span>
+            <span>${escapeHtml(msg.text || 'Your chat Ends')}</span>
+          </div>
+        </div>
+      `;
+    }
 
     let bubbleContent = '';
 

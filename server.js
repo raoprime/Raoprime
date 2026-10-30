@@ -159,7 +159,35 @@ function formatBytes(bytes) {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
 }
 
+// Ended Chats Management & Persistence
+const ENDED_CHATS_FILE = path.join(__dirname, 'storage', 'ended_chats.json');
+let endedChatsSet = new Set();
+
+function loadEndedChats() {
+  try {
+    if (fs.existsSync(ENDED_CHATS_FILE)) {
+      const raw = fs.readFileSync(ENDED_CHATS_FILE, 'utf8');
+      const data = JSON.parse(raw);
+      if (Array.isArray(data)) {
+        endedChatsSet = new Set(data);
+      }
+    }
+  } catch (e) {
+    console.warn('Notice loading ended chats:', e.message);
+  }
+}
+
+function saveEndedChats() {
+  try {
+    fs.writeFileSync(ENDED_CHATS_FILE, JSON.stringify(Array.from(endedChatsSet), null, 2), 'utf8');
+  } catch (e) {
+    console.warn('Notice saving ended chats:', e.message);
+  }
+}
+
 // Canonical Chat ID Normalizer (Unifies room variations & case differences)
+loadEndedChats();
+
 function normalizeChatId(rawChatId) {
   if (!rawChatId || typeof rawChatId !== 'string') return 'default';
   let decoded = rawChatId.trim();
@@ -670,7 +698,8 @@ app.get('/api/chat/messages', async (req, res) => {
       chatId,
       messages,
       typing: activeTyping,
-      online: onlineStatus
+      online: onlineStatus,
+      isEnded: endedChatsSet.has(chatId)
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -700,6 +729,10 @@ app.post('/api/chat/send', async (req, res) => {
     const chatId = normalizeChatId(rawChatId);
     if (!text.trim()) {
       return res.status(400).json({ success: false, error: 'Empty message' });
+    }
+
+    if (endedChatsSet.has(chatId) && sender !== 'Raoprime' && sender !== 'RP') {
+      return res.status(403).json({ success: false, error: 'This conversation has ended. Please start a new chat.' });
     }
 
     const now = Date.now();
@@ -1192,6 +1225,7 @@ app.get('/api/admin/chats', requireAdminAuth, async (req, res) => {
         isOnline: isClientOnline,
         isTyping: isClientTyping,
         unseenCount,
+        isEnded: endedChatsSet.has(chatId),
         lastMessage: {
           sender: lastMsg.sender,
           text: lastMsg.type === 'file' ? `📁 [File] ${lastMsg.file.originalName}` : lastMsg.text,
@@ -1237,17 +1271,48 @@ app.get('/api/admin/download-all/:chatId', requireAdminAuth, async (req, res) =>
 
       if (fs.existsSync(fPath)) {
         archive.file(fPath, { name: f.file.originalName });
-      } else if (isMongoConnected && gridfsBucket && f.file.gridFsId) {
-        try {
-          const downloadStream = gridfsBucket.openDownloadStream(new mongoose.Types.ObjectId(f.file.gridFsId));
-          archive.append(downloadStream, { name: f.file.originalName });
-        } catch (e) {}
       }
     }
 
     archive.finalize();
   } catch (err) {
     res.status(500).send('ZIP error: ' + err.message);
+  }
+});
+
+// Admin: End or Reopen Client Conversation
+app.post('/api/admin/chat/end', requireAdminAuth, async (req, res) => {
+  try {
+    const { chatId: rawChatId, action = 'end' } = req.body;
+    if (!rawChatId) return res.status(400).json({ success: false, error: 'Chat ID required' });
+    const chatId = normalizeChatId(rawChatId);
+
+    if (action === 'end') {
+      endedChatsSet.add(chatId);
+      saveEndedChats();
+
+      // Append system message in the chat
+      const endMsg = {
+        chatId,
+        id: 'msg_sys_' + Date.now(),
+        sender: 'System',
+        type: 'system',
+        text: 'Your chat Ends',
+        timestamp: new Date().toISOString()
+      };
+      await saveChatMessage(chatId, endMsg);
+
+      // 0ms Real-time WebSocket broadcast to room
+      broadcastToRoom(chatId, 'chat:ended', { chatId, isEnded: true });
+      return res.json({ success: true, isEnded: true });
+    } else {
+      endedChatsSet.delete(chatId);
+      saveEndedChats();
+      broadcastToRoom(chatId, 'chat:ended', { chatId, isEnded: false });
+      return res.json({ success: true, isEnded: false });
+    }
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
@@ -1320,6 +1385,10 @@ app.post('/api/upload/init', (req, res) => {
     const chatId = normalizeChatId(rawChatId);
     if (!uploadId || !fileName || !totalChunks) {
       return res.status(400).json({ success: false, error: 'Missing parameters' });
+    }
+
+    if (endedChatsSet.has(chatId) && sender !== 'Raoprime' && sender !== 'RP') {
+      return res.status(403).json({ success: false, error: 'This conversation has ended. Please start a new chat.' });
     }
 
     const sessionDir = path.join(CHUNKS_DIR, uploadId);
@@ -1418,26 +1487,7 @@ app.post('/api/upload/finalize', async (req, res) => {
       destStream.on('error', reject);
     });
 
-    // Cloud GridFS Storage Upload (for files under 350MB to protect MongoDB cluster limits)
     let gridFsId = null;
-    await connectDB();
-    if (isMongoConnected && gridfsBucket && Number(fileSize) < 350 * 1024 * 1024) {
-      try {
-        const uploadStream = gridfsBucket.openUploadStream(finalStoredName, {
-          metadata: { originalName, fileSize, fileType, chatId }
-        });
-        await new Promise((resolve, reject) => {
-          fs.createReadStream(finalFilePath).pipe(uploadStream)
-            .on('finish', () => {
-              gridFsId = uploadStream.id ? uploadStream.id.toString() : null;
-              resolve();
-            })
-            .on('error', reject);
-        });
-      } catch (gridErr) {
-        console.warn('GridFS upload notice:', gridErr.message);
-      }
-    }
 
     // Cleanup temp chunks
     try {
@@ -1489,27 +1539,12 @@ app.get(['/api/download/:storedName', '/api/vault/download/:storedName'], async 
     const filePath = path.join(VAULT_DIR, storedName);
     const isPreview = req.query.preview === '1';
 
-    // 1. Try local disk first
+    // 1. Try local disk
     if (fs.existsSync(filePath)) {
       if (!isPreview) {
         return res.download(filePath);
       } else {
         return res.sendFile(filePath);
-      }
-    }
-
-    // 2. Try MongoDB GridFS Cloud Storage
-    await connectDB();
-    if (isMongoConnected && gridfsBucket) {
-      const files = await gridfsBucket.find({ filename: storedName }).toArray();
-      if (files.length > 0) {
-        const fileDoc = files[0];
-        const contentType = fileDoc.metadata?.fileType || 'application/octet-stream';
-        res.setHeader('Content-Type', contentType);
-        if (!isPreview) {
-          res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileDoc.metadata?.originalName || storedName)}"`);
-        }
-        return gridfsBucket.openDownloadStream(fileDoc._id).pipe(res);
       }
     }
 

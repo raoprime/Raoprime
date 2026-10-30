@@ -8,6 +8,30 @@ const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB chunks (Optimized for Vercel Serverle
 // State
 let currentChatId = 'default';
 let currentRole = 'Client'; // 'Client' or 'Raoprime'
+
+// End Chat & Session Conclusion Logic
+function updateChatEndedState(isEnded) {
+  window.currentChatIsEnded = Boolean(isEnded);
+  const composer = document.getElementById('messageComposerContainer');
+  const endedDock = document.getElementById('chatEndedDock');
+  if (!composer || !endedDock) return;
+  if (isEnded) {
+    composer.classList.add('hidden');
+    endedDock.classList.remove('hidden');
+    endedDock.classList.add('flex');
+  } else {
+    composer.classList.remove('hidden');
+    endedDock.classList.add('hidden');
+    endedDock.classList.remove('flex');
+  }
+}
+
+function startFreshNewChat() {
+  const freshId = 'Client_' + Date.now().toString().slice(-6);
+  localStorage.setItem('raoprime_client', freshId);
+  window.location.href = '/?chatId=' + encodeURIComponent(freshId);
+}
+
 let lastMessagesCount = 0;
 let isCurrentlyUploading = false;
 let typingTimeout = null;
@@ -81,6 +105,14 @@ async function handleWsEvent(payload) {
   }
 
   switch (event) {
+    case 'chat:ended': {
+      if (payload.chatId === currentChatId) {
+        updateChatEndedState(payload.isEnded);
+        loadMessages();
+      }
+      break;
+    }
+
     case 'chat:message': {
       const msg = payload.message;
       if (!msg) return;
@@ -652,6 +684,9 @@ async function loadMessages() {
     const data = await res.json();
     if (data.success && data.messages) {
       window.currentCachedMessages = data.messages;
+      if (typeof data.isEnded !== 'undefined') {
+        updateChatEndedState(Boolean(data.isEnded));
+      }
       const currentSig = data.messages.map(m => `${m.id}:${m.status || ''}:${m.isEdited ? '1' : '0'}:${JSON.stringify(m.reactions || {})}:${m.text || ''}`).join('|');
       if (currentSig !== lastMessageSig) {
         const isNewLength = data.messages.length !== lastMessagesCount;
@@ -757,6 +792,18 @@ function renderMessages(messages) {
         ${renderMessageStatus(msg.status, isOut)}
       </span>
     `;
+
+    if (msg.type === 'system') {
+      return `
+        ${dateDividerHtml}
+        <div class="flex justify-center my-4 select-none animate-in fade-in zoom-in-95 duration-200">
+          <div class="px-4 py-2 rounded-2xl bg-rose-950/40 border border-rose-500/30 text-rose-200 text-xs font-semibold flex items-center gap-2 backdrop-blur-md shadow-lg">
+            <span class="w-2 h-2 rounded-full bg-rose-400"></span>
+            <span>${escapeHtml(msg.text || 'Your chat Ends')}</span>
+          </div>
+        </div>
+      `;
+    }
 
     let bubbleContent = '';
 
@@ -1450,7 +1497,8 @@ async function handleFilesUpload(fileList) {
     fileNameEl.textContent = `(${fIdx + 1}/${fileList.length}) ${file.name}`;
     
     const uploadId = 'upl_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
-    const totalChunks = Math.max(1, Math.ceil(file.size / CHUNK_SIZE));
+    const activeChunkSize = file.size > 20 * 1024 * 1024 ? 4 * 1024 * 1024 : CHUNK_SIZE;
+    const totalChunks = Math.max(1, Math.ceil(file.size / activeChunkSize));
 
     try {
       // 1. Init Upload Session
