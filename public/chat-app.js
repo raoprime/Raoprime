@@ -105,6 +105,24 @@ async function handleWsEvent(payload) {
   }
 
   switch (event) {
+        case 'chat:verification-updated': {
+      if (payload.chatId && payload.chatId.toLowerCase() === (currentChatId || '').toLowerCase()) {
+        currentClientVerification = {
+          verified: Boolean(payload.verified),
+          photoUrl: payload.photoUrl || null,
+          verifiedAt: payload.verifiedAt || null
+        };
+        updatePhotoVerifyUI(currentClientVerification.verified, currentClientVerification.photoUrl);
+      }
+      break;
+    }
+    case 'chat:verification-requested': {
+      if (payload.chatId && payload.chatId.toLowerCase() === (currentChatId || '').toLowerCase()) {
+        showVerificationRequestedBanner();
+        showToast('⚠️ Raoprime requested you to add your photo to verify your identity');
+      }
+      break;
+    }
     case 'chat:ended': {
       if (payload.chatId === currentChatId) {
         updateChatEndedState(payload.isEnded);
@@ -2744,4 +2762,341 @@ async function handleContextUnsend() {
   const msgId = contextTargetMessage.id;
   closeMessageContextMenu();
   unsendMessageById(msgId);
+}
+
+
+// ──────────────────────────────────────────────────────────────
+// Client Photo Identity Verification (Interactive Toggle & Selfie)
+// ──────────────────────────────────────────────────────────────
+
+let currentClientVerification = { verified: false, photoUrl: null, verifiedAt: null };
+let modalCameraMediaStream = null;
+let pendingVerifiedPhotoBase64 = null;
+
+async function loadPhotoVerificationStatus() {
+  if (!currentChatId) return;
+  try {
+    const res = await fetch(`/api/chat/verification?chatId=${encodeURIComponent(currentChatId)}`);
+    const data = await res.json();
+    if (data.success) {
+      currentClientVerification = {
+        verified: Boolean(data.verified),
+        photoUrl: data.photoUrl || null,
+        verifiedAt: data.verifiedAt || null
+      };
+      updatePhotoVerifyUI(currentClientVerification.verified, currentClientVerification.photoUrl);
+      if (data.isRequested && !data.verified) {
+        showVerificationRequestedBanner();
+      }
+    }
+  } catch (err) {
+    console.warn('loadPhotoVerificationStatus error:', err);
+  }
+}
+
+function updatePhotoVerifyUI(isVerified, photoUrl) {
+  const toggle = document.getElementById('photoVerifyToggle');
+  const title = document.getElementById('verifyTitle');
+  const subtitle = document.getElementById('verifySubtitle');
+  const statusBadge = document.getElementById('verifyStatusBadge');
+  const placeholderIcon = document.getElementById('verifyAvatarPlaceholderIcon');
+  const avatarImg = document.getElementById('verifyAvatarImg');
+  const badgeCheck = document.getElementById('verifyBadgeCheck');
+  const changeBtn = document.getElementById('changePhotoBtn');
+  const avatarRing = document.getElementById('verifyAvatarRing');
+
+  if (toggle) toggle.checked = Boolean(isVerified);
+
+  if (isVerified && photoUrl) {
+    if (title) title.textContent = "Verified with your photo";
+    if (subtitle) subtitle.textContent = "Your identity is confirmed with Raoprime";
+    if (statusBadge) statusBadge.classList.remove('hidden');
+    if (changeBtn) changeBtn.classList.remove('hidden');
+    if (placeholderIcon) placeholderIcon.classList.add('hidden');
+    if (avatarImg) {
+      avatarImg.src = photoUrl;
+      avatarImg.classList.remove('hidden');
+    }
+    if (badgeCheck) badgeCheck.classList.remove('hidden');
+    if (avatarRing) {
+      avatarRing.classList.remove('border-slate-600/80');
+      avatarRing.classList.add('border-[#00D26A]');
+    }
+  } else {
+    if (title) title.textContent = "Add your photo to verify it's you";
+    if (subtitle) subtitle.textContent = "Help Raoprime confirm your identity in this chat";
+    if (statusBadge) statusBadge.classList.add('hidden');
+    if (changeBtn) changeBtn.classList.add('hidden');
+    if (placeholderIcon) placeholderIcon.classList.remove('hidden');
+    if (avatarImg) {
+      avatarImg.src = '';
+      avatarImg.classList.add('hidden');
+    }
+    if (badgeCheck) badgeCheck.classList.add('hidden');
+    if (avatarRing) {
+      avatarRing.classList.remove('border-[#00D26A]');
+      avatarRing.classList.add('border-slate-600/80');
+    }
+  }
+}
+
+function showVerificationRequestedBanner() {
+  const strip = document.getElementById('photoVerifyStrip');
+  if (strip) {
+    strip.classList.add('ring-2', 'ring-rose-500', 'bg-rose-950/40');
+    const subtitle = document.getElementById('verifySubtitle');
+    if (subtitle) {
+      subtitle.innerHTML = '<span class="text-rose-300 font-bold">⚠️ Raoprime requested you to add your photo to verify identity</span>';
+    }
+  }
+}
+
+async function onPhotoVerifyToggleChange(isChecked) {
+  if (isChecked) {
+    // If we already have a verified photo on file, keep it enabled
+    if (currentClientVerification.verified && currentClientVerification.photoUrl) {
+      updatePhotoVerifyUI(true, currentClientVerification.photoUrl);
+      return;
+    }
+    // Otherwise open modal for user to take/upload photo
+    openPhotoVerifyModal();
+  } else {
+    // User switched verification OFF
+    try {
+      const res = await fetch('/api/chat/verify-photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chatId: currentChatId, enabled: false })
+      });
+      const data = await res.json();
+      currentClientVerification = { verified: false, photoUrl: null, verifiedAt: null };
+      updatePhotoVerifyUI(false, null);
+      showToast('Photo verification disabled');
+    } catch (err) {
+      showToast('Error updating verification status');
+    }
+  }
+}
+
+function openPhotoVerifyModal() {
+  // If already verified, allow clicking to view full photo or change it
+  const modal = document.getElementById('photoVerifyModal');
+  if (!modal) return;
+  modal.classList.remove('hidden');
+
+  // Populate preview if exists
+  const preview = document.getElementById('modalPhotoPreview');
+  const placeholder = document.getElementById('modalPhotoPlaceholder');
+  const saveBtn = document.getElementById('saveVerifyPhotoBtn');
+
+  if (currentClientVerification.verified && currentClientVerification.photoUrl) {
+    if (preview) {
+      preview.src = currentClientVerification.photoUrl;
+      preview.classList.remove('hidden');
+    }
+    if (placeholder) placeholder.classList.add('hidden');
+    if (saveBtn) saveBtn.disabled = false;
+  } else {
+    if (preview) {
+      preview.src = '';
+      preview.classList.add('hidden');
+    }
+    if (placeholder) placeholder.classList.remove('hidden');
+    if (saveBtn) saveBtn.disabled = true;
+  }
+}
+
+function closePhotoVerifyModal() {
+  stopModalCamera();
+  const modal = document.getElementById('photoVerifyModal');
+  if (modal) modal.classList.add('hidden');
+
+  // If user cancelled without completing verification and is not currently verified, reset toggle switch
+  if (!currentClientVerification.verified) {
+    const toggle = document.getElementById('photoVerifyToggle');
+    if (toggle) toggle.checked = false;
+  }
+}
+
+async function startModalCamera() {
+  const video = document.getElementById('modalCameraStream');
+  const preview = document.getElementById('modalPhotoPreview');
+  const placeholder = document.getElementById('modalPhotoPlaceholder');
+  const cameraControls = document.getElementById('cameraControls');
+  const photoSelectActions = document.getElementById('photoSelectActions');
+
+  try {
+    modalCameraMediaStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 640 } },
+      audio: false
+    });
+    if (video) {
+      video.srcObject = modalCameraMediaStream;
+      video.classList.remove('hidden');
+      if (preview) preview.classList.add('hidden');
+      if (placeholder) placeholder.classList.add('hidden');
+    }
+    if (cameraControls) cameraControls.classList.remove('hidden');
+    if (photoSelectActions) photoSelectActions.classList.add('hidden');
+  } catch (err) {
+    console.warn('Camera access denied or unavailable:', err);
+    showToast('Camera unavailable. Please upload a photo from files.');
+  }
+}
+
+function stopModalCamera() {
+  if (modalCameraMediaStream) {
+    modalCameraMediaStream.getTracks().forEach(t => t.stop());
+    modalCameraMediaStream = null;
+  }
+  const video = document.getElementById('modalCameraStream');
+  if (video) {
+    video.srcObject = null;
+    video.classList.add('hidden');
+  }
+  const cameraControls = document.getElementById('cameraControls');
+  const photoSelectActions = document.getElementById('photoSelectActions');
+  if (cameraControls) cameraControls.classList.add('hidden');
+  if (photoSelectActions) photoSelectActions.classList.remove('hidden');
+}
+
+function captureModalPhoto() {
+  const video = document.getElementById('modalCameraStream');
+  if (!video) return;
+
+  const canvas = document.createElement('canvas');
+  const size = Math.min(video.videoWidth || 480, video.videoHeight || 480);
+  canvas.width = 400;
+  canvas.height = 400;
+  const ctx = canvas.getContext('2d');
+
+  // Center crop square
+  const sx = ((video.videoWidth || 480) - size) / 2;
+  const sy = ((video.videoHeight || 480) - size) / 2;
+  ctx.drawImage(video, sx, sy, size, size, 0, 0, 400, 400);
+
+  const base64 = canvas.toDataURL('image/jpeg', 0.88);
+  pendingVerifiedPhotoBase64 = base64;
+
+  stopModalCamera();
+
+  const preview = document.getElementById('modalPhotoPreview');
+  const placeholder = document.getElementById('modalPhotoPlaceholder');
+  const saveBtn = document.getElementById('saveVerifyPhotoBtn');
+
+  if (preview) {
+    preview.src = base64;
+    preview.classList.remove('hidden');
+  }
+  if (placeholder) placeholder.classList.add('hidden');
+  if (saveBtn) saveBtn.disabled = false;
+}
+
+function handlePhotoFileSelected(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      const maxDim = 480;
+      let w = img.width;
+      let h = img.height;
+      if (w > maxDim || h > maxDim) {
+        if (w > h) {
+          h = Math.round((h * maxDim) / w);
+          w = maxDim;
+        } else {
+          w = Math.round((w * maxDim) / h);
+          h = maxDim;
+        }
+      }
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+
+      const base64 = canvas.toDataURL('image/jpeg', 0.88);
+      pendingVerifiedPhotoBase64 = base64;
+
+      const preview = document.getElementById('modalPhotoPreview');
+      const placeholder = document.getElementById('modalPhotoPlaceholder');
+      const saveBtn = document.getElementById('saveVerifyPhotoBtn');
+
+      if (preview) {
+        preview.src = base64;
+        preview.classList.remove('hidden');
+      }
+      if (placeholder) placeholder.classList.add('hidden');
+      if (saveBtn) saveBtn.disabled = false;
+    };
+    img.src = evt.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function submitPhotoVerification() {
+  if (!pendingVerifiedPhotoBase64 && (!currentClientVerification.verified || !currentClientVerification.photoUrl)) {
+    showToast('Please take or upload a photo first');
+    return;
+  }
+
+  const saveBtn = document.getElementById('saveVerifyPhotoBtn');
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving...';
+  }
+
+  try {
+    const res = await fetch('/api/chat/verify-photo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chatId: currentChatId,
+        photoData: pendingVerifiedPhotoBase64,
+        enabled: true
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      currentClientVerification = {
+        verified: true,
+        photoUrl: data.photoUrl,
+        verifiedAt: data.verifiedAt
+      };
+      updatePhotoVerifyUI(true, data.photoUrl);
+      closePhotoVerifyModal();
+      showToast('✓ Identity photo verified successfully!');
+      // Remove any requested ring
+      const strip = document.getElementById('photoVerifyStrip');
+      if (strip) strip.classList.remove('ring-2', 'ring-rose-500', 'bg-rose-950/40');
+    } else {
+      showToast('Failed to save verification: ' + (data.error || 'Server error'));
+    }
+  } catch (err) {
+    showToast('Network error during verification upload');
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Verify & Save';
+    }
+  }
+}
+
+function openPhotoLightbox(url) {
+  const targetUrl = url || currentClientVerification.photoUrl;
+  if (!targetUrl) return;
+  const modal = document.getElementById('photoLightboxModal');
+  const img = document.getElementById('lightboxPhotoImg');
+  if (modal && img) {
+    img.src = targetUrl;
+    modal.classList.remove('hidden');
+  }
+}
+
+function closePhotoLightbox() {
+  const modal = document.getElementById('photoLightboxModal');
+  if (modal) modal.classList.add('hidden');
 }

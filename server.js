@@ -47,6 +47,28 @@ const VAULT_DIR = path.join(BASE_STORAGE, 'vault');
 const CHUNKS_DIR = path.join(BASE_STORAGE, 'chunks');
 const ASSETS_DIR = path.join(ROOT_DIR, 'public', 'assets');
 const MESSAGES_FILE = path.join(BASE_STORAGE, 'messages.json');
+const VERIFICATIONS_FILE = path.join(BASE_STORAGE, 'verifications.json');
+
+function loadVerifications() {
+  try {
+    if (fs.existsSync(VERIFICATIONS_FILE)) {
+      return JSON.parse(fs.readFileSync(VERIFICATIONS_FILE, 'utf8'));
+    }
+  } catch (e) {
+    console.error('Error reading verifications:', e);
+  }
+  return {};
+}
+
+function saveVerifications(data) {
+  try {
+    fs.writeFileSync(VERIFICATIONS_FILE, JSON.stringify(data, null, 2), 'utf8');
+  } catch (e) {
+    console.error('Error saving verifications:', e);
+  }
+}
+
+let verificationsStore = loadVerifications();
 
 try {
   [BASE_STORAGE, VAULT_DIR, CHUNKS_DIR].forEach((dir) => {
@@ -788,6 +810,112 @@ app.get('/api/chat/messages', async (req, res) => {
       online: onlineStatus,
       isEnded: endedChatsSet.has(chatId)
     });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+
+// ──────────────────────────────────────────────────────────────
+// Client Photo Identity Verification Endpoints
+// ──────────────────────────────────────────────────────────────
+
+app.get('/api/chat/verification', (req, res) => {
+  try {
+    const rawChatId = req.query.chatId || 'default';
+    const chatId = normalizeChatId(rawChatId);
+    const ver = verificationsStore[chatId] || { verified: false, photoUrl: null };
+    res.json({
+      success: true,
+      chatId,
+      verified: Boolean(ver.verified),
+      photoUrl: ver.photoUrl || null,
+      verifiedAt: ver.verifiedAt || null,
+      isRequested: Boolean(ver.isRequested)
+    });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+app.post('/api/chat/verify-photo', (req, res) => {
+  try {
+    const { chatId: rawChatId = 'default', photoData, enabled } = req.body;
+    const chatId = normalizeChatId(rawChatId);
+
+    if (typeof enabled !== 'undefined' && !enabled) {
+      verificationsStore[chatId] = {
+        verified: false,
+        photoUrl: null,
+        updatedAt: new Date().toISOString()
+      };
+      saveVerifications(verificationsStore);
+      broadcastToRoom(chatId, 'chat:verification-updated', {
+        chatId,
+        verified: false,
+        photoUrl: null
+      });
+      return res.json({ success: true, verified: false, photoUrl: null });
+    }
+
+    if (!photoData || typeof photoData !== 'string') {
+      return res.status(400).json({ success: false, error: 'Photo data is required' });
+    }
+
+    let buffer;
+    let ext = 'jpg';
+    const matches = photoData.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
+    if (matches) {
+      ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+      buffer = Buffer.from(matches[2], 'base64');
+    } else {
+      buffer = Buffer.from(photoData, 'base64');
+    }
+
+    const cleanName = chatId.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    const storedFileName = `verify_${cleanName}_${Date.now()}.${ext}`;
+    const filePath = path.join(VAULT_DIR, storedFileName);
+    fs.writeFileSync(filePath, buffer);
+
+    const photoUrl = `/api/download/${storedFileName}`;
+    verificationsStore[chatId] = {
+      verified: true,
+      photoUrl,
+      verifiedAt: new Date().toISOString(),
+      isRequested: false
+    };
+    saveVerifications(verificationsStore);
+
+    broadcastToRoom(chatId, 'chat:verification-updated', {
+      chatId,
+      verified: true,
+      photoUrl,
+      verifiedAt: verificationsStore[chatId].verifiedAt
+    });
+
+    res.json({
+      success: true,
+      verified: true,
+      photoUrl,
+      verifiedAt: verificationsStore[chatId].verifiedAt
+    });
+  } catch (err) {
+    console.error('verify-photo error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/admin/request-verification', requireAdminAuth, (req, res) => {
+  try {
+    const { chatId: rawChatId } = req.body;
+    if (!rawChatId) return res.status(400).json({ success: false, error: 'chatId required' });
+    const chatId = normalizeChatId(rawChatId);
+    if (!verificationsStore[chatId]) verificationsStore[chatId] = { verified: false, photoUrl: null };
+    verificationsStore[chatId].isRequested = true;
+    saveVerifications(verificationsStore);
+
+    broadcastToRoom(chatId, 'chat:verification-requested', { chatId });
+    res.json({ success: true, message: 'Verification requested from client' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

@@ -208,6 +208,25 @@ async function handleAdminWsEvent(payload) {
   const normActiveChatId = (activeChatId || '').toLowerCase().trim();
 
   switch (event) {
+        case 'chat:verification-updated': {
+      const target = allChats.find(c => c.chatId === payload.chatId);
+      if (target) {
+        target.isVerified = Boolean(payload.verified);
+        target.verifiedPhoto = payload.photoUrl;
+        target.verifiedAt = payload.verifiedAt;
+        filterChats();
+        if (activeChatId === payload.chatId) {
+          updateAdminVerificationBadge(target);
+          const avatarEl = document.getElementById('activeClientAvatar');
+          if (target.isVerified && target.verifiedPhoto) {
+            avatarEl.innerHTML = `<img src="${target.verifiedPhoto}" class="w-full h-full object-cover rounded-full cursor-pointer" onclick="viewClientVerifiedPhoto('${target.verifiedPhoto}', '${escapeHtml(target.clientName)}')">`;
+          } else {
+            avatarEl.textContent = target.clientName.charAt(0).toUpperCase();
+          }
+        }
+      }
+      break;
+    }
     case 'chat:ended': {
       if (normChatId === normActiveChatId) {
         updateAdminEndChatButton(payload.isEnded);
@@ -746,9 +765,10 @@ function filterChats() {
     return `
       <div onclick="selectChat('${c.chatId}', true)" class="chat-item p-3.5 flex items-center gap-3 cursor-pointer hover:bg-slate-900/60 active:bg-rose-950/30 transition-colors ${isActive ? 'active' : ''}">
         <div class="relative shrink-0">
-          <div class="w-11 h-11 rounded-full bg-gradient-to-tr from-rose-900 to-red-700 flex items-center justify-center text-white font-extrabold text-sm shadow-md ring-1 ring-black">
-            ${initial}
+          <div class="w-11 h-11 rounded-full bg-gradient-to-tr from-rose-900 to-red-700 flex items-center justify-center text-white font-extrabold text-sm shadow-md ring-1 ring-black overflow-hidden relative cursor-pointer" ${c.isVerified && c.verifiedPhoto ? `onclick="event.stopPropagation(); viewClientVerifiedPhoto('${c.verifiedPhoto}', '${escapeHtml(c.clientName)}')"` : ''}>
+            ${c.isVerified && c.verifiedPhoto ? `<img src="${c.verifiedPhoto}" class="w-full h-full object-cover">` : initial}
           </div>
+          ${c.isVerified ? `<span class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#00D26A] border-2 border-[#090b10] text-white flex items-center justify-center text-[8px] font-bold shadow-sm" title="Verified Identity Photo">✓</span>` : ''}
           <span class="absolute bottom-0 right-0 w-2.5 h-2.5 ${isLiveOnline ? 'bg-emerald-500 radar-pulse' : 'bg-slate-500'} border-2 border-[#090b10] rounded-full"></span>
         </div>
         <div class="flex-1 min-w-0">
@@ -792,7 +812,13 @@ function selectChat(chatId, isUserTap = false) {
   const clientName = current ? current.clientName : decodeURIComponent(chatId);
 
   document.getElementById('activeClientName').textContent = clientName;
-  document.getElementById('activeClientAvatar').textContent = clientName.charAt(0).toUpperCase();
+  const avatarEl = document.getElementById('activeClientAvatar');
+  if (current?.isVerified && current?.verifiedPhoto) {
+    avatarEl.innerHTML = `<img src="${current.verifiedPhoto}" class="w-full h-full object-cover rounded-full cursor-pointer" onclick="viewClientVerifiedPhoto('${current.verifiedPhoto}', '${escapeHtml(clientName)}')">`;
+  } else {
+    avatarEl.textContent = clientName.charAt(0).toUpperCase();
+  }
+  updateAdminVerificationBadge(current);
   const isOnline = Boolean(current?.isOnline);
   document.getElementById('activeClientMeta').innerHTML = isOnline
     ? `<span class="text-emerald-400 font-semibold flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400 radar-pulse"></span> Active now</span>`
@@ -3107,4 +3133,72 @@ async function submitRenameChat() {
       btn.textContent = 'Save Name';
     }
   }
+}
+
+
+// ──────────────────────────────────────────────────────────────
+// Admin Client Photo Verification Handlers
+// ──────────────────────────────────────────────────────────────
+
+function updateAdminVerificationBadge(chat) {
+  const area = document.getElementById('activeClientVerifyArea');
+  if (!area) return;
+  if (!chat) {
+    area.innerHTML = '';
+    return;
+  }
+  if (chat.isVerified && chat.verifiedPhoto) {
+    area.innerHTML = `
+      <button type="button" onclick="viewClientVerifiedPhoto('${chat.verifiedPhoto}', '${escapeHtml(chat.clientName)}')" class="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-bold flex items-center gap-1 hover:bg-emerald-500/30 transition-all cursor-pointer" title="Click to view verified photo">
+        <svg class="w-3 h-3 text-[#00D26A]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        <span>Verified Photo</span>
+      </button>
+    `;
+  } else {
+    area.innerHTML = `
+      <button type="button" onclick="adminRequestPhotoVerification('${chat.chatId}', '${escapeHtml(chat.clientName)}')" class="px-2 py-0.5 rounded-full bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 text-[10.5px] font-semibold flex items-center gap-1 transition-all cursor-pointer active:scale-95" title="Ask client to add their photo to verify identity">
+        <svg class="w-3 h-3 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <span>Request Photo</span>
+      </button>
+    `;
+  }
+}
+
+async function adminRequestPhotoVerification(chatId, clientName) {
+  if (!adminToken) return;
+  try {
+    const res = await fetch('/api/admin/request-verification', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-admin-token': adminToken
+      },
+      body: JSON.stringify({ chatId })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(`Photo verification requested from ${clientName || 'client'}`);
+    } else {
+      showToast('Request failed: ' + (data.error || 'Unknown error'));
+    }
+  } catch (err) {
+    showToast('Network error requesting verification');
+  }
+}
+
+function viewClientVerifiedPhoto(url, name) {
+  if (!url) return;
+  const modal = document.getElementById('adminPhotoModal');
+  const img = document.getElementById('adminPhotoModalImg');
+  const nameEl = document.getElementById('adminPhotoModalName');
+  if (modal && img) {
+    img.src = url;
+    if (nameEl) nameEl.textContent = name || 'Client';
+    modal.classList.remove('hidden');
+  }
+}
+
+function closeAdminPhotoModal() {
+  const modal = document.getElementById('adminPhotoModal');
+  if (modal) modal.classList.add('hidden');
 }

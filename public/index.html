@@ -333,6 +333,49 @@
     </div>
   </div>
 
+
+  <!-- Client Identity Photo Verification Strip with Interactive Toggle Switch -->
+  <div id="photoVerifyStrip" class="w-full bg-[#0b0e17]/95 border-b border-white/[0.08] px-3.5 sm:px-6 py-2.5 flex items-center justify-between gap-3 text-xs z-15 backdrop-blur-xl shadow-md transition-all select-none">
+    <div class="flex items-center gap-3 min-w-0">
+      <!-- Avatar Preview / Camera Icon -->
+      <div onclick="openPhotoVerifyModal()" class="relative shrink-0 cursor-pointer group" title="Click to view or add photo">
+        <div id="verifyAvatarRing" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-tr from-[#161a27] to-[#202738] border-2 border-slate-600/80 flex items-center justify-center text-slate-300 overflow-hidden shadow-md group-hover:scale-105 transition-transform">
+          <svg id="verifyAvatarPlaceholderIcon" class="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-hover:text-rose-300 transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+          <img id="verifyAvatarImg" src="" alt="Verified Photo" class="w-full h-full object-cover hidden">
+        </div>
+        <!-- Emerald Verified Checkmark Badge -->
+        <span id="verifyBadgeCheck" class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#00D26A] border-2 border-[#0a0c12] text-white flex items-center justify-center hidden shadow-sm">
+          <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </span>
+      </div>
+
+      <!-- Text / Status -->
+      <div class="min-w-0">
+        <div class="flex items-center gap-2">
+          <span id="verifyTitle" class="font-extrabold text-white text-[12.5px] truncate">Add your photo to verify it's you</span>
+          <span id="verifyStatusBadge" class="hidden px-2 py-0.2 rounded-full text-[9.5px] font-bold bg-[#00D26A]/20 text-[#00D26A] border border-[#00D26A]/40">Verified ✓</span>
+        </div>
+        <p id="verifySubtitle" class="text-[11px] text-slate-400 truncate">Help Raoprime confirm your identity in this chat</p>
+      </div>
+    </div>
+
+    <!-- Right: Change Photo button + Toggle Switch -->
+    <div class="flex items-center gap-2.5 sm:gap-3 shrink-0">
+      <button type="button" id="changePhotoBtn" onclick="openPhotoVerifyModal()" class="hidden px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 active:scale-95 text-slate-200 text-[11px] font-semibold transition-all cursor-pointer">
+        Change
+      </button>
+
+      <!-- The Toggle Switch -->
+      <label class="inline-flex items-center cursor-pointer select-none" title="Toggle photo verification">
+        <input type="checkbox" id="photoVerifyToggle" onchange="onPhotoVerifyToggleChange(this.checked)" class="sr-only peer">
+        <div class="relative w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#00D26A] shadow-inner transition-colors"></div>
+      </label>
+    </div>
+  </div>
+
   <!-- Middle Chat Messages Stream (Scrollable with WhatsApp Wallpaper Texture) -->
   <main id="chatStream" class="flex-1 overflow-y-auto chat-scroll p-3.5 sm:p-6 space-y-4 relative flex flex-col justify-start chat-wallpaper">
 
@@ -766,6 +809,93 @@
     </div>
   </div>
 
-  <script src="/chat-app.js?v=6.0"></script>
+  <script src="/chat-app.js?v=6.1"></script>
+
+  <!-- Photo Verification Modal (Take Selfie or Upload Photo) -->
+  <div id="photoVerifyModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="w-full max-w-sm p-6 rounded-3xl bg-[#0c0e16] border border-white/10 shadow-2xl text-center space-y-4 relative animate-in fade-in zoom-in-95 duration-200">
+      
+      <!-- Close Button -->
+      <button type="button" onclick="closePhotoVerifyModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-1.5 rounded-full hover:bg-white/10 transition-colors">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+
+      <!-- Header Icon & Title -->
+      <div class="w-14 h-14 rounded-full bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400 mx-auto">
+        <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+      </div>
+
+      <div class="space-y-1">
+        <h3 class="font-extrabold text-lg text-white">Verify It's You</h3>
+        <p class="text-xs text-slate-400 leading-relaxed">Add your photo so Raoprime can verify your identity in this conversation.</p>
+      </div>
+
+      <!-- Photo Preview / Placeholder Area -->
+      <div class="relative w-32 h-32 mx-auto rounded-full bg-[#151926] border-2 border-dashed border-rose-500/40 overflow-hidden flex items-center justify-center group shadow-xl">
+        <img id="modalPhotoPreview" src="" alt="Photo Preview" class="w-full h-full object-cover hidden">
+        <div id="modalPhotoPlaceholder" class="flex flex-col items-center justify-center text-slate-400 text-xs p-2">
+          <svg class="w-8 h-8 text-slate-500 mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/></svg>
+          <span class="text-[11px] text-slate-400 font-medium">No photo selected</span>
+        </div>
+        <!-- Live Camera Stream (if user opens selfie cam) -->
+        <video id="modalCameraStream" autoplay playsinline class="w-full h-full object-cover hidden"></video>
+      </div>
+
+      <!-- Action Buttons for Camera / File Pick -->
+      <div id="photoSelectActions" class="grid grid-cols-2 gap-2 pt-1">
+        <!-- Take Selfie with Camera -->
+        <button type="button" onclick="startModalCamera()" id="btnStartCam" class="py-2.5 px-3 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 border border-white/10 active:scale-95 cursor-pointer">
+          <svg class="w-4 h-4 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <span>Take Selfie</span>
+        </button>
+
+        <!-- Choose from Gallery / Files -->
+        <label class="py-2.5 px-3 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 border border-white/10 active:scale-95 cursor-pointer">
+          <svg class="w-4 h-4 text-sky-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+          <span>Upload File</span>
+          <input type="file" id="photoFileInput" accept="image/*" class="hidden" onchange="handlePhotoFileSelected(event)">
+        </label>
+      </div>
+
+      <!-- Live Camera Capture & Switch Controls (Visible while camera is streaming) -->
+      <div id="cameraControls" class="hidden flex items-center justify-center gap-2 pt-1">
+        <button type="button" onclick="captureModalPhoto()" class="py-2 px-5 rounded-full bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-all shadow-lg active:scale-95 flex items-center gap-1.5 cursor-pointer">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+          <span>Capture Photo</span>
+        </button>
+        <button type="button" onclick="stopModalCamera()" class="p-2 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 text-xs transition-all active:scale-95 cursor-pointer" title="Cancel Camera">
+          ✕
+        </button>
+      </div>
+
+      <!-- Save & Confirm Button -->
+      <div class="pt-2 flex items-center gap-2">
+        <button type="button" onclick="closePhotoVerifyModal()" class="flex-1 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-slate-300 font-semibold text-xs transition-all active:scale-95 cursor-pointer">
+          Cancel
+        </button>
+        <button type="button" onclick="submitPhotoVerification()" id="saveVerifyPhotoBtn" class="flex-1 py-2.5 rounded-xl bg-[#00D26A] hover:bg-[#00ba5e] text-black font-extrabold text-xs transition-all active:scale-95 shadow-lg shadow-emerald-950/40 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed" disabled>
+          Verify & Save
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Photo Full Preview Lightbox Modal -->
+  <div id="photoLightboxModal" onclick="closePhotoLightbox()" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 cursor-pointer">
+    <div class="max-w-md w-full text-center space-y-3" onclick="event.stopPropagation()">
+      <div class="relative inline-block rounded-3xl overflow-hidden border-2 border-white/20 shadow-2xl bg-black">
+        <img id="lightboxPhotoImg" src="" alt="Verified Identity" class="max-h-[75vh] max-w-full object-contain">
+        <div class="absolute bottom-0 inset-x-0 p-3 bg-gradient-to-t from-black/90 via-black/50 to-transparent flex items-center justify-between text-xs text-white">
+          <span class="font-bold flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#00D26A]"></span> Verified Photo</span>
+          <button type="button" onclick="closePhotoLightbox()" class="text-slate-300 hover:text-white font-semibold">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
