@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  raoprime:
+    build: .
+    container_name: raoprime-portal
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    volumes:
+      - ./storage:/app/storage
+      - ./uploads:/app/uploads

@@ -2255,3 +2255,13 @@ function cleanupCall() {
 
   if (window.lucide) window.lucide.createIcons();
 }
+
+function openProfileModal() {
+  const m = document.getElementById('profileModal');
+  if (m) m.classList.remove('hidden');
+}
+
+function closeProfileModal() {
+  const m = document.getElementById('profileModal');
+  if (m) m.classList.add('hidden');
+}

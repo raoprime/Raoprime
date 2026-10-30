@@ -241,16 +241,16 @@
   <!-- Instagram / Apple DM Top Header -->
   <header class="h-16 px-3.5 sm:px-6 bg-[#0a0c12]/95 border-b border-slate-800/80 backdrop-blur-xl flex items-center justify-between z-20 shrink-0 safe-top">
     
-    <!-- User Info & Circular RP Logo -->
+    <!-- User Info & Circular RP Logo (Click to View Profile) -->
     <div class="flex items-center gap-3 sm:gap-3.5 min-w-0">
-      <div class="relative shrink-0">
-        <img src="/assets/rp-logo.jpg" alt="Raoprime Logo" class="w-10 h-10 sm:w-11 sm:h-11 rounded-full object-cover border-2 border-rose-800 shadow-md shadow-rose-950/60 ring-2 ring-black">
+      <div onclick="openProfileModal()" class="relative shrink-0 cursor-pointer group" title="View Raoprime Profile">
+        <img src="/assets/rp-logo.jpg" alt="Raoprime Logo" class="w-10 h-10 sm:w-11 sm:h-11 rounded-full object-cover border-2 border-[#7a182a] shadow-md shadow-rose-950/60 ring-2 ring-black group-hover:scale-105 transition-transform">
         <!-- Live Radar Activity Indicator on Avatar -->
         <span id="headerRadarDot" class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-[#0a0c12] rounded-full radar-pulse"></span>
       </div>
-      <div class="min-w-0">
+      <div onclick="openProfileModal()" class="min-w-0 cursor-pointer">
         <div class="flex items-center gap-1.5">
-          <h2 id="chatHeading" class="font-extrabold text-sm sm:text-base text-white tracking-tight truncate max-w-[100px] xs:max-w-[160px] sm:max-w-none">Raoprime</h2>
+          <h2 id="chatHeading" class="font-extrabold text-sm sm:text-base text-white tracking-tight truncate max-w-[100px] xs:max-w-[160px] sm:max-w-none group-hover:text-rose-200 transition-colors">Raoprime</h2>
           <svg class="w-4 h-4 text-rose-500 fill-current shrink-0" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
         </div>
         <!-- Status / Real-time Typing Text -->
@@ -626,6 +626,66 @@
       </div>
     </div>
 
+  </div>
+
+  <!-- WhatsApp-Grade Profile Photo / Info Modal (DP Managed) -->
+  <div id="profileModal" class="fixed inset-0 bg-black/85 backdrop-blur-xl z-50 hidden flex items-center justify-center p-4 transition-all">
+    <div class="bg-[#0e1118] border border-white/10 rounded-3xl max-w-sm w-full overflow-hidden shadow-2xl relative text-center">
+      <!-- Close button -->
+      <button onclick="closeProfileModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer z-10" aria-label="Close">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+
+      <!-- Banner Accent -->
+      <div class="h-24 bg-gradient-to-r from-[#4a0d17] via-[#641322] to-[#3a0812] relative flex items-center justify-center">
+        <div class="absolute inset-0 bg-[radial-gradient(#ffffff08_1px,transparent_1px)] [background-size:12px_12px]"></div>
+      </div>
+
+      <!-- High-Res DP Avatar with luxury double-ring border -->
+      <div class="relative -mt-14 mb-3 flex justify-center">
+        <div class="relative">
+          <img src="/assets/rp-logo.jpg" alt="Raoprime" class="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover border-4 border-[#0e1118] shadow-2xl ring-4 ring-[#641322]/80">
+          <span class="absolute bottom-1 right-1 w-4 h-4 bg-emerald-500 border-2 border-[#0e1118] rounded-full radar-pulse"></span>
+        </div>
+      </div>
+
+      <!-- Identity & Verified Badge -->
+      <div class="px-6 pb-6 space-y-3">
+        <div>
+          <div class="flex items-center justify-center gap-1.5">
+            <h3 class="text-xl font-bold text-white tracking-tight">Raoprime</h3>
+            <svg class="w-5 h-5 text-rose-500 fill-current" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+          </div>
+          <p class="text-xs text-rose-300 font-semibold tracking-wide uppercase mt-0.5">Official Executive Client Portal</p>
+        </div>
+
+        <p class="text-xs text-slate-400 leading-relaxed max-w-xs mx-auto">
+          Confidential document transmission desk, real-time messaging, and high-fidelity encrypted communications.
+        </p>
+
+        <!-- Status Pill -->
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>Active & Ready to Connect</span>
+        </div>
+
+        <!-- Quick Actions Grid -->
+        <div class="grid grid-cols-3 gap-2 pt-2 border-t border-white/5">
+          <button onclick="closeProfileModal(); startCall('audio')" class="p-2.5 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white flex flex-col items-center gap-1 transition-all cursor-pointer">
+            <svg class="w-5 h-5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+            <span class="text-[11px] font-medium">Voice</span>
+          </button>
+          <button onclick="closeProfileModal(); startCall('video')" class="p-2.5 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white flex flex-col items-center gap-1 transition-all cursor-pointer">
+            <svg class="w-5 h-5 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+            <span class="text-[11px] font-medium">Video</span>
+          </button>
+          <button onclick="closeProfileModal(); copyClientChatLink()" class="p-2.5 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white flex flex-col items-center gap-1 transition-all cursor-pointer">
+            <svg class="w-5 h-5 text-sky-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+            <span class="text-[11px] font-medium">Share</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="/chat-app.js"></script>
