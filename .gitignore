@@ -8,3 +8,5 @@ storage/chunks/*
 *.log
 
 scratch/
+.agents/
+capture_*.js

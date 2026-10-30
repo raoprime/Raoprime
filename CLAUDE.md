@@ -22,22 +22,19 @@ Adhere strictly to the design system established in `DESIGN.md`:
 
 ## 3. Google OAuth 2.0 & Identity Verification
 
-### Google Cloud Credentials
-- **Client ID:** Configured in `.env` / Render (`GOOGLE_CLIENT_ID`)
+### Google Cloud Credentials (Official Raoprime)
+- **Client ID:** Configured in `.env` / Render (`GOOGLE_CLIENT_ID`): `1091556491172-...`
 - **Client Secret:** Configured in `.env` / Render (`GOOGLE_CLIENT_SECRET`)
-- **Project:** `verfect-9d923` (Owner: `raodharmeshy@gmail.com`)
+- **Project:** `Raoprime` (Owner/Support: `raoprime.music@gmail.com`)
 
-### Resolving `Error 400: origin_mismatch`
-When running on `https://raoprime.onrender.com`, Google requires the domain to be registered in Google Cloud Console:
-1. Open [Google Cloud Console Credentials](https://console.cloud.google.com/apis/credentials?project=verfect-9d923)
-2. Select OAuth 2.0 Web Client (`231998089859-...`)
-3. Under **Authorized JavaScript origins**, add:
+### Whitelisted Domains & Callbacks
+For the official Raoprime Web Client ID (`1091556491172-qvg8ad21inph1u5f5i50dohnrp06uvri.apps.googleusercontent.com`):
+1. **Authorized JavaScript origins:**
    - `https://raoprime.onrender.com`
-   - `http://localhost:4000` (for local development)
-4. Under **Authorized redirect URIs**, add:
+   - `http://localhost:4000`
+2. **Authorized redirect URIs:**
    - `https://raoprime.onrender.com/api/auth/google/callback`
    - `http://localhost:4000/api/auth/google/callback`
-5. Save changes.
 
 ### Fallback Verification Engine
 If Google OAuth is pending domain propagation, the client portal provides **Fast-Track Instant Verify**:

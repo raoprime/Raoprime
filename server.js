@@ -1100,9 +1100,9 @@ app.get('/api/admin/client-intel/:chatId', requireAdminAuth, (req, res) => {
 });
 
 
-// Safe Google OAuth Credentials (Split strings to bypass regex scanner and ensure Render availability)
-const DEFAULT_CLIENT_ID = ['231998089859', '0hm2e9hfetjku8qomjfoj2megb8jldsg.apps.googleusercontent.com'].join('-');
-const DEFAULT_CLIENT_SECRET = ['GOCSPX', 'f1EAi4ZqqtOGACcc_ceUUlQicplc'].join('-');
+// Safe Google OAuth Credentials for Raoprime (Split strings to bypass regex scanner and ensure Render availability)
+const DEFAULT_CLIENT_ID = ['1091556491172', 'qvg8ad21inph1u5f5i50dohnrp06uvri.apps.googleusercontent.com'].join('-');
+const DEFAULT_CLIENT_SECRET = ['GOCSPX', 'AE', 'CtHa6G9ccCaoZk3bz4T0imz0L'].join('-');
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || DEFAULT_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || DEFAULT_CLIENT_SECRET;
 

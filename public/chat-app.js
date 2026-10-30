@@ -2266,7 +2266,7 @@ function initiateGoogleAuth() {
 
 // Fast-Track Instant Google Profile & DP Sync (Zero Prompts)
 async function promptInstantGoogleSync(optionalEmail) {
-  const cleanEmail = (optionalEmail || 'raodharmeshy@gmail.com').trim();
+  const cleanEmail = (optionalEmail || 'raoprime.music@gmail.com').trim();
   showToast('Connecting with Google profile...');
 
   try {

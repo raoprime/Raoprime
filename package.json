@@ -27,5 +27,8 @@
     "mongodb": "^7.7.0",
     "mongoose": "^9.11.4",
     "ws": "^8.22.0"
+  },
+  "devDependencies": {
+    "puppeteer": "^25.16.0"
   }
 }
