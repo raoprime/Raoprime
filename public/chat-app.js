@@ -182,6 +182,14 @@ async function handleWsEvent(payload) {
       break;
     }
 
+    case 'chat:deleted': {
+      if (window.currentCachedMessages && payload.messageId) {
+        window.currentCachedMessages = window.currentCachedMessages.filter(m => m.id !== payload.messageId);
+        renderMessages(window.currentCachedMessages);
+      }
+      break;
+    }
+
     case 'call:incoming': {
       if (isCallActive) return;
       const call = payload.call;
@@ -698,6 +706,11 @@ async function loadMessages() {
     const res = await fetch(`/api/chat/messages?chatId=${encodeURIComponent(currentChatId)}&reader=Client`);
     const data = await res.json();
     if (data.success && data.messages) {
+      if (data.canonicalChatId && data.canonicalChatId !== currentChatId) {
+        currentChatId = data.canonicalChatId;
+        localStorage.setItem('raoprime_client', currentChatId);
+        sendWsEvent('join', { chatId: currentChatId, role: currentRole, sender: currentRole });
+      }
       window.currentCachedMessages = data.messages;
       if (typeof data.isEnded !== 'undefined') {
         updateChatEndedState(Boolean(data.isEnded));
@@ -980,6 +993,14 @@ function renderMessages(messages) {
                 <path d="M20 18v-2a4 4 0 0 0-4-4H4"></path>
               </svg>
             </button>
+            ${(msg.sender === currentRole) ? `
+              <button type="button" onclick="quickUnsendMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 rounded-full transition-colors cursor-pointer" title="Unsend Message">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </button>
+            ` : ''}
           </div>
         </div>
       </div>
@@ -1315,6 +1336,16 @@ function openMessageContextMenuById(msgId, event) {
       editBtn.classList.remove('hidden');
     } else {
       editBtn.classList.add('hidden');
+    }
+  }
+
+  const unsendBtn = document.getElementById('ctxUnsendBtn');
+  const canUnsend = (msg.sender === currentRole);
+  if (unsendBtn) {
+    if (canUnsend) {
+      unsendBtn.classList.remove('hidden');
+    } else {
+      unsendBtn.classList.add('hidden');
     }
   }
 
@@ -2544,4 +2575,50 @@ function openProfileModal() {
 function closeProfileModal() {
   const m = document.getElementById('profileModal');
   if (m) m.classList.add('hidden');
+}
+
+
+async function unsendMessageById(msgId) {
+  if (!msgId) return;
+  const msg = (window.currentCachedMessages || []).find(m => m.id === msgId);
+  if (!msg) return;
+  if (msg.sender !== currentRole) {
+    showToast('You can only unsend your own messages');
+    return;
+  }
+
+  // 1. Instant 0ms Optimistic UI Removal
+  window.currentCachedMessages = (window.currentCachedMessages || []).filter(m => m.id !== msgId);
+  renderMessages(window.currentCachedMessages);
+
+  // 2. High-speed WebSocket delivery
+  sendWsEvent('chat:delete', { messageId: msgId, chatId: currentChatId });
+
+  // 3. Guaranteed HTTP Database Persistence
+  try {
+    await fetch('/api/chat/message/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chatId: currentChatId,
+        messageId: msgId,
+        sender: currentRole
+      })
+    });
+    showToast('Message unsent');
+  } catch (err) {
+    console.warn('Delete HTTP notice:', err);
+  }
+}
+
+async function quickUnsendMessage(msgId, event) {
+  if (event) event.stopPropagation();
+  unsendMessageById(msgId);
+}
+
+async function handleContextUnsend() {
+  if (!contextTargetMessage) return;
+  const msgId = contextTargetMessage.id;
+  closeMessageContextMenu();
+  unsendMessageById(msgId);
 }

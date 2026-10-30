@@ -308,6 +308,14 @@ async function handleAdminWsEvent(payload) {
       break;
     }
 
+    case 'chat:deleted': {
+      if (normChatId === normActiveChatId && window.currentAdminCachedMessages && payload.messageId) {
+        window.currentAdminCachedMessages = window.currentAdminCachedMessages.filter(m => m.id !== payload.messageId);
+        renderAdminMessages(window.currentAdminCachedMessages);
+      }
+      break;
+    }
+
     case 'call:incoming': {
       if (isCallActive) return;
       const call = payload.call;
@@ -1194,6 +1202,12 @@ function renderAdminMessages(messages) {
                 <path d="M20 18v-2a4 4 0 0 0-4-4H4"></path>
               </svg>
             </button>
+            <button type="button" onclick="quickAdminDeleteMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 rounded-full transition-colors cursor-pointer" title="Delete Message (Admin Freedom)">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+            </button>
           </div>
         </div>
       </div>
@@ -1563,6 +1577,11 @@ function openAdminMessageContextMenuById(msgId, event) {
     } else {
       editBtn.classList.add('hidden');
     }
+  }
+
+  const deleteBtn = document.getElementById('adminCtxDeleteBtn');
+  if (deleteBtn) {
+    deleteBtn.classList.remove('hidden'); // Admin has freedom to delete BOTH!
   }
 
   if (backdrop) backdrop.classList.remove('hidden');
@@ -2891,3 +2910,48 @@ function cleanupCall() {
 }
 
 
+
+
+async function adminDeleteMessageById(msgId) {
+  if (!msgId) return;
+  const msg = (window.currentAdminCachedMessages || []).find(m => m.id === msgId);
+  if (!msg) return;
+
+  // 1. Instant 0ms Optimistic UI Removal
+  window.currentAdminCachedMessages = (window.currentAdminCachedMessages || []).filter(m => m.id !== msgId);
+  renderAdminMessages(window.currentAdminCachedMessages);
+
+  // 2. High-speed WebSocket delivery
+  sendAdminWsEvent('chat:delete', { messageId: msgId, chatId: activeChatId });
+
+  // 3. Guaranteed HTTP Database Persistence
+  try {
+    await fetch('/api/chat/message/delete', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-admin-token': adminToken
+      },
+      body: JSON.stringify({
+        chatId: activeChatId,
+        messageId: msgId,
+        sender: 'Raoprime'
+      })
+    });
+    showToast('Message deleted');
+  } catch (err) {
+    console.warn('Admin delete HTTP notice:', err);
+  }
+}
+
+async function quickAdminDeleteMessage(msgId, event) {
+  if (event) event.stopPropagation();
+  adminDeleteMessageById(msgId);
+}
+
+async function handleAdminContextDelete() {
+  if (!adminContextTargetMessage) return;
+  const msgId = adminContextTargetMessage.id;
+  closeAdminMessageContextMenu();
+  adminDeleteMessageById(msgId);
+}

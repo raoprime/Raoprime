@@ -210,9 +210,9 @@ function normalizeChatId(rawChatId) {
     return 'default';
   }
 
-  // Canonical alias for Affaque Ahmed
+  // Canonical alias for Affaque Ahmed & client_172627
   const cleanKey = decoded.toLowerCase().replace(/[^a-z0-9]/g, '');
-  if (cleanKey === 'affaqueahmed' || cleanKey === 'afaqahmed' || cleanKey === 'affaque' || cleanKey === 'afaq') {
+  if (cleanKey === 'affaqueahmed' || cleanKey === 'afaqahmed' || cleanKey === 'affaque' || cleanKey === 'afaq' || cleanKey === 'client172627') {
     return 'Affaque Ahmed';
   }
 
@@ -467,6 +467,36 @@ wss.on('connection', (ws) => {
             if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
             saveDebounceTimer = setTimeout(() => saveAllLocalChats(store), 250);
             broadcastToRoom(chatId, 'chat:edit', { messageId, text: msg.text, isEdited: true, editedAt: msg.editedAt });
+          }
+        }
+        return;
+      }
+
+      if (event === 'chat:delete') {
+        const { messageId } = data;
+        const store = ensureMemoryStore();
+        if (store[chatId]) {
+          const idx = store[chatId].findIndex(m => m.id === messageId);
+          if (idx !== -1) {
+            const msg = store[chatId][idx];
+            const isAdmin = (role === 'Raoprime' || sender === 'Raoprime');
+            // Admin can delete BOTH; Client can only unsend their own
+            if (isAdmin || msg.sender === 'Client' || msg.sender === sender) {
+              store[chatId].splice(idx, 1);
+              if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
+              saveDebounceTimer = setTimeout(() => saveAllLocalChats(store), 250);
+              broadcastToRoom(chatId, 'chat:deleted', { chatId, messageId });
+
+              // Sync Firestore deletion
+              setImmediate(async () => {
+                initFirebase();
+                if (isFirebaseConnected && firebaseDb) {
+                  try {
+                    await firebaseDb.collection('raoprime_messages').doc(messageId).delete();
+                  } catch (e) {}
+                }
+              });
+            }
           }
         }
         return;
@@ -743,6 +773,7 @@ app.get('/api/chat/messages', async (req, res) => {
     res.json({
       success: true,
       chatId,
+      canonicalChatId: chatId,
       messages,
       typing: activeTyping,
       online: onlineStatus,
@@ -896,6 +927,67 @@ app.post('/api/chat/message/edit', async (req, res) => {
 });
 
 // Emoji Reaction Endpoint (WhatsApp Style)
+
+// Unsend / Delete Message (Client can unsend own; Admin has freedom to delete BOTH)
+app.post('/api/chat/message/delete', async (req, res) => {
+  try {
+    const { chatId: rawChatId = 'default', messageId, sender = 'Client' } = req.body;
+    const chatId = normalizeChatId(rawChatId);
+    if (!messageId) {
+      return res.status(400).json({ success: false, error: 'Message ID is required' });
+    }
+
+    const store = ensureMemoryStore();
+    if (!store[chatId]) {
+      return res.status(404).json({ success: false, error: 'Chat not found' });
+    }
+
+    const idx = store[chatId].findIndex(m => m.id === messageId);
+    if (idx === -1) {
+      return res.status(404).json({ success: false, error: 'Message not found' });
+    }
+
+    const msg = store[chatId][idx];
+    const adminToken = req.headers['x-admin-token'] || (req.headers.authorization && req.headers.authorization.split(' ')[1]);
+    const isAdmin = Boolean(adminToken && activeAdminSessions.has(adminToken));
+
+    // Client can only unsend their own; Admin has freedom to delete ANY message
+    if (!isAdmin) {
+      const isClientSender = (msg.sender === 'Client' || (sender && msg.sender === sender));
+      const isMsgRaoprime = (msg.sender === 'Raoprime' || msg.sender === 'RP');
+      if (isMsgRaoprime || !isClientSender) {
+        return res.status(403).json({ success: false, error: 'Clients can only unsend their own messages' });
+      }
+    }
+
+    store[chatId].splice(idx, 1);
+
+    if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
+    saveDebounceTimer = setTimeout(() => saveAllLocalChats(store), 250);
+
+    // Broadcast instant deletion in 0ms!
+    broadcastToRoom(chatId, 'chat:deleted', {
+      chatId,
+      messageId,
+      deletedBy: isAdmin ? 'Raoprime' : (sender || 'Client')
+    });
+
+    // Firestore async delete
+    setImmediate(async () => {
+      initFirebase();
+      if (isFirebaseConnected && firebaseDb) {
+        try {
+          await firebaseDb.collection('raoprime_messages').doc(messageId).delete();
+        } catch (e) {}
+      }
+    });
+
+    res.json({ success: true, messageId, chatId });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 app.post('/api/chat/message/react', async (req, res) => {
   try {
     const { chatId: rawChatId = 'default', messageId, emoji, sender = 'Client' } = req.body;

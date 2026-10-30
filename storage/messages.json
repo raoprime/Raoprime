@@ -1,404 +1,4 @@
 {
-  "Client_172627": [
-    {
-      "chatId": "Client_172627",
-      "sender": "Client",
-      "id": "msg_1793381240810_19z3",
-      "text": "Bhai mene itne info de AP is hisab s andaza nhi Laga sakhte k genuine issue hai",
-      "type": "text",
-      "timestamp": "2026-10-30T17:27:20.810Z",
-      "seenAt": "2026-10-30T17:27:39.823Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Client_172627",
-      "sender": "Raoprime",
-      "id": "msg_1793381301813_twn5",
-      "text": "bhai hum bilkul samjh chukke h",
-      "type": "text",
-      "timestamp": "2026-10-30T17:28:21.813Z",
-      "seenAt": "2026-10-30T17:28:22.238Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Client_172627",
-      "sender": "Raoprime",
-      "id": "msg_1793381317467_dqcm",
-      "text": "lekin hum senior ko jaake ye kahenge",
-      "type": "text",
-      "timestamp": "2026-10-30T17:28:37.467Z",
-      "seenAt": "2026-10-30T17:28:37.853Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Client_172627",
-      "sender": "Raoprime",
-      "id": "msg_1793381322980_wg54",
-      "text": "to wo aise kahenge",
-      "type": "text",
-      "timestamp": "2026-10-30T17:28:42.980Z",
-      "seenAt": "2026-10-30T17:28:43.381Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Client_172627",
-      "sender": "Raoprime",
-      "id": "msg_1793381326438_ukpr",
-      "text": "fraud h",
-      "type": "text",
-      "timestamp": "2026-10-30T17:28:46.438Z",
-      "seenAt": "2026-10-30T17:28:46.837Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Client_172627",
-      "sender": "Raoprime",
-      "id": "msg_1793381332046_9c3t",
-      "text": "apne kaam pe dhyaan do",
-      "type": "text",
-      "timestamp": "2026-10-30T17:28:52.046Z",
-      "seenAt": "2026-10-30T17:28:52.463Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Client_172627",
-      "sender": "Raoprime",
-      "id": "msg_1793381352507_rhx7",
-      "text": "bhai ab messege mat krro please",
-      "type": "text",
-      "timestamp": "2026-10-30T17:29:12.507Z",
-      "seenAt": "2026-10-30T17:29:12.913Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Client_172627",
-      "sender": "Client",
-      "id": "msg_1793381367555_t919",
-      "text": "Apke Jo foundation ya Jo bhi hai uska page hoga na",
-      "type": "text",
-      "timestamp": "2026-10-30T17:29:27.555Z",
-      "seenAt": "2026-10-30T17:29:28.004Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Client_172627",
-      "sender": "Raoprime",
-      "id": "msg_1793381412721_jxwq",
-      "text": "google gemini se puchoo",
-      "type": "text",
-      "timestamp": "2026-10-30T17:30:12.721Z",
-      "seenAt": "2026-10-30T17:30:13.138Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Client_172627",
-      "sender": "Raoprime",
-      "id": "msg_1793381425688_2prt",
-      "text": "humse baat karro please",
-      "type": "text",
-      "timestamp": "2026-10-30T17:30:25.688Z",
-      "seenAt": "2026-10-30T17:30:26.103Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Client_172627",
-      "sender": "System",
-      "id": "msg_sys_1793381448427",
-      "text": "Your chat Ends",
-      "type": "system",
-      "timestamp": "2026-10-30T17:30:48.427Z",
-      "seenAt": "2026-10-30T17:30:48.994Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Client_172627",
-      "sender": "Raoprime",
-      "id": "msg_1793381694317_42r1",
-      "text": "bhai dekh liya to m chat end kru",
-      "type": "text",
-      "status": "seen",
-      "timestamp": "2026-10-30T17:34:54.317Z",
-      "seenAt": "2026-10-30T17:43:53.289Z"
-    },
-    {
-      "chatId": "Client_172627",
-      "sender": "System",
-      "id": "msg_sys_1793381967799",
-      "text": "Your chat Ends",
-      "type": "system",
-      "timestamp": "2026-10-30T17:39:27.799Z",
-      "seenAt": "2026-10-30T17:39:28.222Z",
-      "status": "seen"
-    },
-    {
-      "file": {
-        "originalName": "admin_test.pdf",
-        "gridFsId": null,
-        "fileSize": 26,
-        "storedName": "admin_test_193296.pdf",
-        "downloadUrl": "/api/download/admin_test_193296.pdf",
-        "fileType": "application/pdf",
-        "formattedSize": "26 Bytes",
-        "fileId": "upl_test_admin_1793382193296"
-      },
-      "chatId": "Client_172627",
-      "sender": "Raoprime",
-      "id": "msg_1793382195126_6w6q",
-      "type": "file",
-      "timestamp": "2026-10-30T17:43:15.126Z",
-      "seenAt": "2026-10-30T17:43:53.289Z",
-      "status": "seen"
-    },
-    {
-      "id": "msg_1793382348319_03vr",
-      "sender": "Client",
-      "type": "text",
-      "text": "Apne name nhi bataya ya uska page ya Jahan s mujhy help mil sakhte unka page",
-      "status": "seen",
-      "timestamp": "2026-10-30T17:45:48.319Z",
-      "chatId": "Client_172627",
-      "seenAt": "2026-10-30T17:47:16.217Z"
-    },
-    {
-      "id": "msg_1793382348896_oljq",
-      "sender": "Client",
-      "type": "text",
-      "text": "Apne name nhi bataya ya uska page ya Jahan s mujhy help mil sakhte unka page",
-      "status": "seen",
-      "timestamp": "2026-10-30T17:45:48.896Z",
-      "chatId": "Client_172627",
-      "seenAt": "2026-10-30T17:47:16.217Z"
-    },
-    {
-      "id": "msg_1793382543653_qbfc",
-      "sender": "Raoprime",
-      "type": "text",
-      "text": "hamme to jitna pta tha vo bta diya yrr",
-      "status": "seen",
-      "timestamp": "2026-10-30T17:49:03.653Z",
-      "chatId": "Client_172627",
-      "seenAt": "2026-10-30T17:49:54.196Z"
-    },
-    {
-      "id": "msg_1793382543678_bbnx",
-      "sender": "Raoprime",
-      "type": "text",
-      "text": "hamme to jitna pta tha vo bta diya yrr",
-      "status": "seen",
-      "timestamp": "2026-10-30T17:49:03.678Z",
-      "chatId": "Client_172627",
-      "seenAt": "2026-10-30T17:49:54.196Z"
-    },
-    {
-      "id": "msg_1793382663742_lldq",
-      "sender": "Client",
-      "type": "text",
-      "text": "Bhai m Gmail p send karo clip",
-      "status": "seen",
-      "timestamp": "2026-10-30T17:51:03.742Z",
-      "chatId": "Client_172627",
-      "seenAt": "2026-10-30T17:51:04.248Z"
-    },
-    {
-      "id": "msg_1793382663766_9vlu",
-      "sender": "Client",
-      "type": "text",
-      "text": "Bhai m Gmail p send karo clip",
-      "status": "seen",
-      "timestamp": "2026-10-30T17:51:03.766Z",
-      "chatId": "Client_172627",
-      "seenAt": "2026-10-30T17:51:04.248Z"
-    },
-    {
-      "id": "msg_1793382675949_2cbc",
-      "sender": "Raoprime",
-      "type": "text",
-      "text": "kahi bhi kardo",
-      "status": "seen",
-      "timestamp": "2026-10-30T17:51:15.949Z",
-      "chatId": "Client_172627",
-      "seenAt": "2026-10-30T17:51:16.400Z"
-    },
-    {
-      "id": "msg_1793382675971_8gnh",
-      "sender": "Raoprime",
-      "type": "text",
-      "text": "kahi bhi kardo",
-      "status": "seen",
-      "timestamp": "2026-10-30T17:51:15.971Z",
-      "chatId": "Client_172627",
-      "seenAt": "2026-10-30T17:51:16.400Z"
-    },
-    {
-      "id": "msg_1793382700984_g74v",
-      "sender": "Raoprime",
-      "type": "text",
-      "text": "agar aapko bharosa nhi h to rahne do",
-      "status": "seen",
-      "timestamp": "2026-10-30T17:51:40.984Z",
-      "chatId": "Client_172627",
-      "seenAt": "2026-10-30T17:51:41.299Z"
-    },
-    {
-      "id": "msg_1793382701008_rck9",
-      "sender": "Raoprime",
-      "type": "text",
-      "text": "agar aapko bharosa nhi h to rahne do",
-      "status": "seen",
-      "timestamp": "2026-10-30T17:51:41.008Z",
-      "chatId": "Client_172627",
-      "seenAt": "2026-10-30T17:51:41.299Z"
-    },
-    {
-      "id": "msg_1793382709202_viv8",
-      "sender": "Client",
-      "type": "file",
-      "status": "seen",
-      "file": {
-        "fileId": "upl_1793382694954_pkzt",
-        "originalName": "VID20261030004522.mp4",
-        "storedName": "VID20261030004522_4_pkzt.mp4",
-        "fileSize": 8274852,
-        "formattedSize": "7.9 MB",
-        "fileType": "video/mp4",
-        "downloadUrl": "/api/download/VID20261030004522_4_pkzt.mp4",
-        "gridFsId": null
-      },
-      "timestamp": "2026-10-30T17:51:49.202Z",
-      "chatId": "Client_172627",
-      "seenAt": "2026-10-30T17:51:50.016Z"
-    },
-    {
-      "id": "msg_1793382754281_c3uz",
-      "sender": "Raoprime",
-      "type": "text",
-      "text": "Received",
-      "status": "seen",
-      "timestamp": "2026-10-30T17:52:34.281Z",
-      "chatId": "Client_172627",
-      "seenAt": "2026-10-30T17:52:34.597Z"
-    },
-    {
-      "id": "msg_1793382754302_i9ev",
-      "sender": "Raoprime",
-      "type": "text",
-      "text": "Received",
-      "status": "seen",
-      "timestamp": "2026-10-30T17:52:34.302Z",
-      "chatId": "Client_172627",
-      "seenAt": "2026-10-30T17:52:34.597Z"
-    },
-    {
-      "chatId": "Client_172627",
-      "sender": "Client",
-      "id": "msg_1793382770259_w4qd",
-      "text": "Dekho Bhai ab tou yakeen hoga na",
-      "type": "text",
-      "timestamp": "2026-10-30T17:52:50.259Z",
-      "seenAt": "2026-10-30T17:52:50.627Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Client_172627",
-      "sender": "Client",
-      "id": "msg_1793382770277_544q",
-      "text": "Dekho Bhai ab tou yakeen hoga na",
-      "type": "text",
-      "timestamp": "2026-10-30T17:52:50.277Z",
-      "seenAt": "2026-10-30T17:52:50.627Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Client_172627",
-      "sender": "Client",
-      "id": "msg_1793382856811_wppt",
-      "text": "?",
-      "type": "text",
-      "timestamp": "2026-10-30T17:54:16.811Z",
-      "seenAt": "2026-10-30T17:54:31.141Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Client_172627",
-      "sender": "Client",
-      "id": "msg_1793383424375_z5zk",
-      "text": "Bhai Kuch bataya nhi",
-      "type": "text",
-      "timestamp": "2026-10-30T18:03:44.375Z",
-      "seenAt": "2026-10-30T18:03:44.897Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Client_172627",
-      "sender": "Client",
-      "id": "msg_1793383424392_m4rt",
-      "text": "Bhai Kuch bataya nhi",
-      "type": "text",
-      "timestamp": "2026-10-30T18:03:44.392Z",
-      "seenAt": "2026-10-30T18:03:44.897Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Client_172627",
-      "sender": "Raoprime",
-      "id": "msg_1793383460466_7x4l",
-      "text": "bhai is video ko kya kahke dikhau",
-      "type": "text",
-      "timestamp": "2026-10-30T18:04:20.466Z",
-      "seenAt": "2026-10-30T18:04:20.850Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Client_172627",
-      "sender": "Raoprime",
-      "id": "msg_1793383460500_hwqq",
-      "text": "bhai is video ko kya kahke dikhau",
-      "type": "text",
-      "timestamp": "2026-10-30T18:04:20.500Z",
-      "seenAt": "2026-10-30T18:04:20.850Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Client_172627",
-      "sender": "Client",
-      "id": "msg_1793383529895_x32h",
-      "text": "Bhai apko mene Jo chezain bataie Hain AP pory story bataio  y or ye hlt dekh k koie to help karega I think",
-      "type": "text",
-      "timestamp": "2026-10-30T18:05:29.895Z",
-      "seenAt": "2026-10-30T18:05:30.394Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Client_172627",
-      "sender": "Client",
-      "id": "msg_1793383529922_i112",
-      "text": "Bhai apko mene Jo chezain bataie Hain AP pory story bataio  y or ye hlt dekh k koie to help karega I think",
-      "type": "text",
-      "timestamp": "2026-10-30T18:05:29.922Z",
-      "seenAt": "2026-10-30T18:05:30.394Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Client_172627",
-      "sender": "Client",
-      "id": "msg_1793383798970_h6xg",
-      "text": "Bhai agr Ap hlt dekh k Keh Rahe ho k Kuch nhi ho sakhta Bhai mujhy umeed hai me agr continuesly Kam karo zyada nhi Bhai 1 Saal 2,4% to behtar ho jaiegy na phr caheye 4,5 Saal h ku na Lag jaie me mehnat and wait kar longa mere pass full plain hai Thora Thora Karke behtar ho sakhta hon bus mujhy Kuch paise k support mil jaie",
-      "type": "text",
-      "timestamp": "2026-10-30T18:09:58.970Z",
-      "seenAt": "2026-10-30T18:09:59.448Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Client_172627",
-      "sender": "Client",
-      "id": "msg_1793383799005_k5yn",
-      "text": "Bhai agr Ap hlt dekh k Keh Rahe ho k Kuch nhi ho sakhta Bhai mujhy umeed hai me agr continuesly Kam karo zyada nhi Bhai 1 Saal 2,4% to behtar ho jaiegy na phr caheye 4,5 Saal h ku na Lag jaie me mehnat and wait kar longa mere pass full plain hai Thora Thora Karke behtar ho sakhta hon bus mujhy Kuch paise k support mil jaie",
-      "type": "text",
-      "timestamp": "2026-10-30T18:09:59.005Z",
-      "seenAt": "2026-10-30T18:09:59.448Z",
-      "status": "seen"
-    }
-  ],
   "Priya": [
     {
       "chatId": "Priya",
@@ -1727,6 +1327,440 @@
       "timestamp": "2026-10-30T17:26:19.740Z",
       "seenAt": "2026-10-30T17:26:20.133Z",
       "status": "seen"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Client",
+      "id": "msg_1793381240810_19z3",
+      "text": "Bhai mene itne info de AP is hisab s andaza nhi Laga sakhte k genuine issue hai",
+      "type": "text",
+      "timestamp": "2026-10-30T17:27:20.810Z",
+      "seenAt": "2026-10-30T17:27:39.823Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Raoprime",
+      "id": "msg_1793381301813_twn5",
+      "text": "bhai hum bilkul samjh chukke h",
+      "type": "text",
+      "timestamp": "2026-10-30T17:28:21.813Z",
+      "seenAt": "2026-10-30T17:28:22.238Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Raoprime",
+      "id": "msg_1793381317467_dqcm",
+      "text": "lekin hum senior ko jaake ye kahenge",
+      "type": "text",
+      "timestamp": "2026-10-30T17:28:37.467Z",
+      "seenAt": "2026-10-30T17:28:37.853Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Raoprime",
+      "id": "msg_1793381322980_wg54",
+      "text": "to wo aise kahenge",
+      "type": "text",
+      "timestamp": "2026-10-30T17:28:42.980Z",
+      "seenAt": "2026-10-30T17:28:43.381Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Raoprime",
+      "id": "msg_1793381326438_ukpr",
+      "text": "fraud h",
+      "type": "text",
+      "timestamp": "2026-10-30T17:28:46.438Z",
+      "seenAt": "2026-10-30T17:28:46.837Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Raoprime",
+      "id": "msg_1793381332046_9c3t",
+      "text": "apne kaam pe dhyaan do",
+      "type": "text",
+      "timestamp": "2026-10-30T17:28:52.046Z",
+      "seenAt": "2026-10-30T17:28:52.463Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Raoprime",
+      "id": "msg_1793381352507_rhx7",
+      "text": "bhai ab messege mat krro please",
+      "type": "text",
+      "timestamp": "2026-10-30T17:29:12.507Z",
+      "seenAt": "2026-10-30T17:29:12.913Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Client",
+      "id": "msg_1793381367555_t919",
+      "text": "Apke Jo foundation ya Jo bhi hai uska page hoga na",
+      "type": "text",
+      "timestamp": "2026-10-30T17:29:27.555Z",
+      "seenAt": "2026-10-30T17:29:28.004Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Raoprime",
+      "id": "msg_1793381412721_jxwq",
+      "text": "google gemini se puchoo",
+      "type": "text",
+      "timestamp": "2026-10-30T17:30:12.721Z",
+      "seenAt": "2026-10-30T17:30:13.138Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Raoprime",
+      "id": "msg_1793381425688_2prt",
+      "text": "humse baat karro please",
+      "type": "text",
+      "timestamp": "2026-10-30T17:30:25.688Z",
+      "seenAt": "2026-10-30T17:30:26.103Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "System",
+      "id": "msg_sys_1793381448427",
+      "text": "Your chat Ends",
+      "type": "system",
+      "timestamp": "2026-10-30T17:30:48.427Z",
+      "seenAt": "2026-10-30T17:30:48.994Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Raoprime",
+      "id": "msg_1793381694317_42r1",
+      "text": "bhai dekh liya to m chat end kru",
+      "type": "text",
+      "status": "seen",
+      "timestamp": "2026-10-30T17:34:54.317Z",
+      "seenAt": "2026-10-30T17:43:53.289Z"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "System",
+      "id": "msg_sys_1793381967799",
+      "text": "Your chat Ends",
+      "type": "system",
+      "timestamp": "2026-10-30T17:39:27.799Z",
+      "seenAt": "2026-10-30T17:39:28.222Z",
+      "status": "seen"
+    },
+    {
+      "file": {
+        "originalName": "admin_test.pdf",
+        "gridFsId": null,
+        "fileSize": 26,
+        "storedName": "admin_test_193296.pdf",
+        "downloadUrl": "/api/download/admin_test_193296.pdf",
+        "fileType": "application/pdf",
+        "formattedSize": "26 Bytes",
+        "fileId": "upl_test_admin_1793382193296"
+      },
+      "chatId": "Affaque Ahmed",
+      "sender": "Raoprime",
+      "id": "msg_1793382195126_6w6q",
+      "type": "file",
+      "timestamp": "2026-10-30T17:43:15.126Z",
+      "seenAt": "2026-10-30T17:43:53.289Z",
+      "status": "seen"
+    },
+    {
+      "id": "msg_1793382348319_03vr",
+      "sender": "Client",
+      "type": "text",
+      "text": "Apne name nhi bataya ya uska page ya Jahan s mujhy help mil sakhte unka page",
+      "status": "seen",
+      "timestamp": "2026-10-30T17:45:48.319Z",
+      "chatId": "Affaque Ahmed",
+      "seenAt": "2026-10-30T17:47:16.217Z"
+    },
+    {
+      "id": "msg_1793382348896_oljq",
+      "sender": "Client",
+      "type": "text",
+      "text": "Apne name nhi bataya ya uska page ya Jahan s mujhy help mil sakhte unka page",
+      "status": "seen",
+      "timestamp": "2026-10-30T17:45:48.896Z",
+      "chatId": "Affaque Ahmed",
+      "seenAt": "2026-10-30T17:47:16.217Z"
+    },
+    {
+      "id": "msg_1793382543653_qbfc",
+      "sender": "Raoprime",
+      "type": "text",
+      "text": "hamme to jitna pta tha vo bta diya yrr",
+      "status": "seen",
+      "timestamp": "2026-10-30T17:49:03.653Z",
+      "chatId": "Affaque Ahmed",
+      "seenAt": "2026-10-30T17:49:54.196Z"
+    },
+    {
+      "id": "msg_1793382543678_bbnx",
+      "sender": "Raoprime",
+      "type": "text",
+      "text": "hamme to jitna pta tha vo bta diya yrr",
+      "status": "seen",
+      "timestamp": "2026-10-30T17:49:03.678Z",
+      "chatId": "Affaque Ahmed",
+      "seenAt": "2026-10-30T17:49:54.196Z"
+    },
+    {
+      "id": "msg_1793382663742_lldq",
+      "sender": "Client",
+      "type": "text",
+      "text": "Bhai m Gmail p send karo clip",
+      "status": "seen",
+      "timestamp": "2026-10-30T17:51:03.742Z",
+      "chatId": "Affaque Ahmed",
+      "seenAt": "2026-10-30T17:51:04.248Z"
+    },
+    {
+      "id": "msg_1793382663766_9vlu",
+      "sender": "Client",
+      "type": "text",
+      "text": "Bhai m Gmail p send karo clip",
+      "status": "seen",
+      "timestamp": "2026-10-30T17:51:03.766Z",
+      "chatId": "Affaque Ahmed",
+      "seenAt": "2026-10-30T17:51:04.248Z"
+    },
+    {
+      "id": "msg_1793382675949_2cbc",
+      "sender": "Raoprime",
+      "type": "text",
+      "text": "kahi bhi kardo",
+      "status": "seen",
+      "timestamp": "2026-10-30T17:51:15.949Z",
+      "chatId": "Affaque Ahmed",
+      "seenAt": "2026-10-30T17:51:16.400Z"
+    },
+    {
+      "id": "msg_1793382675971_8gnh",
+      "sender": "Raoprime",
+      "type": "text",
+      "text": "kahi bhi kardo",
+      "status": "seen",
+      "timestamp": "2026-10-30T17:51:15.971Z",
+      "chatId": "Affaque Ahmed",
+      "seenAt": "2026-10-30T17:51:16.400Z"
+    },
+    {
+      "id": "msg_1793382700984_g74v",
+      "sender": "Raoprime",
+      "type": "text",
+      "text": "agar aapko bharosa nhi h to rahne do",
+      "status": "seen",
+      "timestamp": "2026-10-30T17:51:40.984Z",
+      "chatId": "Affaque Ahmed",
+      "seenAt": "2026-10-30T17:51:41.299Z"
+    },
+    {
+      "id": "msg_1793382701008_rck9",
+      "sender": "Raoprime",
+      "type": "text",
+      "text": "agar aapko bharosa nhi h to rahne do",
+      "status": "seen",
+      "timestamp": "2026-10-30T17:51:41.008Z",
+      "chatId": "Affaque Ahmed",
+      "seenAt": "2026-10-30T17:51:41.299Z"
+    },
+    {
+      "id": "msg_1793382709202_viv8",
+      "sender": "Client",
+      "type": "file",
+      "status": "seen",
+      "file": {
+        "fileId": "upl_1793382694954_pkzt",
+        "originalName": "VID20261030004522.mp4",
+        "storedName": "VID20261030004522_4_pkzt.mp4",
+        "fileSize": 8274852,
+        "formattedSize": "7.9 MB",
+        "fileType": "video/mp4",
+        "downloadUrl": "/api/download/VID20261030004522_4_pkzt.mp4",
+        "gridFsId": null
+      },
+      "timestamp": "2026-10-30T17:51:49.202Z",
+      "chatId": "Affaque Ahmed",
+      "seenAt": "2026-10-30T17:51:50.016Z"
+    },
+    {
+      "id": "msg_1793382754281_c3uz",
+      "sender": "Raoprime",
+      "type": "text",
+      "text": "Received",
+      "status": "seen",
+      "timestamp": "2026-10-30T17:52:34.281Z",
+      "chatId": "Affaque Ahmed",
+      "seenAt": "2026-10-30T17:52:34.597Z"
+    },
+    {
+      "id": "msg_1793382754302_i9ev",
+      "sender": "Raoprime",
+      "type": "text",
+      "text": "Received",
+      "status": "seen",
+      "timestamp": "2026-10-30T17:52:34.302Z",
+      "chatId": "Affaque Ahmed",
+      "seenAt": "2026-10-30T17:52:34.597Z"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Client",
+      "id": "msg_1793382770259_w4qd",
+      "text": "Dekho Bhai ab tou yakeen hoga na",
+      "type": "text",
+      "timestamp": "2026-10-30T17:52:50.259Z",
+      "seenAt": "2026-10-30T17:52:50.627Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Client",
+      "id": "msg_1793382770277_544q",
+      "text": "Dekho Bhai ab tou yakeen hoga na",
+      "type": "text",
+      "timestamp": "2026-10-30T17:52:50.277Z",
+      "seenAt": "2026-10-30T17:52:50.627Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Client",
+      "id": "msg_1793382856811_wppt",
+      "text": "?",
+      "type": "text",
+      "timestamp": "2026-10-30T17:54:16.811Z",
+      "seenAt": "2026-10-30T17:54:31.141Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Client",
+      "id": "msg_1793383424375_z5zk",
+      "text": "Bhai Kuch bataya nhi",
+      "type": "text",
+      "timestamp": "2026-10-30T18:03:44.375Z",
+      "seenAt": "2026-10-30T18:03:44.897Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Client",
+      "id": "msg_1793383424392_m4rt",
+      "text": "Bhai Kuch bataya nhi",
+      "type": "text",
+      "timestamp": "2026-10-30T18:03:44.392Z",
+      "seenAt": "2026-10-30T18:03:44.897Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Raoprime",
+      "id": "msg_1793383460466_7x4l",
+      "text": "bhai is video ko kya kahke dikhau",
+      "type": "text",
+      "timestamp": "2026-10-30T18:04:20.466Z",
+      "seenAt": "2026-10-30T18:04:20.850Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Raoprime",
+      "id": "msg_1793383460500_hwqq",
+      "text": "bhai is video ko kya kahke dikhau",
+      "type": "text",
+      "timestamp": "2026-10-30T18:04:20.500Z",
+      "seenAt": "2026-10-30T18:04:20.850Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Client",
+      "id": "msg_1793383529895_x32h",
+      "text": "Bhai apko mene Jo chezain bataie Hain AP pory story bataio  y or ye hlt dekh k koie to help karega I think",
+      "type": "text",
+      "timestamp": "2026-10-30T18:05:29.895Z",
+      "seenAt": "2026-10-30T18:05:30.394Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Client",
+      "id": "msg_1793383529922_i112",
+      "text": "Bhai apko mene Jo chezain bataie Hain AP pory story bataio  y or ye hlt dekh k koie to help karega I think",
+      "type": "text",
+      "timestamp": "2026-10-30T18:05:29.922Z",
+      "seenAt": "2026-10-30T18:05:30.394Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Client",
+      "id": "msg_1793383798970_h6xg",
+      "text": "Bhai agr Ap hlt dekh k Keh Rahe ho k Kuch nhi ho sakhta Bhai mujhy umeed hai me agr continuesly Kam karo zyada nhi Bhai 1 Saal 2,4% to behtar ho jaiegy na phr caheye 4,5 Saal h ku na Lag jaie me mehnat and wait kar longa mere pass full plain hai Thora Thora Karke behtar ho sakhta hon bus mujhy Kuch paise k support mil jaie",
+      "type": "text",
+      "timestamp": "2026-10-30T18:09:58.970Z",
+      "seenAt": "2026-10-30T18:09:59.448Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Client",
+      "id": "msg_1793383799005_k5yn",
+      "text": "Bhai agr Ap hlt dekh k Keh Rahe ho k Kuch nhi ho sakhta Bhai mujhy umeed hai me agr continuesly Kam karo zyada nhi Bhai 1 Saal 2,4% to behtar ho jaiegy na phr caheye 4,5 Saal h ku na Lag jaie me mehnat and wait kar longa mere pass full plain hai Thora Thora Karke behtar ho sakhta hon bus mujhy Kuch paise k support mil jaie",
+      "type": "text",
+      "timestamp": "2026-10-30T18:09:59.005Z",
+      "seenAt": "2026-10-30T18:09:59.448Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Raoprime",
+      "id": "msg_1793384278010_a4f8",
+      "text": "bhai m samjh sakta hu problem bdi h",
+      "type": "text",
+      "status": "sent",
+      "timestamp": "2026-10-30T18:17:58.010Z"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Raoprime",
+      "id": "msg_1793384294231_q4w6",
+      "text": "lekin kai baar kuch cheeze",
+      "type": "text",
+      "status": "sent",
+      "timestamp": "2026-10-30T18:18:14.231Z"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Raoprime",
+      "id": "msg_1793384301792_it4m",
+      "text": "hamari job kha sakti h",
+      "type": "text",
+      "status": "sent",
+      "timestamp": "2026-10-30T18:18:21.792Z"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Raoprime",
+      "id": "msg_1793384308330_7bkq",
+      "text": "hamari job kha sakti h",
+      "type": "text",
+      "status": "sent",
+      "timestamp": "2026-10-30T18:18:28.330Z"
     }
   ],
   "Dharmesh": [
@@ -2026,6 +2060,15 @@
       "timestamp": "2026-10-30T17:12:54.388Z",
       "seenAt": "2026-10-30T17:12:56.807Z",
       "status": "seen"
+    },
+    {
+      "chatId": "Dharmesh",
+      "sender": "Client",
+      "id": "msg_1793384207898_s85n",
+      "text": "Hi",
+      "type": "text",
+      "status": "sent",
+      "timestamp": "2026-10-30T18:16:47.898Z"
     }
   ],
   "Test_Large_Room": [
@@ -2203,5 +2246,18 @@
       "status": "seen",
       "chatId": "default"
     }
-  ]
+  ],
+  "AutoTest_1793383869362": [
+    {
+      "chatId": "AutoTest_1793383869362",
+      "sender": "Client",
+      "id": "test_1793383869362",
+      "text": "Test Deduplication",
+      "type": "text",
+      "timestamp": "2026-10-30T18:11:09.418Z",
+      "seenAt": "2026-10-30T18:12:56.691Z",
+      "status": "seen"
+    }
+  ],
+  "Test_Unsend_Room_1793384344048": []
 }
