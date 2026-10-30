@@ -92,6 +92,7 @@ async function handleWsEvent(payload) {
         window.currentCachedMessages.push(msg);
         if (msg.sender !== currentRole) {
           playMessageSound();
+          showDeviceSystemNotification(msg);
           sendWsEvent('chat:read', { reader: currentRole });
         }
       }
@@ -181,22 +182,150 @@ async function handleWsEvent(payload) {
   }
 }
 
-function playMessageSound() {
+// Official Luxury Acoustic Double-Ping Chime
+function playLuxuryChime() {
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return;
     const ctx = new AudioCtx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(659.25, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.1);
-    gain.gain.setValueAtTime(0.18, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.22);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.25);
+    if (ctx.state === 'suspended') ctx.resume();
+    const now = ctx.currentTime;
+
+    // Tone 1: 880 Hz (A5 harmonic)
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(880, now);
+    gain1.gain.setValueAtTime(0.14, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.3);
+
+    // Tone 2: 1320 Hz (E6 pure fifth above)
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(1320, now + 0.08);
+    gain2.gain.setValueAtTime(0.16, now + 0.08);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(now + 0.08);
+    osc2.stop(now + 0.48);
+  } catch (e) {}
+}
+
+function playMessageSound() {
+  playLuxuryChime();
+}
+
+// Native Android / Desktop OS Notification Panel Alerts
+function initServiceWorkerAndNotifications() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js?v=2.3')
+      .then(reg => {
+        console.log('Raoprime ServiceWorker active:', reg.scope);
+      })
+      .catch(err => console.warn('SW registration notice:', err));
+  }
+  checkNotificationPermissionBanner();
+}
+
+function checkNotificationPermissionBanner() {
+  const banner = document.getElementById('notifPermissionBanner');
+  if (!banner) return;
+  if (!('Notification' in window)) {
+    banner.classList.add('hidden');
+    return;
+  }
+  const isDismissed = sessionStorage.getItem('rp_notif_banner_dismissed') === '1';
+  if (Notification.permission === 'default' && !isDismissed) {
+    banner.classList.remove('hidden');
+  } else {
+    banner.classList.add('hidden');
+  }
+}
+
+async function requestNotificationPermission() {
+  if (!('Notification' in window)) {
+    showToast('Notifications are not supported on this browser.');
+    return;
+  }
+  try {
+    const perm = await Notification.requestPermission();
+    const banner = document.getElementById('notifPermissionBanner');
+    if (banner) banner.classList.add('hidden');
+    if (perm === 'granted') {
+      playLuxuryChime();
+      showToast('🔔 Phone notification alerts active!');
+      showDeviceSystemNotification({
+        sender: 'Raoprime',
+        text: 'Notification alerts enabled! You will be notified instantly in your status bar when Raoprime messages you.',
+        id: 'welcome_alert_' + Date.now()
+      });
+    } else if (perm === 'denied') {
+      showToast('Notifications were disabled in browser settings.');
+    }
+  } catch (err) {
+    console.warn('Notification permission error:', err);
+  }
+}
+
+function dismissNotificationBanner() {
+  sessionStorage.setItem('rp_notif_banner_dismissed', '1');
+  const banner = document.getElementById('notifPermissionBanner');
+  if (banner) banner.classList.add('hidden');
+}
+
+function showDeviceSystemNotification(msg) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  // If user is actively focused on this tab, skip OS notification bar spam
+  if (!document.hidden && document.hasFocus()) return;
+
+  const senderTitle = msg.sender === 'Raoprime' ? 'Raoprime' : (msg.sender || 'Raoprime');
+  let bodyText = '';
+  if (msg.type === 'file' && msg.file) {
+    bodyText = '📎 Sent attachment: ' + (msg.file.originalName || 'File') + ' (' + (msg.file.formattedSize || '') + ')';
+  } else {
+    bodyText = msg.text || 'New message';
+    if (bodyText.length > 120) bodyText = bodyText.slice(0, 117) + '...';
+  }
+
+  const notifOptions = {
+    body: bodyText,
+    icon: '/assets/rp-logo.jpg',
+    badge: '/assets/rp-logo.jpg',
+    tag: 'raoprime-' + (currentChatId || 'default'),
+    renotify: true,
+    vibrate: [250, 100, 250],
+    data: {
+      url: window.location.href,
+      chatId: currentChatId,
+      messageId: msg.id
+    }
+  };
+
+  // Modern Android Service Worker notification (Appears in status bar & lock screen panel)
+  if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+    navigator.serviceWorker.ready.then(reg => {
+      reg.showNotification(senderTitle, notifOptions);
+    }).catch(() => {
+      fallbackNotification(senderTitle, notifOptions);
+    });
+  } else {
+    fallbackNotification(senderTitle, notifOptions);
+  }
+}
+
+function fallbackNotification(title, options) {
+  try {
+    const n = new Notification(title, options);
+    n.onclick = () => {
+      window.focus();
+      n.close();
+    };
   } catch (e) {}
 }
 
@@ -1333,7 +1462,7 @@ async function handleFilesUpload(fileList) {
           fileName: file.name,
           fileSize: file.size,
           totalChunks,
-          chunkSize: CHUNK_SIZE,
+          chunkSize: activeChunkSize,
           fileType: file.type,
           chatId: currentChatId,
           sender: currentRole
@@ -1345,14 +1474,14 @@ async function handleFilesUpload(fileList) {
       let lastTime = Date.now();
 
       for (let cIdx = 0; cIdx < totalChunks; cIdx++) {
-        const start = cIdx * CHUNK_SIZE;
-        const end = Math.min(file.size, start + CHUNK_SIZE);
+        const start = cIdx * activeChunkSize;
+        const end = Math.min(file.size, start + activeChunkSize);
         const chunkBlob = file.slice(start, end);
 
         let sent = false;
         let retries = 0;
 
-        while (!sent && retries < 5) {
+        while (!sent && retries < 10) {
           try {
             const res = await fetch(`/api/upload/chunk?uploadId=${uploadId}&chunkIndex=${cIdx}&totalChunks=${totalChunks}`, {
               method: 'POST',
@@ -1368,11 +1497,11 @@ async function handleFilesUpload(fileList) {
             else throw new Error('Chunk error');
           } catch (e) {
             retries++;
-            await new Promise(r => setTimeout(r, 600));
+            await new Promise(r => setTimeout(r, Math.min(3000, 400 * (retries + 1))));
           }
         }
 
-        const uploadedNow = Math.min(file.size, (cIdx + 1) * CHUNK_SIZE);
+        const uploadedNow = Math.min(file.size, (cIdx + 1) * activeChunkSize);
         const percent = Math.round((uploadedNow / file.size) * 100);
         barEl.style.width = percent + '%';
         percentEl.textContent = percent + '%';

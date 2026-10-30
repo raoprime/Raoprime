@@ -7,6 +7,64 @@ const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB chunks (Optimized for Vercel Serverle
 
 let allChats = [];
 let activeChatId = null;
+// Native OS Notification Alerts for Admin Desk
+function initAdminNotifications() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js?v=2.3').catch(() => {});
+  }
+  if ('Notification' in window && Notification.permission === 'default') {
+    // Quietly request notification permission when admin interacts
+    document.addEventListener('click', function reqOnce() {
+      Notification.requestPermission();
+      document.removeEventListener('click', reqOnce);
+    }, { once: true });
+  }
+}
+
+function showAdminDeviceNotification(msg, roomName) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  if (!document.hidden && document.hasFocus()) return;
+
+  const clientTitle = roomName ? decodeURIComponent(roomName) : (msg.sender || 'Client');
+  let bodyText = '';
+  if (msg.type === 'file' && msg.file) {
+    bodyText = '📎 Sent file: ' + (msg.file.originalName || 'Document') + ' (' + (msg.file.formattedSize || '') + ')';
+  } else {
+    bodyText = msg.text || 'New confidential message';
+    if (bodyText.length > 120) bodyText = bodyText.slice(0, 117) + '...';
+  }
+
+  const notifOptions = {
+    body: bodyText,
+    icon: '/assets/rp-logo.jpg',
+    badge: '/assets/rp-logo.jpg',
+    tag: 'raoprime-admin-' + (roomName || 'default'),
+    renotify: true,
+    vibrate: [250, 100, 250],
+    data: {
+      url: window.location.href,
+      chatId: roomName,
+      messageId: msg.id
+    }
+  };
+
+  if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+    navigator.serviceWorker.ready.then(reg => {
+      reg.showNotification(clientTitle, notifOptions);
+    }).catch(() => {
+      try {
+        const n = new Notification(clientTitle, notifOptions);
+        n.onclick = () => { window.focus(); n.close(); };
+      } catch (e) {}
+    });
+  } else {
+    try {
+      const n = new Notification(clientTitle, notifOptions);
+      n.onclick = () => { window.focus(); n.close(); };
+    } catch (e) {}
+  }
+}
+
 let lastMsgCount = 0;
 let isUploading = false;
 let typingTimeout = null;
@@ -97,6 +155,7 @@ async function handleAdminWsEvent(payload) {
             window.currentAdminCachedMessages.push(msg);
             if (msg.sender !== 'Raoprime' && msg.sender !== 'RP') {
               playConnectChime();
+              showAdminDeviceNotification(msg, activeChatId);
               sendAdminWsEvent('chat:read', { chatId: activeChatId, reader: 'Raoprime' });
             }
           }
@@ -213,6 +272,7 @@ let adminIgnoreNextClickUntil = 0;
 
 document.addEventListener('DOMContentLoaded', async () => {
   if (window.lucide) window.lucide.createIcons();
+  initAdminNotifications();
 
   setupMobileViewport();
 

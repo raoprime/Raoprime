@@ -1376,6 +1376,7 @@ app.post('/api/upload/chunk', (req, res) => {
 
 // 3. Finalize, save to Cloud GridFS / Disk & append file message to chat
 app.post('/api/upload/finalize', async (req, res) => {
+  req.setTimeout(600000); // 10 minutes timeout for high-capacity 20-30 min 4K/1080p video files
   try {
     const { uploadId } = req.body;
     if (!uploadId) return res.status(400).json({ success: false, error: 'Upload ID required' });
@@ -1399,7 +1400,7 @@ app.post('/api/upload/finalize', async (req, res) => {
     const finalStoredName = `${baseName}_${uploadId.slice(-6)}${fileExt}`;
     const finalFilePath = path.join(VAULT_DIR, finalStoredName);
 
-    // Assemble file
+    // Assemble file with high-speed sequential streaming
     const destStream = fs.createWriteStream(finalFilePath);
     for (let i = 0; i < totalChunks; i++) {
       const cPath = path.join(sessionDir, `chunk_${i}`);
@@ -1417,10 +1418,10 @@ app.post('/api/upload/finalize', async (req, res) => {
       destStream.on('error', reject);
     });
 
-    // Cloud GridFS Storage Upload (if MongoDB Connected)
+    // Cloud GridFS Storage Upload (for files under 350MB to protect MongoDB cluster limits)
     let gridFsId = null;
     await connectDB();
-    if (isMongoConnected && gridfsBucket) {
+    if (isMongoConnected && gridfsBucket && Number(fileSize) < 350 * 1024 * 1024) {
       try {
         const uploadStream = gridfsBucket.openUploadStream(finalStoredName, {
           metadata: { originalName, fileSize, fileType, chatId }
@@ -1434,7 +1435,7 @@ app.post('/api/upload/finalize', async (req, res) => {
             .on('error', reject);
         });
       } catch (gridErr) {
-        console.warn('GridFS upload warning:', gridErr.message);
+        console.warn('GridFS upload notice:', gridErr.message);
       }
     }
 
