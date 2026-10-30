@@ -13,6 +13,193 @@ let isCurrentlyUploading = false;
 let typingTimeout = null;
 let isCurrentlyTyping = false;
 
+// ⚡ Ultra-Low-Latency WebSocket Real-Time Engine (0ms delivery for Chat & 1080p Calling)
+let appWs = null;
+let isWsConnected = false;
+let wsReconnectTimer = null;
+let pendingSdpOffer = null;
+
+function initAppWebSocket() {
+  if (appWs && (appWs.readyState === WebSocket.OPEN || appWs.readyState === WebSocket.CONNECTING)) {
+    return;
+  }
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsUrl = `${protocol}//${window.location.host}/ws`;
+
+  try {
+    appWs = new WebSocket(wsUrl);
+
+    appWs.onopen = () => {
+      isWsConnected = true;
+      console.log('⚡ Ultra-fast real-time WebSocket connected');
+      sendWsEvent('join', { chatId: currentChatId, role: currentRole, sender: currentRole });
+      loadMessages();
+    };
+
+    appWs.onmessage = async (evt) => {
+      try {
+        const payload = JSON.parse(evt.data);
+        handleWsEvent(payload);
+      } catch (err) {
+        console.warn('WS message parse error:', err);
+      }
+    };
+
+    appWs.onerror = () => {};
+
+    appWs.onclose = () => {
+      isWsConnected = false;
+      if (wsReconnectTimer) clearTimeout(wsReconnectTimer);
+      wsReconnectTimer = setTimeout(initAppWebSocket, 3000);
+    };
+  } catch (err) {
+    if (wsReconnectTimer) clearTimeout(wsReconnectTimer);
+    wsReconnectTimer = setTimeout(initAppWebSocket, 5000);
+  }
+}
+
+function sendWsEvent(event, data = {}) {
+  if (appWs && appWs.readyState === WebSocket.OPEN) {
+    try {
+      appWs.send(JSON.stringify({ event, chatId: currentChatId, role: currentRole, sender: currentRole, ...data }));
+      return true;
+    } catch (e) {
+      console.warn('WS send error:', e);
+    }
+  }
+  return false;
+}
+
+async function handleWsEvent(payload) {
+  const { event, chatId } = payload;
+  const currentNorm = (currentChatId || '').toLowerCase().trim();
+  const eventNorm = (chatId || '').toLowerCase().trim();
+
+  // Ignore events meant exclusively for other rooms
+  if (eventNorm && eventNorm !== currentNorm && eventNorm !== 'all') {
+    return;
+  }
+
+  switch (event) {
+    case 'chat:message': {
+      const msg = payload.message;
+      if (!msg) return;
+      if (!window.currentCachedMessages) window.currentCachedMessages = [];
+      const existsIndex = window.currentCachedMessages.findIndex(m => m.id === msg.id);
+      if (existsIndex >= 0) {
+        window.currentCachedMessages[existsIndex] = msg;
+      } else {
+        window.currentCachedMessages.push(msg);
+        if (msg.sender !== currentRole) {
+          playMessageSound();
+          sendWsEvent('chat:read', { reader: currentRole });
+        }
+      }
+      renderMessages(window.currentCachedMessages);
+      scrollToBottom();
+      break;
+    }
+
+    case 'chat:typing': {
+      if (payload.sender !== currentRole) {
+        updateTypingUI(true, Boolean(payload.isTyping));
+      }
+      break;
+    }
+
+    case 'chat:presence': {
+      updateTypingUI(Boolean(payload.isAdminOnline), false);
+      break;
+    }
+
+    case 'chat:read': {
+      if (window.currentCachedMessages) {
+        let changed = false;
+        window.currentCachedMessages.forEach(m => {
+          if (m.sender === currentRole && m.status !== 'seen') {
+            m.status = 'seen';
+            changed = true;
+          }
+        });
+        if (changed) renderMessages(window.currentCachedMessages);
+      }
+      break;
+    }
+
+    case 'chat:reaction': {
+      if (window.currentCachedMessages && payload.messageId) {
+        const target = window.currentCachedMessages.find(m => m.id === payload.messageId);
+        if (target) {
+          target.reactions = payload.reactions;
+          renderMessages(window.currentCachedMessages);
+        }
+      }
+      break;
+    }
+
+    case 'chat:edited': {
+      if (window.currentCachedMessages && payload.messageId) {
+        const target = window.currentCachedMessages.find(m => m.id === payload.messageId);
+        if (target) {
+          target.text = payload.text;
+          target.isEdited = true;
+          renderMessages(window.currentCachedMessages);
+        }
+      }
+      break;
+    }
+
+    case 'call:incoming': {
+      if (isCallActive) return;
+      const call = payload.call;
+      if (call && call.caller !== currentRole && call.status === 'ringing') {
+        pendingCall = call;
+        showIncomingCallModal(call);
+      }
+      break;
+    }
+
+    case 'call:signal': {
+      if (isCallActive && payload.from !== currentRole && payload.signal) {
+        await handleIncomingSignal(payload.signal);
+      }
+      break;
+    }
+
+    case 'call:accepted': {
+      if (isCallActive) {
+        showToast('Ultra HD connected!');
+      }
+      break;
+    }
+
+    case 'call:ended': {
+      cleanupCall();
+      showToast('Call ended');
+      break;
+    }
+  }
+}
+
+function playMessageSound() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(659.25, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.18, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.22);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.25);
+  } catch (e) {}
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   if (window.lucide) window.lucide.createIcons();
 
@@ -91,22 +278,27 @@ document.addEventListener('DOMContentLoaded', () => {
   // Message Context Menu (Long-press on mobile / Right-click on desktop)
   setupMessageContextMenu();
 
-  // Heartbeat Loop (Pings every 5s as secondary fallback)
+  // Initialize Ultra-fast real-time WebSocket connection
+  initAppWebSocket();
+
+  // Heartbeat Loop (fallback pinger every 15s)
   sendHeartbeat();
-  setInterval(sendHeartbeat, 5000);
+  setInterval(sendHeartbeat, 15000);
 
   // Sequential non-blocking message polling (100% immune to request pile-up and freezes)
   triggerMessagePoll();
 
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) {
+      if (!isWsConnected) initAppWebSocket();
       triggerMessagePoll();
     }
   });
 });
 
-// Send Heartbeat to declare active online presence
+// Send Heartbeat to declare active online presence (suppressed when WS is alive)
 function sendHeartbeat() {
+  if (isWsConnected) return; // WebSocket maintains continuous presence in 0ms
   fetch('/api/chat/heartbeat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -128,6 +320,9 @@ function setupMobileViewport() {
 }
 
 async function sendTypingStatus(isTyping) {
+  // Ultra-fast WS typing broadcast (0ms!)
+  if (sendWsEvent('chat:typing', { isTyping })) return;
+
   try {
     await fetch('/api/chat/typing', {
       method: 'POST',
@@ -201,6 +396,9 @@ function setSenderRole(role) {
   if (roleText) {
     roleText.textContent = role === 'Raoprime' ? 'Raoprime' : 'Client';
     roleText.className = role === 'Raoprime' ? 'font-bold text-emerald-400' : 'font-bold text-rose-400';
+  }
+  if (isWsConnected) {
+    sendWsEvent('join', { chatId: currentChatId, role, sender: role });
   }
   renderMessages(window.currentCachedMessages || []);
 }
@@ -312,7 +510,9 @@ async function triggerMessagePoll() {
   } catch (e) {
   } finally {
     isPollingMessages = false;
-    const interval = document.hidden ? 3000 : 1000;
+    // When WebSocket is alive, poll only every 30 seconds as quiet sync
+    // When disconnected, poll every 2.5s
+    const interval = isWsConnected ? 30000 : (document.hidden ? 5000 : 2500);
     if (messagePollTimer) clearTimeout(messagePollTimer);
     messagePollTimer = setTimeout(triggerMessagePoll, interval);
   }
@@ -570,7 +770,6 @@ async function sendTextMessage() {
         return;
       }
       cancelEditingMessage();
-      triggerMessagePoll();
       showToast('✓ Message updated');
     } catch (err) {
       showToast('Failed to edit message: ' + err.message);
@@ -600,20 +799,23 @@ async function sendTextMessage() {
   isCurrentlyTyping = false;
   sendTypingStatus(false);
 
-  try {
-    await fetch('/api/chat/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chatId: currentChatId,
-        sender: currentRole,
-        text,
-        replyTo: replyPayload
-      })
-    });
-    triggerMessagePoll();
-  } catch (err) {
-    showToast('Failed to send message: ' + err.message);
+  // Send via 0ms WebSocket first
+  const sentViaWs = sendWsEvent('chat:message', { text, replyTo: replyPayload });
+  if (!sentViaWs) {
+    try {
+      await fetch('/api/chat/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chatId: currentChatId,
+          sender: currentRole,
+          text,
+          replyTo: replyPayload
+        })
+      });
+    } catch (err) {
+      showToast('Failed to send message: ' + err.message);
+    }
   }
 }
 
@@ -1279,12 +1481,12 @@ let callStartTime = null;
 let callDurationTimer = null;
 let currentCallType = 'video';
 
-// Background check for incoming calls (Universal detection with in-flight guard)
+// Background check for incoming calls (Universal fallback)
 let isCheckingCall = false;
-setInterval(checkIncomingCallStatus, 2000);
+setInterval(checkIncomingCallStatus, 5000);
 
 async function checkIncomingCallStatus() {
-  if (isCallActive || isCheckingCall) return;
+  if (isWsConnected || isCallActive || isCheckingCall) return;
   isCheckingCall = true;
   try {
     const res = await fetch(`/api/call/status?role=client&chatId=${encodeURIComponent(currentChatId)}`);
@@ -1396,7 +1598,8 @@ async function startCall(type = 'video') {
     if (flipBtn) flipBtn.classList.remove('hidden');
   }
 
-  // 3. Ring the callee instantly on backend
+  // 3. Ring the callee instantly on backend (WebSocket + HTTP fallback)
+  sendWsEvent('call:initiate', { caller: currentRole, type });
   try {
     await fetch('/api/call/initiate', {
       method: 'POST',
@@ -1423,11 +1626,11 @@ async function startCall(type = 'video') {
     await peerConnection.setLocalDescription(offer);
     await sendCallSignal({ sdp: offer });
 
-    startSignalPolling();
+    if (!isWsConnected) startSignalPolling();
     showToast(`HD ${type === 'video' ? 'Video' : 'Voice'} Call initiated...`);
   } catch (err) {
     console.error('Call media setup warning:', err);
-    startSignalPolling();
+    if (!isWsConnected) startSignalPolling();
   }
 }
 
@@ -1441,7 +1644,6 @@ async function acceptIncomingCall() {
   currentCallType = call.type || 'video';
   isCallActive = true;
   lastSignalSeq = 0;
-  pendingCandidates = [];
 
   // Prime and unlock browser audio & video contexts synchronously on user gesture
   const remoteAudioEl = document.getElementById('remoteAudio');
@@ -1490,7 +1692,8 @@ async function acceptIncomingCall() {
     if (flipBtn) flipBtn.classList.remove('hidden');
   }
 
-  // Notify backend call is accepted immediately
+  // Notify backend call is accepted immediately (WS + HTTP)
+  sendWsEvent('call:accept', { chatId: currentChatId });
   try {
     await fetch('/api/call/accept', {
       method: 'POST',
@@ -1502,11 +1705,19 @@ async function acceptIncomingCall() {
   try {
     await acquireLocalMedia(currentCallType === 'video');
     await initPeerConnection(currentCallType === 'video');
-    startSignalPolling();
+
+    // Deliver buffered SDP offer immediately if already arrived
+    if (pendingSdpOffer) {
+      const offer = pendingSdpOffer;
+      pendingSdpOffer = null;
+      await handleIncomingSignal({ sdp: offer });
+    }
+
+    if (!isWsConnected) startSignalPolling();
     showToast('Ultra HD connected!');
   } catch (err) {
     console.error('Call accept setup warning:', err);
-    startSignalPolling();
+    if (!isWsConnected) startSignalPolling();
   }
 }
 
@@ -1515,6 +1726,7 @@ async function declineCall() {
   const modal = document.getElementById('incomingCallModal');
   if (modal) modal.classList.add('hidden');
   
+  sendWsEvent('call:end', { chatId: currentChatId });
   await fetch('/api/call/end', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -1522,9 +1734,12 @@ async function declineCall() {
   }).catch(() => {});
   
   pendingCall = null;
+  pendingSdpOffer = null;
+  pendingCandidates = [];
 }
 
 async function endCall() {
+  sendWsEvent('call:end', { chatId: currentChatId });
   await fetch('/api/call/end', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -1667,6 +1882,11 @@ async function initPeerConnection(isVideo) {
 }
 
 async function sendCallSignal(signal) {
+  // Ultra-low latency 0ms transmission via WebSocket
+  if (sendWsEvent('call:signal', { signal, from: currentRole })) {
+    return;
+  }
+  // Secondary HTTP fallback
   try {
     await fetch('/api/call/signal', {
       method: 'POST',
@@ -1682,8 +1902,11 @@ async function sendCallSignal(signal) {
 
 function startSignalPolling() {
   if (callPollInterval) clearInterval(callPollInterval);
+  // WebSocket streams signals in 0ms! Only run HTTP polling if WS is disconnected.
+  if (isWsConnected) return;
+
   callPollInterval = setInterval(async () => {
-    if (!isCallActive) {
+    if (!isCallActive || isWsConnected) {
       clearInterval(callPollInterval);
       return;
     }
@@ -1704,11 +1927,12 @@ function startSignalPolling() {
         }
       }
     } catch (e) {}
-  }, 600);
+  }, 1000);
 }
 
 async function handleIncomingSignal(sig) {
   if (!peerConnection) {
+    if (sig.sdp && sig.sdp.type === 'offer') pendingSdpOffer = sig.sdp;
     if (sig.candidate) pendingCandidates.push(sig.candidate);
     return;
   }
@@ -1941,6 +2165,8 @@ function cleanupCall() {
 
   isCallActive = false;
   pendingCall = null;
+  pendingSdpOffer = null;
+  pendingCandidates = [];
   isMicMuted = false;
   isCamOff = false;
 

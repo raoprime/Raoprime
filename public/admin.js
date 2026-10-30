@@ -14,6 +14,197 @@ let isCurrentlyTyping = false;
 let adminToken = localStorage.getItem('raoprime_admin_token') || '';
 let pollIntervals = [];
 
+// ⚡ Ultra-Low-Latency WebSocket Real-Time Engine for Admin
+let adminWs = null;
+let isAdminWsConnected = false;
+let adminWsReconnectTimer = null;
+let pendingSdpOffer = null;
+
+function initAdminWebSocket() {
+  if (!adminToken) return;
+  if (adminWs && (adminWs.readyState === WebSocket.OPEN || adminWs.readyState === WebSocket.CONNECTING)) {
+    return;
+  }
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsUrl = `${protocol}//${window.location.host}/ws`;
+
+  try {
+    adminWs = new WebSocket(wsUrl);
+
+    adminWs.onopen = () => {
+      isAdminWsConnected = true;
+      console.log('⚡ Raoprime Admin Ultra-fast WebSocket connected');
+      sendAdminWsEvent('join', { chatId: activeChatId || 'all', role: 'Raoprime', sender: 'Raoprime' });
+      loadAdminChats();
+      if (activeChatId) loadActiveMessages();
+    };
+
+    adminWs.onmessage = async (evt) => {
+      try {
+        const payload = JSON.parse(evt.data);
+        handleAdminWsEvent(payload);
+      } catch (err) {
+        console.warn('Admin WS parse warning:', err);
+      }
+    };
+
+    adminWs.onerror = () => {};
+
+    adminWs.onclose = () => {
+      isAdminWsConnected = false;
+      if (adminToken) {
+        if (adminWsReconnectTimer) clearTimeout(adminWsReconnectTimer);
+        adminWsReconnectTimer = setTimeout(initAdminWebSocket, 3000);
+      }
+    };
+  } catch (err) {
+    if (adminWsReconnectTimer) clearTimeout(adminWsReconnectTimer);
+    adminWsReconnectTimer = setTimeout(initAdminWebSocket, 5000);
+  }
+}
+
+function sendAdminWsEvent(event, data = {}) {
+  if (adminWs && adminWs.readyState === WebSocket.OPEN) {
+    try {
+      const targetChat = data.chatId || activeChatId || 'all';
+      adminWs.send(JSON.stringify({ event, chatId: targetChat, role: 'Raoprime', sender: 'Raoprime', ...data }));
+      return true;
+    } catch (e) {
+      console.warn('Admin WS send error:', e);
+    }
+  }
+  return false;
+}
+
+async function handleAdminWsEvent(payload) {
+  const { event, chatId } = payload;
+  const normChatId = (chatId || '').toLowerCase().trim();
+  const normActiveChatId = (activeChatId || '').toLowerCase().trim();
+
+  switch (event) {
+    case 'chat:message': {
+      const msg = payload.message;
+      if (!msg) return;
+
+      // 1. If currently viewing this chat, update active messages view in 0ms
+      if (normChatId && (normChatId === normActiveChatId || !normActiveChatId)) {
+        if (normChatId === normActiveChatId) {
+          if (!window.currentAdminCachedMessages) window.currentAdminCachedMessages = [];
+          const existsIndex = window.currentAdminCachedMessages.findIndex(m => m.id === msg.id);
+          if (existsIndex >= 0) {
+            window.currentAdminCachedMessages[existsIndex] = msg;
+          } else {
+            window.currentAdminCachedMessages.push(msg);
+            if (msg.sender !== 'Raoprime' && msg.sender !== 'RP') {
+              playConnectChime();
+              sendAdminWsEvent('chat:read', { chatId: activeChatId, reader: 'Raoprime' });
+            }
+          }
+          renderAdminMessages(window.currentAdminCachedMessages);
+          scrollAdminToBottom();
+        }
+      }
+
+      // 2. Update allChats list in sidebar in 0ms
+      let foundChat = allChats.find(c => c.chatId.toLowerCase() === normChatId);
+      if (foundChat) {
+        foundChat.lastMessage = msg;
+        foundChat.lastActivity = msg.timestamp || new Date().toISOString();
+        if (normChatId !== normActiveChatId && msg.sender !== 'Raoprime' && msg.sender !== 'RP') {
+          foundChat.unseenCount = (foundChat.unseenCount || 0) + 1;
+        }
+        allChats = [foundChat, ...allChats.filter(c => c !== foundChat)];
+        filterChats();
+      } else {
+        loadAdminChats();
+      }
+      break;
+    }
+
+    case 'chat:typing': {
+      if (normChatId === normActiveChatId && payload.sender !== 'Raoprime') {
+        updateAdminTypingUI(true, Boolean(payload.isTyping));
+      }
+      break;
+    }
+
+    case 'chat:presence': {
+      if (normChatId === normActiveChatId) {
+        updateAdminTypingUI(Boolean(payload.isClientOnline), false);
+      }
+      break;
+    }
+
+    case 'chat:read': {
+      if (normChatId === normActiveChatId && window.currentAdminCachedMessages) {
+        let changed = false;
+        window.currentAdminCachedMessages.forEach(m => {
+          if ((m.sender === 'Raoprime' || m.sender === 'RP') && m.status !== 'seen') {
+            m.status = 'seen';
+            changed = true;
+          }
+        });
+        if (changed) renderAdminMessages(window.currentAdminCachedMessages);
+      }
+      break;
+    }
+
+    case 'chat:reaction': {
+      if (normChatId === normActiveChatId && window.currentAdminCachedMessages && payload.messageId) {
+        const target = window.currentAdminCachedMessages.find(m => m.id === payload.messageId);
+        if (target) {
+          target.reactions = payload.reactions;
+          renderAdminMessages(window.currentAdminCachedMessages);
+        }
+      }
+      break;
+    }
+
+    case 'chat:edited': {
+      if (normChatId === normActiveChatId && window.currentAdminCachedMessages && payload.messageId) {
+        const target = window.currentAdminCachedMessages.find(m => m.id === payload.messageId);
+        if (target) {
+          target.text = payload.text;
+          target.isEdited = true;
+          renderAdminMessages(window.currentAdminCachedMessages);
+        }
+      }
+      break;
+    }
+
+    case 'call:incoming': {
+      if (isCallActive) return;
+      const call = payload.call;
+      if (call && call.caller !== 'Raoprime' && call.status === 'ringing') {
+        pendingCall = call;
+        pendingCallChatId = payload.chatId || activeChatId || 'default';
+        showAdminIncomingModal(call, pendingCallChatId);
+      }
+      break;
+    }
+
+    case 'call:signal': {
+      if (isCallActive && payload.from !== 'Raoprime' && payload.signal) {
+        await handleIncomingSignal(payload.signal);
+      }
+      break;
+    }
+
+    case 'call:accepted': {
+      if (isCallActive) {
+        showToast('Client connected in Ultra HD!');
+      }
+      break;
+    }
+
+    case 'call:ended': {
+      cleanupCall();
+      showToast('Call ended by client');
+      break;
+    }
+  }
+}
+
 // WhatsApp-grade Action States
 let adminEditingMessageId = null;
 let adminReplyingMessageId = null;
@@ -62,12 +253,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Admin Message Context Menu (Right-click & Long-press)
   setupAdminMessageContextMenu();
 
-  // Admin Heartbeat Loop (5s secondary pulse)
-  setInterval(sendAdminHeartbeat, 5000);
+  // Admin Heartbeat Loop (15s fallback pinger)
+  setInterval(sendAdminHeartbeat, 15000);
 
-  // Resume polling on window visibility
+  // Resume polling & WS on window visibility
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden && adminToken) {
+      if (!isAdminWsConnected) initAdminWebSocket();
       triggerAdminChatsPoll();
       if (activeChatId) triggerActiveMsgsPoll();
     }
@@ -78,7 +270,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 function sendAdminHeartbeat() {
-  if (!adminToken) return;
+  if (!adminToken || isAdminWsConnected) return; // WebSocket maintains continuous presence automatically
   fetch('/api/chat/heartbeat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -139,6 +331,7 @@ function hideLoginGateway() {
 }
 
 function startPolling() {
+  initAdminWebSocket();
   triggerAdminChatsPoll();
   triggerActiveMsgsPoll();
 }
@@ -195,6 +388,12 @@ async function handleAdminLogout() {
     });
   } catch (e) {}
 
+  if (adminWs) {
+    try { adminWs.close(); } catch (e) {}
+    adminWs = null;
+    isAdminWsConnected = false;
+  }
+
   adminToken = '';
   localStorage.removeItem('raoprime_admin_token');
   if (adminChatsPollTimer) clearTimeout(adminChatsPollTimer);
@@ -206,6 +405,7 @@ async function handleAdminLogout() {
 
 async function sendAdminTypingStatus(isTyping) {
   if (!activeChatId) return;
+  if (sendAdminWsEvent('chat:typing', { chatId: activeChatId, sender: 'Raoprime', isTyping })) return;
   try {
     await fetch('/api/chat/typing', {
       method: 'POST',
@@ -289,7 +489,7 @@ async function triggerAdminChatsPoll() {
   } catch (e) {
   } finally {
     isPollingAdminChats = false;
-    const interval = document.hidden ? 4000 : 1500;
+    const interval = isAdminWsConnected ? 30000 : (document.hidden ? 5000 : 2500);
     if (adminChatsPollTimer) clearTimeout(adminChatsPollTimer);
     adminChatsPollTimer = setTimeout(triggerAdminChatsPoll, interval);
   }
@@ -413,6 +613,7 @@ function filterChats() {
 function selectChat(chatId, isUserTap = false) {
   if (activeChatId === chatId && !isUserTap) return;
   activeChatId = chatId;
+  sendAdminWsEvent('join', { chatId, role: 'Raoprime', sender: 'Raoprime' });
   lastAdminMsgSig = '';
   lastAdminTypingSig = '';
   lastMsgCount = 0;
@@ -534,7 +735,7 @@ function formatAdminMessageText(text) {
 async function triggerActiveMsgsPoll() {
   if (!adminToken || !activeChatId) {
     if (activeMsgsPollTimer) clearTimeout(activeMsgsPollTimer);
-    activeMsgsPollTimer = setTimeout(triggerActiveMsgsPoll, 1200);
+    activeMsgsPollTimer = setTimeout(triggerActiveMsgsPoll, 3000);
     return;
   }
   if (isPollingActiveMsgs) return;
@@ -544,7 +745,7 @@ async function triggerActiveMsgsPoll() {
   } catch (e) {
   } finally {
     isPollingActiveMsgs = false;
-    const interval = document.hidden ? 3000 : 1000;
+    const interval = isAdminWsConnected ? 30000 : (document.hidden ? 5000 : 2000);
     if (activeMsgsPollTimer) clearTimeout(activeMsgsPollTimer);
     activeMsgsPollTimer = setTimeout(triggerActiveMsgsPoll, interval);
   }
@@ -855,24 +1056,28 @@ async function sendAdminTextMessage() {
   isCurrentlyTyping = false;
   sendAdminTypingStatus(false);
 
-  try {
-    await fetch('/api/chat/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-admin-token': adminToken
-      },
-      body: JSON.stringify({
-        chatId: activeChatId,
-        sender: 'Raoprime',
-        text,
-        replyTo: replyPayload
-      })
-    });
-    triggerActiveMsgsPoll();
-    triggerAdminChatsPoll();
-  } catch (err) {
-    showToast('Failed to send reply: ' + err.message);
+  // Send via WebSocket first in 0ms
+  const sentViaWs = sendAdminWsEvent('chat:message', { chatId: activeChatId, text, replyTo: replyPayload });
+  if (!sentViaWs) {
+    try {
+      await fetch('/api/chat/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-token': adminToken
+        },
+        body: JSON.stringify({
+          chatId: activeChatId,
+          sender: 'Raoprime',
+          text,
+          replyTo: replyPayload
+        })
+      });
+      triggerActiveMsgsPoll();
+      triggerAdminChatsPoll();
+    } catch (err) {
+      showToast('Failed to send reply: ' + err.message);
+    }
   }
 }
 
@@ -1547,10 +1752,10 @@ let currentCallType = 'video';
 
 // Background incoming call polling for Admin (Checks for calls from ANY client with in-flight guard)
 let isCheckingAdminCall = false;
-setInterval(checkAdminIncomingCalls, 2000);
+setInterval(checkAdminIncomingCalls, 5000);
 
 async function checkAdminIncomingCalls() {
-  if (isCallActive || !adminToken || isCheckingAdminCall) return;
+  if (isAdminWsConnected || isCallActive || !adminToken || isCheckingAdminCall) return;
   isCheckingAdminCall = true;
   try {
     const queryChat = activeChatId || 'all';
@@ -1604,6 +1809,7 @@ async function startAdminCall(type = 'video') {
   isCallActive = true;
   lastSignalSeq = 0;
   pendingCandidates = [];
+  pendingSdpOffer = null;
   pendingCallChatId = targetChat;
 
   // 1. Prime and unlock browser audio & video contexts synchronously on user gesture
@@ -1660,7 +1866,8 @@ async function startAdminCall(type = 'video') {
     if (flipBtn) flipBtn.classList.remove('hidden');
   }
 
-  // 2. Ring the client immediately on backend
+  // 2. Ring the client immediately on backend (WS + HTTP fallback)
+  sendAdminWsEvent('call:initiate', { chatId: targetChat, caller: 'Raoprime', type });
   try {
     await fetch('/api/call/initiate', {
       method: 'POST',
@@ -1687,11 +1894,11 @@ async function startAdminCall(type = 'video') {
     await peerConnection.setLocalDescription(offer);
     await sendAdminCallSignal({ sdp: offer });
 
-    startSignalPolling();
+    if (!isAdminWsConnected) startSignalPolling();
     showToast(`HD ${type === 'video' ? 'Video' : 'Voice'} Call started...`);
   } catch (err) {
     console.error('Admin call media setup warning:', err);
-    startSignalPolling();
+    if (!isAdminWsConnected) startSignalPolling();
   }
 }
 
@@ -1706,7 +1913,6 @@ async function acceptIncomingCall() {
   currentCallType = call.type || 'video';
   isCallActive = true;
   lastSignalSeq = 0;
-  pendingCandidates = [];
 
   // Prime and unlock browser audio & video contexts synchronously on user gesture
   const remoteAudioEl = document.getElementById('remoteAudio');
@@ -1762,7 +1968,8 @@ async function acceptIncomingCall() {
     if (flipBtn) flipBtn.classList.remove('hidden');
   }
 
-  // Notify backend call is accepted immediately
+  // Notify backend call is accepted immediately (WS + HTTP)
+  sendAdminWsEvent('call:accept', { chatId: callChatId });
   try {
     await fetch('/api/call/accept', {
       method: 'POST',
@@ -1774,11 +1981,19 @@ async function acceptIncomingCall() {
   try {
     await acquireLocalMedia(currentCallType === 'video');
     await initPeerConnection(currentCallType === 'video');
-    startSignalPolling();
+
+    // Deliver buffered SDP offer immediately if already arrived
+    if (pendingSdpOffer) {
+      const offer = pendingSdpOffer;
+      pendingSdpOffer = null;
+      await handleIncomingSignal({ sdp: offer });
+    }
+
+    if (!isAdminWsConnected) startSignalPolling();
     showToast('Ultra HD connected!');
   } catch (err) {
     console.error('Admin accept setup warning:', err);
-    startSignalPolling();
+    if (!isAdminWsConnected) startSignalPolling();
   }
 }
 
@@ -1788,6 +2003,7 @@ async function declineCall() {
   if (modal) modal.classList.add('hidden');
 
   const callChatId = pendingCallChatId || activeChatId || 'default';
+  sendAdminWsEvent('call:end', { chatId: callChatId });
   await fetch('/api/call/end', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -1796,10 +2012,13 @@ async function declineCall() {
   
   pendingCall = null;
   pendingCallChatId = null;
+  pendingSdpOffer = null;
+  pendingCandidates = [];
 }
 
 async function endCall() {
   const callChatId = pendingCallChatId || activeChatId || 'default';
+  sendAdminWsEvent('call:end', { chatId: callChatId });
   await fetch('/api/call/end', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -1943,6 +2162,11 @@ async function initPeerConnection(isVideo) {
 
 async function sendAdminCallSignal(signal) {
   const targetChatId = pendingCallChatId || activeChatId || 'default';
+  // Send over WebSocket first in 0ms!
+  if (sendAdminWsEvent('call:signal', { signal, from: 'Raoprime', chatId: targetChatId })) {
+    return;
+  }
+  // Secondary HTTP fallback
   try {
     await fetch('/api/call/signal', {
       method: 'POST',
@@ -1958,8 +2182,11 @@ async function sendAdminCallSignal(signal) {
 
 function startSignalPolling() {
   if (callPollInterval) clearInterval(callPollInterval);
+  // WebSocket streams signals with 0ms delay! Only run polling as fallback.
+  if (isAdminWsConnected) return;
+
   callPollInterval = setInterval(async () => {
-    if (!isCallActive) {
+    if (!isCallActive || isAdminWsConnected) {
       clearInterval(callPollInterval);
       return;
     }
@@ -1982,11 +2209,12 @@ function startSignalPolling() {
         }
       }
     } catch (e) {}
-  }, 600);
+  }, 1000);
 }
 
 async function handleIncomingSignal(sig) {
   if (!peerConnection) {
+    if (sig.sdp && sig.sdp.type === 'offer') pendingSdpOffer = sig.sdp;
     if (sig.candidate) pendingCandidates.push(sig.candidate);
     return;
   }
@@ -2223,6 +2451,8 @@ function cleanupCall() {
   isCallActive = false;
   pendingCall = null;
   pendingCallChatId = null;
+  pendingSdpOffer = null;
+  pendingCandidates = [];
   isMicMuted = false;
   isCamOff = false;
 

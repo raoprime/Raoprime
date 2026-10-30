@@ -25,6 +25,7 @@
     "firebase-admin": "^12.7.0",
     "mime-types": "^2.1.35",
     "mongodb": "^7.7.0",
-    "mongoose": "^9.11.4"
+    "mongoose": "^9.11.4",
+    "ws": "^8.22.0"
   }
 }
