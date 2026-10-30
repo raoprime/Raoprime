@@ -1,7 +1,7 @@
 // Raoprime Official Service Worker
 // Enables Native Android / Desktop OS Notification Panel Alerts and Background Sync
 
-const CACHE_NAME = 'raoprime-v2.3';
+const CACHE_NAME = 'raoprime-v2.4';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

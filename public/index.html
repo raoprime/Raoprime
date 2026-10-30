@@ -276,6 +276,16 @@
 
     <!-- Header Actions (WhatsApp / iOS FaceTime Grade Minimalist Glass Icons) -->
     <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+      <!-- Device Notifications Bell Button -->
+      <button type="button" id="notifBellBtn" onclick="toggleOrRequestNotification()" class="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/[0.06] hover:bg-white/[0.12] active:bg-white/[0.18] text-slate-200 hover:text-white border border-white/[0.08] backdrop-blur-md transition-all active:scale-90 flex items-center justify-center cursor-pointer shadow-sm group" title="Device Notifications" aria-label="Device Notifications">
+        <svg id="notifBellIcon" class="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:rotate-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>
+        <span id="notifBellDot" class="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-amber-400 ring-2 ring-[#0a0c12] hidden"></span>
+        <span id="notifBellBadge" class="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping hidden"></span>
+      </button>
+
       <!-- Voice Call Button -->
       <button onclick="startCall('audio')" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/[0.06] hover:bg-white/[0.12] active:bg-white/[0.18] text-slate-200 hover:text-white border border-white/[0.08] backdrop-blur-md transition-all active:scale-90 flex items-center justify-center cursor-pointer shadow-sm" title="Voice Call" aria-label="Voice Call">
         <svg class="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
@@ -305,22 +315,33 @@
 
   </header>
 
-  <!-- Middle Chat Messages Stream (Scrollable with WhatsApp Wallpaper Texture) -->
-  <main id="chatStream" class="flex-1 overflow-y-auto chat-scroll p-3.5 sm:p-6 space-y-4 relative flex flex-col justify-start chat-wallpaper">
-    
-    <!-- Device Notification Enable Banner (WhatsApp / Executive Style) -->
-    <div id="notifPermissionBanner" class="hidden max-w-sm sm:max-w-md w-full mx-auto my-1.5 px-3.5 py-2 rounded-2xl bg-[#121622]/95 border border-amber-500/30 text-amber-200 text-xs flex items-center justify-between gap-3 shadow-xl backdrop-blur-md animate-in fade-in duration-200 select-none">
-      <div class="flex items-center gap-2 min-w-0">
-        <svg class="w-4 h-4 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-        <span class="truncate text-[11.5px]">Turn on device alerts for new messages</span>
+  <!-- Device Notification Enable Banner (Pinned directly under header, WhatsApp Web style) -->
+  <div id="notifPermissionBanner" class="hidden w-full bg-gradient-to-r from-amber-950/80 via-[#181310]/95 to-amber-950/80 border-b border-amber-500/30 px-3.5 sm:px-6 py-2.5 flex items-center justify-between gap-3 text-xs text-amber-200 z-10 backdrop-blur-md shadow-lg transition-all select-none">
+    <div class="flex items-center gap-2.5 min-w-0">
+      <div class="w-7 h-7 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shrink-0">
+        <svg class="w-4 h-4 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>
       </div>
-      <div class="flex items-center gap-1.5 shrink-0">
-        <button type="button" onclick="requestNotificationPermission()" class="px-2.5 py-1 rounded-full bg-amber-500 hover:bg-amber-400 text-black font-bold text-[11px] transition-transform active:scale-95 cursor-pointer shadow-sm">Enable</button>
-        <button type="button" onclick="dismissNotificationBanner()" class="p-1 text-slate-400 hover:text-white rounded-full transition-colors cursor-pointer" aria-label="Dismiss">
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-        </button>
+      <div class="min-w-0">
+        <p class="font-bold text-white text-[12px] truncate">Turn on device alerts for new messages</p>
+        <p class="text-[11px] text-amber-200/80 truncate">Get instant alerts on your phone or PC when Raoprime replies</p>
       </div>
     </div>
+    <div class="flex items-center gap-2 shrink-0">
+      <button type="button" onclick="requestNotificationPermission()" class="px-3.5 py-1.5 rounded-full bg-amber-500 hover:bg-amber-400 active:scale-95 text-black font-extrabold text-[11.5px] transition-all shadow-md cursor-pointer flex items-center gap-1.5">
+        <span>Turn On</span>
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+      </button>
+      <button type="button" onclick="dismissNotificationBanner()" class="p-1.5 text-slate-400 hover:text-white rounded-full hover:bg-white/10 transition-colors cursor-pointer" aria-label="Dismiss" title="Dismiss">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Middle Chat Messages Stream (Scrollable with WhatsApp Wallpaper Texture) -->
+  <main id="chatStream" class="flex-1 overflow-y-auto chat-scroll p-3.5 sm:p-6 space-y-4 relative flex flex-col justify-start chat-wallpaper">
 
     <!-- Welcome Info Card -->
     <div class="text-center my-2 sm:my-3">
@@ -752,6 +773,6 @@
     </div>
   </div>
 
-  <script src="/chat-app.js?v=5.5"></script>
+  <script src="/chat-app.js?v=5.6"></script>
 </body>
 </html>

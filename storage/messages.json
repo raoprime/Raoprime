@@ -168,6 +168,15 @@
       "timestamp": "2026-10-30T17:57:56.379Z",
       "seenAt": "2026-10-30T17:57:56.763Z",
       "status": "seen"
+    },
+    {
+      "chatId": "Priya",
+      "sender": "Client",
+      "id": "msg_1793385120233_uu4q",
+      "text": "hi",
+      "type": "text",
+      "status": "sent",
+      "timestamp": "2026-10-30T18:32:00.234Z"
     }
   ],
   "Experiment_Client": [
@@ -2337,9 +2346,63 @@
       "sender": "Client",
       "type": "text",
       "text": "Rapid test",
-      "status": "sent",
+      "status": "seen",
       "timestamp": "2026-10-30T18:27:59.435Z",
-      "chatId": "RenamedVIP_1793384879389"
+      "chatId": "RenamedVIP_1793384879389",
+      "seenAt": "2026-10-30T18:29:18.534Z"
+    }
+  ],
+  "TempClient_1793384879389": [
+    {
+      "chatId": "TempClient_1793384879389",
+      "sender": "Client",
+      "id": "msg_1793384879394_75uv",
+      "text": "Message in original chat",
+      "type": "text",
+      "timestamp": "2026-10-30T18:27:59.394Z",
+      "status": "seen",
+      "seenAt": "2026-10-30T18:29:25.804Z"
+    }
+  ],
+  "raoprime - khudd": [
+    {
+      "file": {
+        "originalName": "Screenshot 2026-03-01 104525.png",
+        "gridFsId": null,
+        "fileSize": 853080,
+        "storedName": "Screenshot_2026-03-01_104525_3_1v1i.png",
+        "downloadUrl": "/api/download/Screenshot_2026-03-01_104525_3_1v1i.png",
+        "fileType": "image/png",
+        "formattedSize": "833.1 KB",
+        "fileId": "upl_1793385050573_1v1i"
+      },
+      "chatId": "raoprime - khudd",
+      "sender": "Client",
+      "id": "msg_1793385053753_c2ia",
+      "type": "file",
+      "timestamp": "2026-10-30T18:30:53.753Z",
+      "seenAt": "2026-10-30T18:31:24.109Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "raoprime - khudd",
+      "sender": "Raoprime",
+      "id": "msg_1793385093937_o4p0",
+      "text": "hi",
+      "type": "text",
+      "timestamp": "2026-10-30T18:31:33.969Z",
+      "seenAt": "2026-10-30T18:31:34.020Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "raoprime - khudd",
+      "sender": "Raoprime",
+      "id": "msg_1793385135992_kgo6",
+      "text": "hi",
+      "type": "text",
+      "timestamp": "2026-10-30T18:32:16.028Z",
+      "seenAt": "2026-10-30T18:32:16.487Z",
+      "status": "seen"
     }
   ]
 }
