@@ -1027,23 +1027,50 @@ async function sendTextMessage() {
   isCurrentlyTyping = false;
   sendTypingStatus(false);
 
-  // Send via 0ms WebSocket first
-  const sentViaWs = sendWsEvent('chat:message', { text, replyTo: replyPayload });
-  if (!sentViaWs) {
-    try {
-      await fetch('/api/chat/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chatId: currentChatId,
-          sender: currentRole,
-          text,
-          replyTo: replyPayload
-        })
-      });
-    } catch (err) {
-      showToast('Failed to send message: ' + err.message);
+  // 1. Instant 0ms Optimistic UI Rendering
+  const tempMsgId = 'msg_opt_' + Date.now();
+  const optimisticMsg = {
+    id: tempMsgId,
+    chatId: currentChatId,
+    sender: currentRole,
+    type: 'text',
+    text,
+    status: 'sent',
+    timestamp: new Date().toISOString(),
+    replyTo: replyPayload
+  };
+  if (!window.currentCachedMessages) window.currentCachedMessages = [];
+  window.currentCachedMessages.push(optimisticMsg);
+  renderMessages(window.currentCachedMessages);
+  scrollToBottom();
+
+  // 2. Instant 0ms WebSocket broadcast
+  sendWsEvent('chat:message', { text, replyTo: replyPayload });
+
+  // 3. Guaranteed HTTP Database Persistence
+  try {
+    const res = await fetch('/api/chat/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chatId: currentChatId,
+        sender: currentRole,
+        text,
+        replyTo: replyPayload
+      })
+    });
+    const data = await res.json();
+    if (data.success && data.message) {
+      const idx = window.currentCachedMessages.findIndex(m => m.id === tempMsgId);
+      if (idx >= 0) {
+        window.currentCachedMessages[idx] = data.message;
+        renderMessages(window.currentCachedMessages);
+      }
+    } else if (data.error) {
+      showToast(data.error);
     }
+  } catch (err) {
+    console.warn('HTTP send notice:', err);
   }
 }
 

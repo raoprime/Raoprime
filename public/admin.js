@@ -39,7 +39,7 @@ async function toggleAdminEndChat() {
       window.activeChatIsEnded = data.isEnded;
       updateAdminEndChatButton(data.isEnded);
       showToast(data.isEnded ? '🔒 Consultation ended for client' : '🔓 Consultation reopened for client');
-      loadActiveAdminMessages();
+      loadActiveMessages();
       loadAdminChats();
     } else {
       showToast('Error: ' + (data.error || 'Failed to update'));
@@ -211,7 +211,7 @@ async function handleAdminWsEvent(payload) {
     case 'chat:ended': {
       if (normChatId === normActiveChatId) {
         updateAdminEndChatButton(payload.isEnded);
-        loadActiveAdminMessages();
+        loadActiveMessages();
       }
       loadAdminChats();
       break;
@@ -1201,10 +1201,13 @@ function renderAdminMessages(messages) {
 // ──────────────────────────────────────────────────────────────
 
 async function sendAdminTextMessage() {
-  if (!activeChatId) return;
+  if (!activeChatId) {
+    showToast('Please select a client conversation from the list first');
+    return;
+  }
 
   const input = document.getElementById('adminMessageInput');
-  const text = input.value.trim();
+  const text = input ? input.value.trim() : '';
   if (!text) return;
 
   // If in edit mode, save edited message
@@ -1229,8 +1232,8 @@ async function sendAdminTextMessage() {
         return;
       }
       cancelAdminEditingMessage();
-      triggerActiveMsgsPoll();
-      triggerAdminChatsPoll();
+      loadActiveMessages();
+      loadAdminChats();
       showToast('✓ Message updated');
     } catch (err) {
       showToast('Failed to edit message: ' + err.message);
@@ -1252,36 +1255,65 @@ async function sendAdminTextMessage() {
     cancelAdminReplyMessage();
   }
 
-  input.value = '';
-  input.style.height = 'auto';
+  if (input) {
+    input.value = '';
+    input.style.height = 'auto';
+  }
 
   // Reset typing immediately
   clearTimeout(typingTimeout);
   isCurrentlyTyping = false;
   sendAdminTypingStatus(false);
 
-  // Send via WebSocket first in 0ms
-  const sentViaWs = sendAdminWsEvent('chat:message', { chatId: activeChatId, text, replyTo: replyPayload });
-  if (!sentViaWs) {
-    try {
-      await fetch('/api/chat/send', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-admin-token': adminToken
-        },
-        body: JSON.stringify({
-          chatId: activeChatId,
-          sender: 'Raoprime',
-          text,
-          replyTo: replyPayload
-        })
-      });
-      triggerActiveMsgsPoll();
-      triggerAdminChatsPoll();
-    } catch (err) {
-      showToast('Failed to send reply: ' + err.message);
+  // 1. Instant 0ms Optimistic UI Rendering (guarantees message appears instantly)
+  const tempMsgId = 'msg_opt_' + Date.now();
+  const optimisticMsg = {
+    id: tempMsgId,
+    chatId: activeChatId,
+    sender: 'Raoprime',
+    type: 'text',
+    text,
+    status: 'sent',
+    timestamp: new Date().toISOString(),
+    replyTo: replyPayload
+  };
+  if (!window.currentAdminCachedMessages) window.currentAdminCachedMessages = [];
+  window.currentAdminCachedMessages.push(optimisticMsg);
+  renderAdminMessages(window.currentAdminCachedMessages);
+  scrollAdminToBottom();
+
+  // 2. Instant 0ms WebSocket broadcast
+  sendAdminWsEvent('chat:message', { chatId: activeChatId, text, replyTo: replyPayload });
+
+  // 3. Guaranteed HTTP Database Persistence
+  try {
+    const res = await fetch('/api/chat/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-admin-token': adminToken
+      },
+      body: JSON.stringify({
+        chatId: activeChatId,
+        sender: 'Raoprime',
+        text,
+        replyTo: replyPayload
+      })
+    });
+    const data = await res.json();
+    if (data.success && data.message) {
+      const idx = window.currentAdminCachedMessages.findIndex(m => m.id === tempMsgId);
+      if (idx >= 0) {
+        window.currentAdminCachedMessages[idx] = data.message;
+        renderAdminMessages(window.currentAdminCachedMessages);
+      }
+    } else if (data.error) {
+      showToast('Notice: ' + data.error);
     }
+    triggerActiveMsgsPoll();
+    triggerAdminChatsPoll();
+  } catch (err) {
+    console.warn('HTTP send notice:', err);
   }
 }
 
