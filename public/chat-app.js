@@ -624,6 +624,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // Sequential non-blocking message polling (100% immune to request pile-up and freezes)
   triggerMessagePoll();
 
+  // Load photo verification status immediately on page load
+  if (currentChatId) {
+    loadPhotoVerificationStatus();
+  }
+
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) {
       if (!isWsConnected) initAppWebSocket();
@@ -860,6 +865,35 @@ async function loadMessages() {
         renderMessages(data.messages);
         if (isNewLength) {
           scrollToBottom();
+        }
+      }
+
+      // Update verification state from every poll (catches 20-min auto-verify)
+      if (data.verification) {
+        const prevStatus = currentClientVerification.status;
+        const newVerified = Boolean(data.verification.verified);
+        const newStatus = data.verification.status || (newVerified ? 'verified' : (data.verification.photoUrl ? 'pending' : 'none'));
+
+        currentClientVerification = {
+          verified: newVerified,
+          status: newStatus,
+          photoUrl: data.verification.photoUrl || null,
+          phoneNumber: data.verification.phoneNumber || null,
+          submittedAt: data.verification.submittedAt || null,
+          remainingMinutes: data.verification.remainingMinutes || 0,
+          verifiedAt: data.verification.verifiedAt || null
+        };
+
+        updatePhotoVerifyUI(
+          currentClientVerification.verified,
+          currentClientVerification.photoUrl,
+          currentClientVerification.status,
+          currentClientVerification.remainingMinutes,
+          currentClientVerification.phoneNumber
+        );
+
+        if (prevStatus === 'pending' && newStatus === 'verified') {
+          showToast('🎉 Google Identity Verified! Your account is officially verified.');
         }
       }
 
@@ -2946,8 +2980,8 @@ function updatePhotoVerifyUI(isVerified, photoUrl, status, remainingMinutes, pho
   } else {
     // Unverified / None
     if (toggle) toggle.checked = false;
-    if (title) title.textContent = "Google Identity Verification";
-    if (subtitle) subtitle.textContent = "Verify with photo & mobile to confirm identity";
+    if (title) title.textContent = "Add your photo to verify it's you";
+    if (subtitle) subtitle.textContent = "Google Identity Verification • Add photo & mobile";
     if (statusBadge) statusBadge.classList.add('hidden');
     if (changeBtn) changeBtn.classList.add('hidden');
     if (badgeCheck) badgeCheck.classList.add('hidden');

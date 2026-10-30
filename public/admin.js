@@ -709,7 +709,7 @@ async function loadAdminChats() {
       allChats = data.chats;
 
       const currentSig = data.chats.map(c =>
-        `${c.chatId}:${c.totalMessages}:${c.unseenCount}:${c.isOnline ? 1 : 0}:${c.isTyping ? 1 : 0}:${c.lastMessage?.status || ''}:${c.lastMessage?.timestamp || ''}`
+        `${c.chatId}:${c.totalMessages}:${c.unseenCount}:${c.isOnline ? 1 : 0}:${c.isTyping ? 1 : 0}:${c.lastMessage?.status || ''}:${c.lastMessage?.timestamp || ''}:${c.isVerified ? 1 : 0}:${c.verificationStatus || ''}:${c.verifiedPhoto ? '1' : '0'}`
       ).join('|');
 
       const isSearchActive = document.activeElement === document.getElementById('searchInput');
