@@ -806,16 +806,23 @@ function selectChat(chatId, isUserTap = false) {
   }
   document.getElementById('adminMessageInput').placeholder = `Reply as Raoprime to ${clientName}...`;
 
-  // Immediately clear old messages and display smooth loading placeholder
+    // Check if we already have messages in memory cache for this chat
   const container = document.getElementById('adminMessagesList');
   if (container) {
-    container.innerHTML = `
-      <div class="flex items-center justify-center h-48 text-slate-500 text-xs">
-        <div class="flex items-center gap-2">
-          <div class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></div>
-          <span>Loading ${escapeHtml(clientName)}'s conversation...</span>
-        </div>
-      </div>`;
+    if (adminChatCache[chatId] && Array.isArray(adminChatCache[chatId])) {
+      window.currentAdminCachedMessages = adminChatCache[chatId];
+      renderAdminMessages(adminChatCache[chatId]);
+      scrollAdminToBottom();
+    } else {
+      window.currentAdminCachedMessages = [];
+      container.innerHTML = `
+        <div class="admin-chat-loading-placeholder flex items-center justify-center h-48 text-slate-500 text-xs">
+          <div class="flex items-center gap-2">
+            <div class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></div>
+            <span>Loading ${escapeHtml(clientName)}'s conversation...</span>
+          </div>
+        </div>`;
+    }
   }
 
   filterChats();
@@ -851,6 +858,8 @@ function showInboxOnMobile() {
 // Message Stream for Active Chat (Real-time Seen / Delivered / Active)
 // ──────────────────────────────────────────────────────────────
 
+const adminChatCache = {};
+window.adminChatCache = adminChatCache;
 let lastAdminMsgSig = '';
 let isPollingActiveMsgs = false;
 let activeMsgsPollTimer = null;
@@ -930,19 +939,37 @@ async function loadActiveMessages() {
     // Discard response if user switched to another chat while request was pending
     if (requestedChatId !== activeChatId) return;
 
+    if (!res.ok) {
+      console.warn('loadActiveMessages HTTP error:', res.status);
+      const container = document.getElementById('adminMessagesList');
+      if (container && container.querySelector('.admin-chat-loading-placeholder')) {
+        container.innerHTML = `
+          <div class="flex flex-col items-center justify-center h-48 text-slate-500 text-xs gap-3">
+            <p>Unable to load conversation right now.</p>
+            <button onclick="triggerActiveMsgsPoll()" class="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold cursor-pointer">Retry</button>
+          </div>`;
+      }
+      return;
+    }
+
     const data = await res.json();
     if (requestedChatId !== activeChatId) return;
 
-    if (data.success && data.messages) {
+    if (data.success && Array.isArray(data.messages)) {
+      adminChatCache[requestedChatId] = data.messages;
       window.currentAdminCachedMessages = data.messages;
       if (typeof data.isEnded !== 'undefined') updateAdminEndChatButton(data.isEnded);
+
+      const container = document.getElementById('adminMessagesList');
+      const isPlaceholderStillShowing = Boolean(container && container.querySelector('.admin-chat-loading-placeholder'));
       const currentSig = data.messages.map(m => `${m.id}:${m.status || ''}:${m.isEdited ? '1' : '0'}:${JSON.stringify(m.reactions || {})}:${m.text || ''}`).join('|');
-      if (currentSig !== lastAdminMsgSig) {
+
+      if (currentSig !== lastAdminMsgSig || isPlaceholderStillShowing || data.messages.length === 0) {
         const isNewLength = data.messages.length !== lastMsgCount;
         lastAdminMsgSig = currentSig;
         lastMsgCount = data.messages.length;
         renderAdminMessages(data.messages);
-        if (isNewLength) {
+        if (isNewLength || isPlaceholderStillShowing) {
           scrollAdminToBottom();
         }
       }
@@ -954,6 +981,14 @@ async function loadActiveMessages() {
     }
   } catch (err) {
     console.error('loadActiveMessages error:', err);
+    const container = document.getElementById('adminMessagesList');
+    if (container && container.querySelector('.admin-chat-loading-placeholder')) {
+      container.innerHTML = `
+        <div class="flex flex-col items-center justify-center h-48 text-slate-500 text-xs gap-3">
+          <p>Connection issue. Retrying...</p>
+          <button onclick="triggerActiveMsgsPoll()" class="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold cursor-pointer">Retry</button>
+        </div>`;
+    }
   }
 }
 
@@ -1210,9 +1245,9 @@ function renderAdminMessages(messages) {
   const container = document.getElementById('adminMessagesList');
   if (!container) return;
 
-  if (messages.length === 0) {
+  if (!messages || messages.length === 0) {
     container.innerHTML = `
-      <div class="py-16 text-center text-slate-500 text-xs">
+      <div class="empty-chat-state py-16 text-center text-slate-500 text-xs">
         <p>No messages yet in this conversation.</p>
         <p class="text-[11px] text-slate-600 mt-1">Send a message or document below to initiate.</p>
       </div>`;
@@ -1224,17 +1259,35 @@ function renderAdminMessages(messages) {
   if (renderedRows.length > 0 && renderedRows.length === messages.length - 1) {
     const lastMsg = messages[messages.length - 1];
     if (container.querySelector(`[data-msg-id="${lastMsg.id}"]`)) return; // Already rendered!
-    const singleHtml = renderAdminSingleMessageHtml(lastMsg, messages.length - 1, messages);
-    container.insertAdjacentHTML('beforeend', singleHtml);
-    if (window.lucide) window.lucide.createIcons();
-    return;
+    try {
+      const singleHtml = renderAdminSingleMessageHtml(lastMsg, messages.length - 1, messages);
+      container.insertAdjacentHTML('beforeend', singleHtml);
+      if (window.lucide) window.lucide.createIcons();
+      return;
+    } catch (appendErr) {
+      console.error('render single message error:', appendErr);
+      // Fall through to full render
+    }
   }
 
-  try {
-    container.innerHTML = messages.map((m, i) => renderAdminSingleMessageHtml(m, i, messages)).join('');
-  } catch (renderErr) {
-    console.error('renderAdminMessages error:', renderErr);
+  const renderedItems = [];
+  for (let i = 0; i < messages.length; i++) {
+    try {
+      renderedItems.push(renderAdminSingleMessageHtml(messages[i], i, messages));
+    } catch (msgErr) {
+      console.error('renderAdminSingleMessageHtml error for msg:', messages[i], msgErr);
+      const isRaoprime = messages[i]?.sender === 'Raoprime' || messages[i]?.sender === 'RP';
+      renderedItems.push(`
+        <div class="admin-message-row flex flex-col ${isRaoprime ? 'items-end' : 'items-start'} mt-2" data-msg-id="${messages[i]?.id || ''}">
+          <div class="px-3.5 py-2 rounded-2xl bg-slate-800 text-xs text-slate-200">
+            ${escapeHtml(messages[i]?.text || (messages[i]?.file ? (messages[i].file.originalName || 'Attachment') : 'Message'))}
+          </div>
+        </div>
+      `);
+    }
   }
+
+  container.innerHTML = renderedItems.join('');
   if (window.lucide) window.lucide.createIcons();
 }
 

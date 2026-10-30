@@ -1761,8 +1761,9 @@
       "id": "msg_1793386679573_txen",
       "text": "Bhai Jo age dost banane wale Hote hai us age me Me chal tak nhi sakhta phr bhi jata tha Kaam k Koshish karta tha family n kisi chez ko serious h nhi Liya howa mere phr m mujhse 1 Bara Bhai hai baki mujhse chote hai like 18*19 age k Lekin sab ko hlt Nazar aty hai itna nhi hota unse k serious le Esa nhi k koie gareeb ghr s Hain acha sa ghr hai city m rehty Hain phr PTA nhi Syd andhi Hain",
       "type": "text",
-      "status": "sent",
-      "timestamp": "2026-10-30T18:58:01.055Z"
+      "status": "seen",
+      "timestamp": "2026-10-30T18:58:01.055Z",
+      "seenAt": "2026-10-30T19:58:35.120Z"
     },
     {
       "chatId": "Affaque Ahmed",
@@ -1770,8 +1771,19 @@
       "id": "msg_1793387025022_tzmn",
       "text": "Bhai me Kuch chezain Bata deta hon me koie chez unclear nhi rakhna chata inko lagta hai k mere ye hlt us chez k waja s koie Nasha wagera nhi karta Sirf wahi ek chez hai jis k waja s Me pure life stress anxiety depression m Raha hon",
       "type": "text",
-      "status": "sent",
-      "timestamp": "2026-10-30T19:03:46.519Z"
+      "status": "seen",
+      "timestamp": "2026-10-30T19:03:46.519Z",
+      "seenAt": "2026-10-30T19:58:35.120Z"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Client",
+      "id": "msg_1793390029996_1pbd",
+      "text": "Bhai baat sunne ke liye thanks me try karta rahonga Ap chat close kar sakhte ho",
+      "type": "text",
+      "timestamp": "2026-10-30T19:53:51.452Z",
+      "seenAt": "2026-10-30T19:58:35.120Z",
+      "status": "seen"
     }
   ],
   "Dharmesh": [

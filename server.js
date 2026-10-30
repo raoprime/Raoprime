@@ -70,7 +70,13 @@ app.use((req, res, next) => {
 });
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(express.static(path.join(ROOT_DIR, 'public')));
+app.use(express.static(path.join(ROOT_DIR, 'public'), {
+  setHeaders: (res, pathUrl) => {
+    if (pathUrl.endsWith('.html') || pathUrl.endsWith('.js')) {
+      res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+    }
+  }
+}));
 
 // Lightweight Keep-Alive / Health Check Endpoint (Prevents Render Cold Starts)
 app.get(['/api/health', '/healthz'], (req, res) => {
