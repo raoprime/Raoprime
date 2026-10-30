@@ -847,7 +847,7 @@ async function loadMessages() {
         );
 
         if (prevStatus === 'pending' && newStatus === 'verified') {
-          showToast('🎉 Google Identity Verified! Your account is officially verified.');
+          showToast('✓ Google Identity Verified');
         }
       }
 
@@ -2263,7 +2263,7 @@ function initiateGoogleAuth() {
 
 // Fast-Track Instant Google Profile & DP Sync
 async function promptInstantGoogleSync() {
-  const email = prompt('Enter your Google / Gmail account address to sync your official DP & verify:', 'raodharmeshy@gmail.com');
+  const email = prompt('Enter your Google / Gmail address to sync your profile picture & verify:', 'raodharmeshy@gmail.com');
   if (!email || !email.trim()) return;
   const cleanEmail = email.trim();
   showToast('Connecting with Google profile...');
