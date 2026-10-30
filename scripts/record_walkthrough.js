@@ -111,19 +111,19 @@ async function runWalkthrough() {
     await page.type('#adminPasswordInput', 'rdmy', { delay: 180 });
     await wait(600);
     await page.click('#unlockBtn');
-    await wait(2000);
+    await wait(2200);
 
     // 3. Search in inbox
     console.log('Step 3: Filtering conversations in sidebar...');
     await page.focus('#searchInput');
     await page.type('#searchInput', 'Dharmesh', { delay: 120 });
-    await wait(1000);
+    await wait(1200);
     // Clear search
     await page.evaluate(() => {
       const input = document.getElementById('searchInput');
       if (input) {
         input.value = '';
-        input.dispatchEvent(new Event('input', { bubbles: true }));
+        if (typeof filterChats === 'function') filterChats();
       }
     });
     await wait(800);
@@ -131,9 +131,12 @@ async function runWalkthrough() {
     // 4. Select Dharmesh conversation
     console.log('Step 4: Opening Dharmesh active conversation...');
     await page.evaluate(() => {
-      const convos = Array.from(document.querySelectorAll('.conversation-item'));
-      const target = convos.find(el => el.textContent.includes('Dharmesh')) || convos[0];
-      if (target) target.click();
+      if (typeof selectChat === 'function') {
+        selectChat('Dharmesh', true);
+      } else {
+        const item = document.querySelector('.chat-item');
+        if (item) item.click();
+      }
     });
     await wait(2000);
 
@@ -185,12 +188,18 @@ async function runWalkthrough() {
 
     // 8. Admin sends an interactive reply message
     console.log('Step 8: Admin sending real-time reply message in velvet maroon stream...');
-    await page.focus('#adminMessageInput');
-    await wait(400);
-    await page.type('#adminMessageInput', 'Your identity and cloud files have been verified. Welcome to Raoprime VIP.', { delay: 60 });
-    await wait(600);
-    await page.click('#adminSendBtn');
-    await wait(2000);
+    const adminInput = await page.$('#adminMessageInput');
+    if (adminInput) {
+      await adminInput.focus();
+      await wait(400);
+      await adminInput.type('Your identity and cloud files have been verified. Welcome to Raoprime VIP.', { delay: 50 });
+      await wait(600);
+      const adminSend = await page.$('#adminSendBtn');
+      if (adminSend) await adminSend.click();
+      await wait(2000);
+    } else {
+      console.log('Note: Admin message composer not directly present in current layout, continuing...');
+    }
 
     console.log('\n======================================================');
     console.log('ACT 2: LOCAL CLIENT PORTAL EXPLORATION (http://localhost:4000/?chat=Dharmesh)');
@@ -199,16 +208,20 @@ async function runWalkthrough() {
     // 9. Navigate to Client Portal
     console.log('Step 9: Navigating to Client Portal with Signature Velvet Maroon styling...');
     await page.goto('http://localhost:4000/?chat=Dharmesh', { waitUntil: 'networkidle2', timeout: 30000 });
-    await wait(2000);
+    await wait(2200);
 
     // 10. Client sends an interactive message
     console.log('Step 10: Client sending interactive message...');
-    await page.focus('#messageInput');
-    await wait(400);
-    await page.type('#messageInput', 'Confirmed received! The Obsidian & Velvet Maroon luxury theme looks exceptional.', { delay: 60 });
-    await wait(600);
-    await page.click('#sendBtn');
-    await wait(2000);
+    const clientInput = await page.$('#messageInput');
+    if (clientInput) {
+      await clientInput.focus();
+      await wait(400);
+      await clientInput.type('Confirmed received! The Obsidian & Velvet Maroon luxury theme looks exceptional.', { delay: 50 });
+      await wait(600);
+      const clientSend = await page.$('#sendBtn');
+      if (clientSend) await clientSend.click();
+      await wait(2000);
+    }
 
     // 11. Open "My Profile" Modal (View Mode)
     console.log('Step 11: Opening "My Profile" Modal (View Mode)...');
@@ -279,16 +292,19 @@ async function runWalkthrough() {
     await page.type('#adminPasswordInput', 'rdmy', { delay: 180 });
     await wait(600);
     await page.click('#unlockBtn');
-    await wait(2200);
+    await wait(2500);
 
     // 17. Select Dharmesh conversation on Live Admin
     console.log('Step 17: Selecting conversation on Live Admin Console...');
     await page.evaluate(() => {
-      const convos = Array.from(document.querySelectorAll('.conversation-item'));
-      const target = convos.find(el => el.textContent.includes('Dharmesh')) || convos[0];
-      if (target) target.click();
+      if (typeof selectChat === 'function') {
+        selectChat('Dharmesh', true);
+      } else {
+        const item = document.querySelector('.chat-item');
+        if (item) item.click();
+      }
     });
-    await wait(2000);
+    await wait(2200);
 
     // 18. Inspect Client Intel on Live
     console.log('Step 18: Opening Client Intel on Live Admin...');
@@ -304,7 +320,7 @@ async function runWalkthrough() {
     // 19. Navigate to Live Client Portal
     console.log('Step 19: Navigating to Live Client Portal...');
     await page.goto('https://raoprime.onrender.com/?chat=Dharmesh', { waitUntil: 'networkidle2', timeout: 35000 });
-    await wait(2000);
+    await wait(2200);
 
     // 20. Open Profile Modal on Live Client
     console.log('Step 20: Opening My Profile Modal on Live Client Portal...');
@@ -315,7 +331,7 @@ async function runWalkthrough() {
     await page.evaluate(() => {
       if (typeof closeClientProfileModal === 'function') closeClientProfileModal();
     });
-    await wait(1200);
+    await wait(1500);
 
     console.log('\n🎬 Walkthrough Exploration Sequence Completed Successfully!');
   } catch (err) {
@@ -341,7 +357,7 @@ async function runWalkthrough() {
           resolve();
         } else {
           console.error(`FFmpeg exited with code ${code}`);
-          resolve(); // Resolve to let verification inspect
+          resolve();
         }
       });
     });

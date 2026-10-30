@@ -1,0 +1,264 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "name": "Raoprime Design Tokens",
+  "version": "2.4.0",
+  "description": "Institutional Velvet Maroon & Obsidian Dark System Design Tokens for Figma and UI Implementation",
+  "color": {
+    "brand": {
+      "maroon-primary": {
+        "value": "#741728",
+        "type": "color",
+        "description": "Primary velvet maroon accent, interactive buttons, border highlight"
+      },
+      "maroon-dark": {
+        "value": "#3e0a14",
+        "type": "color",
+        "description": "Deep maroon anchor for velvet gradients and shadows"
+      },
+      "maroon-light": {
+        "value": "#9e2037",
+        "type": "color",
+        "description": "Lighter maroon hover state for interactive elements"
+      },
+      "maroon-glow": {
+        "value": "rgba(116, 23, 40, 0.45)",
+        "type": "color",
+        "description": "Box shadow glow for primary action buttons"
+      },
+      "maroon-subtle": {
+        "value": "rgba(116, 23, 40, 0.15)",
+        "type": "color",
+        "description": "Subtle tint for input focus rings and active tabs"
+      }
+    },
+    "surface": {
+      "obsidian": {
+        "value": "#080a0f",
+        "type": "color",
+        "description": "Global dark base canvas background"
+      },
+      "slate-dark": {
+        "value": "#0d1017",
+        "type": "color",
+        "description": "Modal container background, top navigation bar, bottom chat dock"
+      },
+      "bubble-received": {
+        "value": "#1f2937",
+        "type": "color",
+        "description": "WhatsApp dark slate background for incoming messages from Admin"
+      },
+      "card-surface": {
+        "value": "rgba(255, 255, 255, 0.03)",
+        "type": "color",
+        "description": "Subtle transparent card background for groupings inside modals"
+      },
+      "card-surface-hover": {
+        "value": "rgba(255, 255, 255, 0.06)",
+        "type": "color",
+        "description": "Hover state for card list items and interactive rows"
+      },
+      "overlay-dim": {
+        "value": "rgba(0, 0, 0, 0.75)",
+        "type": "color",
+        "description": "Modal backdrop scrim dimming overlay"
+      }
+    },
+    "border": {
+      "subtle": {
+        "value": "rgba(255, 255, 255, 0.08)",
+        "type": "color",
+        "description": "Standard border stroke for inputs, cards, and modal dividers"
+      },
+      "medium": {
+        "value": "rgba(255, 255, 255, 0.15)",
+        "type": "color",
+        "description": "Hovered input borders and active modal cards"
+      },
+      "maroon-active": {
+        "value": "#741728",
+        "type": "color",
+        "description": "Focused input border and selected item stroke"
+      }
+    },
+    "text": {
+      "primary": {
+        "value": "#ffffff",
+        "type": "color",
+        "description": "Primary high-contrast white text"
+      },
+      "secondary": {
+        "value": "#f1f5f9",
+        "type": "color",
+        "description": "Received message text, card titles"
+      },
+      "muted": {
+        "value": "#94a3b8",
+        "type": "color",
+        "description": "Slate 400 for secondary descriptions, timestamps on incoming messages"
+      },
+      "timestamp-sent": {
+        "value": "#fecdd3",
+        "type": "color",
+        "description": "Rose 200 for timestamps on outgoing velvet maroon messages"
+      },
+      "dim": {
+        "value": "#64748b",
+        "type": "color",
+        "description": "Slate 500 for placeholders and inactive captions"
+      }
+    },
+    "semantic": {
+      "verified-emerald": {
+        "value": "#00D26A",
+        "type": "color",
+        "description": "Google verified account pill, verified checkmark icon"
+      },
+      "verified-emerald-bg": {
+        "value": "rgba(0, 210, 106, 0.12)",
+        "type": "color",
+        "description": "Background badge fill for verified Google identity status"
+      },
+      "warning-amber": {
+        "value": "#f59e0b",
+        "type": "color",
+        "description": "Warning indicator, pending review badge"
+      },
+      "destructive-crimson": {
+        "value": "#dc2626",
+        "type": "color",
+        "description": "Delete conversation button, destructive actions"
+      },
+      "locked-slate": {
+        "value": "#94a3b8",
+        "type": "color",
+        "description": "Permanent locked handle padlock icon and border"
+      }
+    }
+  },
+  "gradient": {
+    "brand": {
+      "maroon-velvet": {
+        "value": "linear-gradient(135deg, #741728 0%, #3e0a14 100%)",
+        "type": "gradient",
+        "description": "Signature Velvet Maroon gradient for sent chat bubbles and primary buttons"
+      },
+      "maroon-velvet-hover": {
+        "value": "linear-gradient(135deg, #881c31 0%, #4c0d19 100%)",
+        "type": "gradient",
+        "description": "Hover state for primary action buttons"
+      },
+      "modal-header": {
+        "value": "linear-gradient(180deg, rgba(116, 23, 40, 0.35) 0%, rgba(13, 16, 23, 0) 100%)",
+        "type": "gradient",
+        "description": "Top ambient glow in My Profile and Brand Info modals"
+      },
+      "emerald-subtle": {
+        "value": "linear-gradient(135deg, rgba(0, 210, 106, 0.2) 0%, rgba(0, 210, 106, 0.05) 100%)",
+        "type": "gradient",
+        "description": "Verified Google profile identity card fill"
+      }
+    }
+  },
+  "typography": {
+    "fontFamily": {
+      "primary": {
+        "value": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+        "type": "fontFamily"
+      },
+      "mono": {
+        "value": "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace",
+        "type": "fontFamily"
+      }
+    },
+    "fontSize": {
+      "xs": { "value": "11px", "type": "dimension" },
+      "sm": { "value": "13px", "type": "dimension" },
+      "base": { "value": "15px", "type": "dimension" },
+      "md": { "value": "16px", "type": "dimension" },
+      "lg": { "value": "18px", "type": "dimension" },
+      "xl": { "value": "20px", "type": "dimension" },
+      "2xl": { "value": "24px", "type": "dimension" }
+    },
+    "fontWeight": {
+      "regular": { "value": "400", "type": "fontWeight" },
+      "medium": { "value": "500", "type": "fontWeight" },
+      "semibold": { "value": "600", "type": "fontWeight" },
+      "bold": { "value": "700", "type": "fontWeight" },
+      "extrabold": { "value": "800", "type": "fontWeight" }
+    },
+    "lineHeight": {
+      "tight": { "value": "1.2", "type": "dimension" },
+      "normal": { "value": "1.45", "type": "dimension" },
+      "relaxed": { "value": "1.6", "type": "dimension" }
+    }
+  },
+  "spacing": {
+    "2xs": { "value": "4px", "type": "dimension" },
+    "xs": { "value": "8px", "type": "dimension" },
+    "sm": { "value": "12px", "type": "dimension" },
+    "md": { "value": "16px", "type": "dimension" },
+    "lg": { "value": "20px", "type": "dimension" },
+    "xl": { "value": "24px", "type": "dimension" },
+    "2xl": { "value": "32px", "type": "dimension" },
+    "3xl": { "value": "48px", "type": "dimension" }
+  },
+  "borderRadius": {
+    "sm": { "value": "6px", "type": "dimension" },
+    "md": { "value": "10px", "type": "dimension" },
+    "lg": { "value": "16px", "type": "dimension" },
+    "xl": { "value": "20px", "type": "dimension" },
+    "2xl": { "value": "24px", "type": "dimension" },
+    "drawer-top": { "value": "28px 28px 0 0", "type": "dimension" },
+    "bubble-sent": { "value": "18px 18px 4px 18px", "type": "dimension" },
+    "bubble-received": { "value": "18px 18px 18px 4px", "type": "dimension" },
+    "full": { "value": "9999px", "type": "dimension" }
+  },
+  "boxShadow": {
+    "btn-maroon": {
+      "value": "0 4px 14px rgba(116, 23, 40, 0.45)",
+      "type": "boxShadow"
+    },
+    "bubble-sent": {
+      "value": "0 4px 14px rgba(116, 23, 40, 0.25)",
+      "type": "boxShadow"
+    },
+    "bubble-received": {
+      "value": "0 2px 8px rgba(0, 0, 0, 0.35)",
+      "type": "boxShadow"
+    },
+    "modal-surface": {
+      "value": "0 20px 60px rgba(0, 0, 0, 0.75), 0 0 1px rgba(255, 255, 255, 0.15)",
+      "type": "boxShadow"
+    },
+    "dock-floating": {
+      "value": "0 10px 30px rgba(0, 0, 0, 0.5)",
+      "type": "boxShadow"
+    }
+  },
+  "componentSpecs": {
+    "messageBubble": {
+      "maxWidth": "75%",
+      "padding": "10px 14px",
+      "sentBackground": "{gradient.brand.maroon-velvet.value}",
+      "sentBorderRadius": "{borderRadius.bubble-sent.value}",
+      "receivedBackground": "{color.surface.bubble-received.value}",
+      "receivedBorderRadius": "{borderRadius.bubble-received.value}",
+      "receivedBorder": "1px solid {color.border.subtle.value}"
+    },
+    "profileModal": {
+      "mobileWidth": "390px",
+      "desktopMaxWidth": "480px",
+      "borderRadiusDesktop": "24px",
+      "borderRadiusMobile": "{borderRadius.drawer-top.value}",
+      "avatarDiameter": "72px",
+      "avatarRingBorder": "3px solid {color.brand.maroon-primary.value}"
+    },
+    "chatInputDock": {
+      "height": "56px",
+      "borderRadius": "{borderRadius.full.value}",
+      "background": "{color.surface.slate-dark.value}",
+      "border": "1px solid {color.border.subtle.value}",
+      "sendButtonSize": "40px"
+    }
+  }
+}
