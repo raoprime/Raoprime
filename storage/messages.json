@@ -2555,8 +2555,39 @@
       "id": "msg_1793393165083_5p0n",
       "text": "Hello",
       "type": "text",
-      "status": "sent",
-      "timestamp": "2026-10-30T20:46:04.909Z"
+      "status": "seen",
+      "timestamp": "2026-10-30T20:46:04.909Z",
+      "seenAt": "2026-10-30T20:56:46.859Z"
+    },
+    {
+      "chatId": "Dharmesh",
+      "sender": "Client",
+      "id": "msg_1793393923101_72ou",
+      "text": "Hi",
+      "type": "text",
+      "timestamp": "2026-10-30T20:58:42.919Z",
+      "seenAt": "2026-10-30T20:58:43.355Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Dharmesh",
+      "sender": "Client",
+      "id": "msg_1793393985226_ox8x",
+      "text": "Hi",
+      "type": "text",
+      "timestamp": "2026-10-30T20:59:45.044Z",
+      "seenAt": "2026-10-30T20:59:45.451Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Dharmesh",
+      "sender": "Client",
+      "id": "msg_1793394019358_6e4s",
+      "text": "Binna seen kiye message seen kyu dikha raha h",
+      "type": "text",
+      "timestamp": "2026-10-30T21:00:19.176Z",
+      "seenAt": "2026-10-30T21:00:19.560Z",
+      "status": "seen"
     }
   ],
   "Test_Large_Room": [

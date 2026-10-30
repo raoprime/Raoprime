@@ -105,14 +105,28 @@ async function handleWsEvent(payload) {
   }
 
   switch (event) {
-        case 'chat:verification-updated': {
-      if (payload.chatId && payload.chatId.toLowerCase() === (currentChatId || '').toLowerCase()) {
+    case 'chat:verification-updated': {
+      if (payload && payload.chatId === currentChatId) {
+        const wasPending = currentClientVerification.status === 'pending';
         currentClientVerification = {
           verified: Boolean(payload.verified),
+          status: payload.status || (payload.verified ? 'verified' : (payload.photoUrl ? 'pending' : 'none')),
           photoUrl: payload.photoUrl || null,
+          phoneNumber: payload.phoneNumber || null,
+          submittedAt: payload.submittedAt || currentClientVerification.submittedAt,
+          remainingMinutes: payload.remainingMinutes || 0,
           verifiedAt: payload.verifiedAt || null
         };
-        updatePhotoVerifyUI(currentClientVerification.verified, currentClientVerification.photoUrl);
+        updatePhotoVerifyUI(
+          currentClientVerification.verified,
+          currentClientVerification.photoUrl,
+          currentClientVerification.status,
+          currentClientVerification.remainingMinutes,
+          currentClientVerification.phoneNumber
+        );
+        if (wasPending && currentClientVerification.verified) {
+          showToast('🎉 Google Identity Verified! Your account is officially verified.');
+        }
       }
       break;
     }
@@ -1870,12 +1884,20 @@ function scrollToBottom() {
 function saveClientName() {
   const input = document.getElementById('clientNameInput');
   const name = (input.value || '').trim();
-  if (!name) return;
+  if (!name) {
+    showToast('Please enter a username to continue');
+    return;
+  }
 
   currentChatId = name;
   localStorage.setItem('raoprime_client', name);
   document.getElementById('chatHeading').textContent = 'Raoprime';
   document.getElementById('nameModal').classList.add('hidden');
+  
+  // Set header initials
+  const headerInitials = document.getElementById('headerClientInitials');
+  if (headerInitials) headerInitials.textContent = name.charAt(0).toUpperCase();
+
   if ('Notification' in window && Notification.permission === 'default') {
     requestNotificationPermission().catch(() => {});
   }
@@ -1884,7 +1906,9 @@ function saveClientName() {
   const newUrl = `${window.location.pathname}?chat=${encodeURIComponent(name)}`;
   window.history.replaceState(null, '', newUrl);
 
+  showToast(`Welcome, @${name}!`);
   loadMessages();
+  loadPhotoVerificationStatus();
 }
 
 function copyClientChatLink() {
@@ -2769,7 +2793,16 @@ async function handleContextUnsend() {
 // Client Photo Identity Verification (Interactive Toggle & Selfie)
 // ──────────────────────────────────────────────────────────────
 
-let currentClientVerification = { verified: false, photoUrl: null, verifiedAt: null };
+let currentClientVerification = {
+  verified: false,
+  status: 'none',
+  photoUrl: null,
+  phoneNumber: null,
+  submittedAt: null,
+  remainingMinutes: 0,
+  verifiedAt: null
+};
+let verificationCountdownInterval = null;
 let modalCameraMediaStream = null;
 let pendingVerifiedPhotoBase64 = null;
 
@@ -2779,14 +2812,31 @@ async function loadPhotoVerificationStatus() {
     const res = await fetch(`/api/chat/verification?chatId=${encodeURIComponent(currentChatId)}`);
     const data = await res.json();
     if (data.success) {
+      const wasPending = currentClientVerification.status === 'pending';
       currentClientVerification = {
         verified: Boolean(data.verified),
+        status: data.status || (data.verified ? 'verified' : (data.photoUrl ? 'pending' : 'none')),
         photoUrl: data.photoUrl || null,
+        phoneNumber: data.phoneNumber || null,
+        submittedAt: data.submittedAt || null,
+        remainingMinutes: data.remainingMinutes || 0,
         verifiedAt: data.verifiedAt || null
       };
-      updatePhotoVerifyUI(currentClientVerification.verified, currentClientVerification.photoUrl);
-      if (data.isRequested && !data.verified) {
+
+      updatePhotoVerifyUI(
+        currentClientVerification.verified,
+        currentClientVerification.photoUrl,
+        currentClientVerification.status,
+        currentClientVerification.remainingMinutes,
+        currentClientVerification.phoneNumber
+      );
+
+      if (data.isRequested && !data.photoUrl) {
         showVerificationRequestedBanner();
+      }
+
+      if (wasPending && currentClientVerification.verified) {
+        showToast('🎉 Google Identity Verified! Your account is officially verified.');
       }
     }
   } catch (err) {
@@ -2794,7 +2844,7 @@ async function loadPhotoVerificationStatus() {
   }
 }
 
-function updatePhotoVerifyUI(isVerified, photoUrl) {
+function updatePhotoVerifyUI(isVerified, photoUrl, status, remainingMinutes, phoneNumber) {
   const toggle = document.getElementById('photoVerifyToggle');
   const title = document.getElementById('verifyTitle');
   const subtitle = document.getElementById('verifySubtitle');
@@ -2802,42 +2852,140 @@ function updatePhotoVerifyUI(isVerified, photoUrl) {
   const placeholderIcon = document.getElementById('verifyAvatarPlaceholderIcon');
   const avatarImg = document.getElementById('verifyAvatarImg');
   const badgeCheck = document.getElementById('verifyBadgeCheck');
+  const badgePending = document.getElementById('verifyBadgePending');
   const changeBtn = document.getElementById('changePhotoBtn');
   const avatarRing = document.getElementById('verifyAvatarRing');
 
-  if (toggle) toggle.checked = Boolean(isVerified);
+  // Header Client DP elements
+  const headerAvatarImg = document.getElementById('headerClientAvatarImg');
+  const headerInitials = document.getElementById('headerClientInitials');
+  const headerVerifiedBadge = document.getElementById('headerClientVerifiedBadge');
+  const headerPendingBadge = document.getElementById('headerClientPendingBadge');
 
-  if (isVerified && photoUrl) {
-    if (title) title.textContent = "Verified with your photo";
-    if (subtitle) subtitle.textContent = "Your identity is confirmed with Raoprime";
-    if (statusBadge) statusBadge.classList.remove('hidden');
-    if (changeBtn) changeBtn.classList.remove('hidden');
-    if (placeholderIcon) placeholderIcon.classList.add('hidden');
+  if (headerInitials && currentChatId) {
+    headerInitials.textContent = currentChatId.charAt(0).toUpperCase();
+  }
+
+  const effectiveStatus = status || (isVerified ? 'verified' : (photoUrl ? 'pending' : 'none'));
+
+  // 1. INSTANT DP UPDATE (Display Picture sets immediately upon photo selection / load)
+  if (photoUrl) {
     if (avatarImg) {
       avatarImg.src = photoUrl;
       avatarImg.classList.remove('hidden');
     }
-    if (badgeCheck) badgeCheck.classList.remove('hidden');
-    if (avatarRing) {
-      avatarRing.classList.remove('border-slate-600/80');
-      avatarRing.classList.add('border-[#00D26A]');
+    if (placeholderIcon) placeholderIcon.classList.add('hidden');
+    if (headerAvatarImg) {
+      headerAvatarImg.src = photoUrl;
+      headerAvatarImg.classList.remove('hidden');
     }
+    if (headerInitials) headerInitials.classList.add('hidden');
   } else {
-    if (title) title.textContent = "Add your photo to verify it's you";
-    if (subtitle) subtitle.textContent = "Help Raoprime confirm your identity in this chat";
-    if (statusBadge) statusBadge.classList.add('hidden');
-    if (changeBtn) changeBtn.classList.add('hidden');
-    if (placeholderIcon) placeholderIcon.classList.remove('hidden');
     if (avatarImg) {
       avatarImg.src = '';
       avatarImg.classList.add('hidden');
     }
-    if (badgeCheck) badgeCheck.classList.add('hidden');
+    if (placeholderIcon) placeholderIcon.classList.remove('hidden');
+    if (headerAvatarImg) {
+      headerAvatarImg.src = '';
+      headerAvatarImg.classList.add('hidden');
+    }
+    if (headerInitials) headerInitials.classList.remove('hidden');
+  }
+
+  // 2. Verification Badges & Texts according to Status
+  if (effectiveStatus === 'verified' || isVerified) {
+    if (toggle) toggle.checked = true;
+    if (title) title.textContent = "Google Verified Identity ✓";
+    if (subtitle) {
+      subtitle.textContent = phoneNumber ? `Photo & Mobile (+91 ${phoneNumber.slice(-4).padStart(phoneNumber.length, '•')}) confirmed` : "Identity verified via Google Security Services";
+    }
+    if (statusBadge) {
+      statusBadge.className = 'px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-[#00D26A]/20 text-[#00D26A] border border-[#00D26A]/40 inline-flex items-center gap-1';
+      statusBadge.innerHTML = '<span>Google Verified</span> <svg class="w-2.5 h-2.5 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+      statusBadge.classList.remove('hidden');
+    }
+    if (changeBtn) {
+      changeBtn.textContent = 'View';
+      changeBtn.classList.remove('hidden');
+    }
+    if (badgeCheck) badgeCheck.classList.remove('hidden');
+    if (badgePending) badgePending.classList.add('hidden');
+    if (headerVerifiedBadge) headerVerifiedBadge.classList.remove('hidden');
+    if (headerPendingBadge) headerPendingBadge.classList.add('hidden');
     if (avatarRing) {
-      avatarRing.classList.remove('border-[#00D26A]');
+      avatarRing.classList.remove('border-slate-600/80', 'border-amber-500');
+      avatarRing.classList.add('border-[#00D26A]');
+    }
+  } else if (effectiveStatus === 'pending') {
+    if (toggle) toggle.checked = true;
+    if (title) title.textContent = "Google Verification Under Review";
+    const mins = remainingMinutes || 20;
+    if (subtitle) {
+      subtitle.innerHTML = `Security review in progress (<span class="text-amber-300 font-bold">~${mins}m</span> remaining)`;
+    }
+    if (statusBadge) {
+      statusBadge.className = 'px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 inline-flex items-center gap-1';
+      statusBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span> Reviewing (~${mins}m)`;
+      statusBadge.classList.remove('hidden');
+    }
+    if (changeBtn) {
+      changeBtn.textContent = 'Details';
+      changeBtn.classList.remove('hidden');
+    }
+    if (badgeCheck) badgeCheck.classList.add('hidden');
+    if (badgePending) badgePending.classList.remove('hidden');
+    if (headerVerifiedBadge) headerVerifiedBadge.classList.add('hidden');
+    if (headerPendingBadge) headerPendingBadge.classList.remove('hidden');
+    if (avatarRing) {
+      avatarRing.classList.remove('border-slate-600/80', 'border-[#00D26A]');
+      avatarRing.classList.add('border-amber-500');
+    }
+
+    startVerificationCountdown();
+  } else {
+    // Unverified / None
+    if (toggle) toggle.checked = false;
+    if (title) title.textContent = "Google Identity Verification";
+    if (subtitle) subtitle.textContent = "Verify with photo & mobile to confirm identity";
+    if (statusBadge) statusBadge.classList.add('hidden');
+    if (changeBtn) changeBtn.classList.add('hidden');
+    if (badgeCheck) badgeCheck.classList.add('hidden');
+    if (badgePending) badgePending.classList.add('hidden');
+    if (headerVerifiedBadge) headerVerifiedBadge.classList.add('hidden');
+    if (headerPendingBadge) headerPendingBadge.classList.add('hidden');
+    if (avatarRing) {
+      avatarRing.classList.remove('border-[#00D26A]', 'border-amber-500');
       avatarRing.classList.add('border-slate-600/80');
     }
   }
+}
+
+function startVerificationCountdown() {
+  if (verificationCountdownInterval) return;
+  verificationCountdownInterval = setInterval(() => {
+    if (currentClientVerification.status === 'pending' && currentClientVerification.submittedAt) {
+      const elapsed = Date.now() - currentClientVerification.submittedAt;
+      const remMs = (20 * 60 * 1000) - elapsed;
+      if (remMs <= 0) {
+        clearInterval(verificationCountdownInterval);
+        verificationCountdownInterval = null;
+        loadPhotoVerificationStatus();
+      } else {
+        const remMin = Math.ceil(remMs / 60000);
+        currentClientVerification.remainingMinutes = remMin;
+        const sub = document.getElementById('verifySubtitle');
+        if (sub) sub.innerHTML = `Security review in progress (<span class="text-amber-300 font-bold">~${remMin}m</span> remaining)`;
+        const badge = document.getElementById('verifyStatusBadge');
+        if (badge) badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span> Reviewing (~${remMin}m)`;
+        const modalBadge = document.getElementById('modalCountdownBadge');
+        if (modalBadge) modalBadge.textContent = `~${remMin}m left`;
+      }
+    } else {
+      clearInterval(verificationCountdownInterval);
+      verificationCountdownInterval = null;
+    }
+  }, 10000);
 }
 
 function showVerificationRequestedBanner() {
@@ -2846,19 +2994,13 @@ function showVerificationRequestedBanner() {
     strip.classList.add('ring-2', 'ring-rose-500', 'bg-rose-950/40');
     const subtitle = document.getElementById('verifySubtitle');
     if (subtitle) {
-      subtitle.innerHTML = '<span class="text-rose-300 font-bold">⚠️ Raoprime requested you to add your photo to verify identity</span>';
+      subtitle.innerHTML = '<span class="text-rose-300 font-bold">⚠️ Raoprime requested you to add your photo & phone number</span>';
     }
   }
 }
 
 async function onPhotoVerifyToggleChange(isChecked) {
   if (isChecked) {
-    // If we already have a verified photo on file, keep it enabled
-    if (currentClientVerification.verified && currentClientVerification.photoUrl) {
-      updatePhotoVerifyUI(true, currentClientVerification.photoUrl);
-      return;
-    }
-    // Otherwise open modal for user to take/upload photo
     openPhotoVerifyModal();
   } else {
     // User switched verification OFF
@@ -2868,9 +3010,8 @@ async function onPhotoVerifyToggleChange(isChecked) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chatId: currentChatId, enabled: false })
       });
-      const data = await res.json();
-      currentClientVerification = { verified: false, photoUrl: null, verifiedAt: null };
-      updatePhotoVerifyUI(false, null);
+      currentClientVerification = { verified: false, status: 'none', photoUrl: null, phoneNumber: null, submittedAt: null, remainingMinutes: 0, verifiedAt: null };
+      updatePhotoVerifyUI(false, null, 'none', 0, null);
       showToast('Photo verification disabled');
     } catch (err) {
       showToast('Error updating verification status');
@@ -2879,30 +3020,91 @@ async function onPhotoVerifyToggleChange(isChecked) {
 }
 
 function openPhotoVerifyModal() {
-  // If already verified, allow clicking to view full photo or change it
   const modal = document.getElementById('photoVerifyModal');
   if (!modal) return;
   modal.classList.remove('hidden');
 
-  // Populate preview if exists
+  // Username display
+  const userEl = document.getElementById('modalUsernameDisplay');
+  if (userEl) userEl.textContent = '@' + (currentChatId || 'client');
+
+  // Phone input
+  const phoneInput = document.getElementById('verifyPhoneInput');
+  if (phoneInput && currentClientVerification.phoneNumber) {
+    // Strip leading +91 or non-digits for cleaner display in input
+    const clean = currentClientVerification.phoneNumber.replace(/\D/g, '').slice(-10);
+    phoneInput.value = clean;
+  }
+
+  // Previews & Status Cards
   const preview = document.getElementById('modalPhotoPreview');
   const placeholder = document.getElementById('modalPhotoPlaceholder');
+  const pendingCard = document.getElementById('modalPendingStatusCard');
+  const verifiedCard = document.getElementById('modalVerifiedSuccessCard');
+  const phoneGroup = document.getElementById('modalPhoneGroup');
+  const photoActions = document.getElementById('photoSelectActions');
   const saveBtn = document.getElementById('saveVerifyPhotoBtn');
 
-  if (currentClientVerification.verified && currentClientVerification.photoUrl) {
+  if (currentClientVerification.verified) {
+    if (pendingCard) pendingCard.classList.add('hidden');
+    if (verifiedCard) {
+      verifiedCard.classList.remove('hidden');
+      const det = document.getElementById('modalVerifiedDetails');
+      if (det) det.textContent = currentClientVerification.phoneNumber ? `Verified Mobile: +91 ${currentClientVerification.phoneNumber.slice(-10)}` : 'Google Verified Identity';
+    }
+    if (saveBtn) {
+      saveBtn.textContent = 'Verified with Google ✓';
+      saveBtn.disabled = true;
+      saveBtn.classList.remove('bg-[#00D26A]');
+      saveBtn.classList.add('bg-emerald-700');
+    }
+  } else if (currentClientVerification.status === 'pending') {
+    if (pendingCard) {
+      pendingCard.classList.remove('hidden');
+      const mb = document.getElementById('modalCountdownBadge');
+      if (mb) mb.textContent = `~${currentClientVerification.remainingMinutes || 20}m left`;
+    }
+    if (verifiedCard) verifiedCard.classList.add('hidden');
+    if (saveBtn) {
+      saveBtn.textContent = 'Update Verification';
+      saveBtn.disabled = false;
+    }
+  } else {
+    if (pendingCard) pendingCard.classList.add('hidden');
+    if (verifiedCard) verifiedCard.classList.add('hidden');
+    if (saveBtn) {
+      saveBtn.textContent = 'Verify with Google';
+      saveBtn.disabled = true;
+    }
+  }
+
+  if (currentClientVerification.photoUrl) {
     if (preview) {
       preview.src = currentClientVerification.photoUrl;
       preview.classList.remove('hidden');
     }
     if (placeholder) placeholder.classList.add('hidden');
-    if (saveBtn) saveBtn.disabled = false;
   } else {
     if (preview) {
       preview.src = '';
       preview.classList.add('hidden');
     }
     if (placeholder) placeholder.classList.remove('hidden');
-    if (saveBtn) saveBtn.disabled = true;
+  }
+
+  validateVerificationForm();
+}
+
+function validateVerificationForm() {
+  const phoneInput = document.getElementById('verifyPhoneInput');
+  const phoneVal = phoneInput ? phoneInput.value.replace(/\D/g, '') : '';
+  const isPhoneValid = phoneVal.length === 10;
+
+  const hasPhoto = Boolean(pendingVerifiedPhotoBase64 || currentClientVerification.photoUrl);
+  const saveBtn = document.getElementById('saveVerifyPhotoBtn');
+
+  if (saveBtn && !currentClientVerification.verified) {
+    saveBtn.disabled = !(isPhoneValid && hasPhoto);
   }
 }
 
@@ -2911,8 +3113,7 @@ function closePhotoVerifyModal() {
   const modal = document.getElementById('photoVerifyModal');
   if (modal) modal.classList.add('hidden');
 
-  // If user cancelled without completing verification and is not currently verified, reset toggle switch
-  if (!currentClientVerification.verified) {
+  if (!currentClientVerification.verified && currentClientVerification.status !== 'pending') {
     const toggle = document.getElementById('photoVerifyToggle');
     if (toggle) toggle.checked = false;
   }
@@ -2970,7 +3171,6 @@ function captureModalPhoto() {
   canvas.height = 400;
   const ctx = canvas.getContext('2d');
 
-  // Center crop square
   const sx = ((video.videoWidth || 480) - size) / 2;
   const sy = ((video.videoHeight || 480) - size) / 2;
   ctx.drawImage(video, sx, sy, size, size, 0, 0, 400, 400);
@@ -2982,14 +3182,14 @@ function captureModalPhoto() {
 
   const preview = document.getElementById('modalPhotoPreview');
   const placeholder = document.getElementById('modalPhotoPlaceholder');
-  const saveBtn = document.getElementById('saveVerifyPhotoBtn');
 
   if (preview) {
     preview.src = base64;
     preview.classList.remove('hidden');
   }
   if (placeholder) placeholder.classList.add('hidden');
-  if (saveBtn) saveBtn.disabled = false;
+
+  validateVerificationForm();
 }
 
 function handlePhotoFileSelected(e) {
@@ -3023,14 +3223,14 @@ function handlePhotoFileSelected(e) {
 
       const preview = document.getElementById('modalPhotoPreview');
       const placeholder = document.getElementById('modalPhotoPlaceholder');
-      const saveBtn = document.getElementById('saveVerifyPhotoBtn');
 
       if (preview) {
         preview.src = base64;
         preview.classList.remove('hidden');
       }
       if (placeholder) placeholder.classList.add('hidden');
-      if (saveBtn) saveBtn.disabled = false;
+
+      validateVerificationForm();
     };
     img.src = evt.target.result;
   };
@@ -3038,15 +3238,23 @@ function handlePhotoFileSelected(e) {
 }
 
 async function submitPhotoVerification() {
-  if (!pendingVerifiedPhotoBase64 && (!currentClientVerification.verified || !currentClientVerification.photoUrl)) {
-    showToast('Please take or upload a photo first');
+  const phoneInput = document.getElementById('verifyPhoneInput');
+  const cleanPhone = phoneInput ? phoneInput.value.replace(/\D/g, '') : '';
+  if (cleanPhone.length !== 10) {
+    showToast('Please enter a valid 10-digit mobile number');
+    if (phoneInput) phoneInput.focus();
+    return;
+  }
+
+  if (!pendingVerifiedPhotoBase64 && (!currentClientVerification.photoUrl)) {
+    showToast('Please take or upload a profile photo');
     return;
   }
 
   const saveBtn = document.getElementById('saveVerifyPhotoBtn');
   if (saveBtn) {
     saveBtn.disabled = true;
-    saveBtn.textContent = 'Saving...';
+    saveBtn.textContent = 'Submitting...';
   }
 
   try {
@@ -3055,32 +3263,39 @@ async function submitPhotoVerification() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chatId: currentChatId,
-        photoData: pendingVerifiedPhotoBase64,
+        photoData: pendingVerifiedPhotoBase64 || currentClientVerification.photoUrl,
+        phoneNumber: cleanPhone,
         enabled: true
       })
     });
     const data = await res.json();
     if (data.success) {
       currentClientVerification = {
-        verified: true,
+        verified: false,
+        status: 'pending',
         photoUrl: data.photoUrl,
-        verifiedAt: data.verifiedAt
+        phoneNumber: cleanPhone,
+        submittedAt: data.submittedAt || Date.now(),
+        remainingMinutes: 20
       };
-      updatePhotoVerifyUI(true, data.photoUrl);
+
+      // Set DP immediately on client header & verification strip!
+      updatePhotoVerifyUI(false, data.photoUrl, 'pending', 20, cleanPhone);
       closePhotoVerifyModal();
-      showToast('✓ Identity photo verified successfully!');
-      // Remove any requested ring
+
+      showToast('🚀 Submitted for Google Verification! Security review in progress (~20 mins).');
+
       const strip = document.getElementById('photoVerifyStrip');
       if (strip) strip.classList.remove('ring-2', 'ring-rose-500', 'bg-rose-950/40');
     } else {
-      showToast('Failed to save verification: ' + (data.error || 'Server error'));
+      showToast('Failed to submit verification: ' + (data.error || 'Server error'));
     }
   } catch (err) {
     showToast('Network error during verification upload');
   } finally {
     if (saveBtn) {
       saveBtn.disabled = false;
-      saveBtn.textContent = 'Verify & Save';
+      saveBtn.textContent = 'Verify with Google';
     }
   }
 }

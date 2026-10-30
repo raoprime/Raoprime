@@ -70,6 +70,41 @@ function saveVerifications(data) {
 
 let verificationsStore = loadVerifications();
 
+const VERIFICATION_DELAY_MS = 20 * 60 * 1000; // Exactly 20 minutes delay
+
+function checkAutoVerifications() {
+  try {
+    const now = Date.now();
+    let modified = false;
+    for (const [chatId, ver] of Object.entries(verificationsStore)) {
+      if (ver && ver.status === 'pending' && ver.submittedAt) {
+        if (now - ver.submittedAt >= VERIFICATION_DELAY_MS) {
+          ver.verified = true;
+          ver.status = 'verified';
+          ver.verifiedAt = new Date().toISOString();
+          modified = true;
+          broadcastToRoom(chatId, 'chat:verification-updated', {
+            chatId,
+            verified: true,
+            status: 'verified',
+            photoUrl: ver.photoUrl,
+            phoneNumber: ver.phoneNumber || null,
+            verifiedAt: ver.verifiedAt
+          });
+          console.log(`[Auto-Verify] Client ${chatId} auto-verified after 20 minutes`);
+        }
+      }
+    }
+    if (modified) {
+      saveVerifications(verificationsStore);
+    }
+  } catch (e) {
+    console.warn('checkAutoVerifications error:', e.message);
+  }
+}
+setInterval(checkAutoVerifications, 10000); // Check every 10 seconds
+
+
 try {
   [BASE_STORAGE, VAULT_DIR, CHUNKS_DIR].forEach((dir) => {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -808,7 +843,27 @@ app.get('/api/chat/messages', async (req, res) => {
       messages,
       typing: activeTyping,
       online: onlineStatus,
-      isEnded: endedChatsSet.has(chatId)
+      isEnded: endedChatsSet.has(chatId),
+      verification: (() => {
+        const ver = verificationsStore[chatId] || {};
+        if (ver.status === 'pending' && ver.submittedAt && (now - ver.submittedAt >= VERIFICATION_DELAY_MS)) {
+          ver.verified = true;
+          ver.status = 'verified';
+          ver.verifiedAt = new Date().toISOString();
+          saveVerifications(verificationsStore);
+        }
+        const remainingMs = ver.status === 'pending' && ver.submittedAt ? Math.max(0, VERIFICATION_DELAY_MS - (now - ver.submittedAt)) : 0;
+        return {
+          verified: Boolean(ver.verified),
+          status: ver.status || (ver.verified ? 'verified' : (ver.photoUrl ? 'pending' : 'none')),
+          photoUrl: ver.photoUrl || null,
+          phoneNumber: ver.phoneNumber || null,
+          submittedAt: ver.submittedAt || null,
+          remainingMinutes: Math.ceil(remainingMs / 60000),
+          verifiedAt: ver.verifiedAt || null,
+          isRequested: Boolean(ver.isRequested)
+        };
+      })(),
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -817,19 +872,36 @@ app.get('/api/chat/messages', async (req, res) => {
 
 
 // ──────────────────────────────────────────────────────────────
-// Client Photo Identity Verification Endpoints
+// Client Photo Identity Verification Endpoints (Google Trust & 20-Min Auto Review)
 // ──────────────────────────────────────────────────────────────
 
 app.get('/api/chat/verification', (req, res) => {
   try {
     const rawChatId = req.query.chatId || 'default';
     const chatId = normalizeChatId(rawChatId);
-    const ver = verificationsStore[chatId] || { verified: false, photoUrl: null };
+    let ver = verificationsStore[chatId] || { verified: false, status: 'none', photoUrl: null };
+
+    const now = Date.now();
+    if (ver.status === 'pending' && ver.submittedAt && (now - ver.submittedAt >= VERIFICATION_DELAY_MS)) {
+      ver.verified = true;
+      ver.status = 'verified';
+      ver.verifiedAt = new Date().toISOString();
+      saveVerifications(verificationsStore);
+    }
+
+    const remainingMs = ver.status === 'pending' && ver.submittedAt ? Math.max(0, VERIFICATION_DELAY_MS - (now - ver.submittedAt)) : 0;
+    const remainingMinutes = Math.ceil(remainingMs / 60000);
+
     res.json({
       success: true,
       chatId,
       verified: Boolean(ver.verified),
+      status: ver.status || (ver.verified ? 'verified' : (ver.photoUrl ? 'pending' : 'none')),
       photoUrl: ver.photoUrl || null,
+      phoneNumber: ver.phoneNumber || null,
+      submittedAt: ver.submittedAt || null,
+      remainingMs,
+      remainingMinutes,
       verifiedAt: ver.verifiedAt || null,
       isRequested: Boolean(ver.isRequested)
     });
@@ -840,22 +912,26 @@ app.get('/api/chat/verification', (req, res) => {
 
 app.post('/api/chat/verify-photo', (req, res) => {
   try {
-    const { chatId: rawChatId = 'default', photoData, enabled } = req.body;
+    const { chatId: rawChatId = 'default', photoData, phoneNumber, enabled } = req.body;
     const chatId = normalizeChatId(rawChatId);
 
     if (typeof enabled !== 'undefined' && !enabled) {
       verificationsStore[chatId] = {
         verified: false,
+        status: 'none',
         photoUrl: null,
+        phoneNumber: null,
         updatedAt: new Date().toISOString()
       };
       saveVerifications(verificationsStore);
       broadcastToRoom(chatId, 'chat:verification-updated', {
         chatId,
         verified: false,
-        photoUrl: null
+        status: 'none',
+        photoUrl: null,
+        phoneNumber: null
       });
-      return res.json({ success: true, verified: false, photoUrl: null });
+      return res.json({ success: true, verified: false, status: 'none', photoUrl: null });
     }
 
     if (!photoData || typeof photoData !== 'string') {
@@ -878,29 +954,77 @@ app.post('/api/chat/verify-photo', (req, res) => {
     fs.writeFileSync(filePath, buffer);
 
     const photoUrl = `/api/download/${storedFileName}`;
+    const cleanPhone = (phoneNumber || '').toString().trim();
+    const now = Date.now();
+
+    // Set as pending for 20 minutes (simulated realistic security review)
     verificationsStore[chatId] = {
-      verified: true,
+      verified: false,
+      status: 'pending',
       photoUrl,
-      verifiedAt: new Date().toISOString(),
+      phoneNumber: cleanPhone,
+      submittedAt: now,
+      verifiedAt: null,
       isRequested: false
     };
     saveVerifications(verificationsStore);
 
+    // Broadcast update so admin & client see photo DP immediately and review status
     broadcastToRoom(chatId, 'chat:verification-updated', {
       chatId,
-      verified: true,
+      verified: false,
+      status: 'pending',
       photoUrl,
-      verifiedAt: verificationsStore[chatId].verifiedAt
+      phoneNumber: cleanPhone,
+      submittedAt: now,
+      remainingMs: VERIFICATION_DELAY_MS,
+      remainingMinutes: 20
     });
 
     res.json({
       success: true,
-      verified: true,
+      verified: false,
+      status: 'pending',
       photoUrl,
-      verifiedAt: verificationsStore[chatId].verifiedAt
+      phoneNumber: cleanPhone,
+      submittedAt: now,
+      remainingMinutes: 20
     });
   } catch (err) {
     console.error('verify-photo error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/admin/verify-client', requireAdminAuth, (req, res) => {
+  try {
+    const { chatId: rawChatId, approve } = req.body;
+    if (!rawChatId) return res.status(400).json({ success: false, error: 'chatId required' });
+    const chatId = normalizeChatId(rawChatId);
+    let ver = verificationsStore[chatId] || { verified: false, status: 'none', photoUrl: null };
+
+    if (approve) {
+      ver.verified = true;
+      ver.status = 'verified';
+      ver.verifiedAt = new Date().toISOString();
+    } else {
+      ver.verified = false;
+      ver.status = 'none';
+    }
+    verificationsStore[chatId] = ver;
+    saveVerifications(verificationsStore);
+
+    broadcastToRoom(chatId, 'chat:verification-updated', {
+      chatId,
+      verified: ver.verified,
+      status: ver.status,
+      photoUrl: ver.photoUrl || null,
+      phoneNumber: ver.phoneNumber || null,
+      verifiedAt: ver.verifiedAt || null
+    });
+
+    res.json({ success: true, verified: ver.verified, status: ver.status });
+  } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
@@ -1551,7 +1675,23 @@ app.get('/api/admin/chats', requireAdminAuth, async (req, res) => {
       const isClientTyping = Boolean(chatTyping.Client && (now - chatTyping.Client < 3500));
       const unseenCount = messages.filter(m => (m.sender !== 'Raoprime' && m.sender !== 'RP') && m.status !== 'seen').length;
 
+      const ver = verificationsStore[chatId] || {};
+      if (ver.status === 'pending' && ver.submittedAt && (now - ver.submittedAt >= VERIFICATION_DELAY_MS)) {
+        ver.verified = true;
+        ver.status = 'verified';
+        ver.verifiedAt = new Date().toISOString();
+        saveVerifications(verificationsStore);
+      }
+      const remainingMs = ver.status === 'pending' && ver.submittedAt ? Math.max(0, VERIFICATION_DELAY_MS - (now - ver.submittedAt)) : 0;
+
       chatList.push({
+        isVerified: Boolean(ver.verified),
+        verificationStatus: ver.status || (ver.verified ? 'verified' : (ver.photoUrl ? 'pending' : 'none')),
+        verifiedPhoto: ver.photoUrl || null,
+        phoneNumber: ver.phoneNumber || null,
+        verifiedAt: ver.verifiedAt || null,
+        submittedAt: ver.submittedAt || null,
+        remainingMinutes: Math.ceil(remainingMs / 60000),
         chatId,
         clientName,
         totalMessages: messages.length,
