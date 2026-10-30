@@ -57,6 +57,11 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(path.join(ROOT_DIR, 'public')));
 
+// Lightweight Keep-Alive / Health Check Endpoint (Prevents Render Cold Starts)
+app.get(['/api/health', '/healthz'], (req, res) => {
+  res.status(200).json({ status: 'ok', service: 'raoprime', uptime: process.uptime() });
+});
+
 // ──────────────────────────────────────────────────────────────
 // Firebase Cloud Firestore Permanent Cloud Persistence Layer
 // Backed by Google Cloud Firebase: verfect-9d923
