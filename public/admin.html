@@ -9,10 +9,10 @@
   <link rel="apple-touch-icon" href="/assets/rp-logo.jpg">
   <title>Raoprime — Admin Desk</title>
   <link rel="icon" type="image/jpeg" href="/assets/rp-logo.jpg">
-  <!-- Inter Font -->
+  <!-- Premium Executive Typography: Poppins (Indian Type Foundry - World-class Devanagari & Latin) + Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
@@ -26,10 +26,12 @@
     }
 
     html, body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'Poppins', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background-color: #050608;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+      letter-spacing: -0.01em;
       height: 100%;
       height: 100dvh;
       width: 100%;
@@ -85,8 +87,8 @@
     .chat-wallpaper {
       background-color: #0b0e14;
       background-image: 
-        radial-gradient(circle at 50% 15%, rgba(100, 19, 34, 0.14) 0%, transparent 65%),
-        url('/assets/chat-wallpaper.svg');
+        radial-gradient(circle at 50% 12%, rgba(100, 19, 34, 0.22) 0%, transparent 65%),
+        url('/assets/chat-wallpaper.svg?v=2.2');
       background-repeat: no-repeat, repeat;
       background-size: 100% 500px, 380px 380px;
     }
@@ -99,7 +101,7 @@
       border-top: 1px solid rgba(255, 255, 255, 0.22);
       border-radius: 18px 18px 4px 18px;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(58, 8, 18, 0.3);
-      min-width: 96px;
+      min-width: 105px;
       width: fit-content;
       max-width: 82%;
       word-break: normal;
@@ -112,7 +114,7 @@
       border-top: 1px solid rgba(255, 255, 255, 0.16);
       border-radius: 18px 18px 18px 4px;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
-      min-width: 96px;
+      min-width: 105px;
       width: fit-content;
       max-width: 82%;
       word-break: normal;
@@ -120,6 +122,15 @@
     }
     .bubble-mid {
       border-radius: 18px !important;
+    }
+    .bubble-text {
+      font-size: 14.5px;
+      line-height: 1.55;
+      letter-spacing: -0.01em;
+      white-space: pre-wrap;
+      word-break: normal;
+      overflow-wrap: break-word;
+      word-wrap: break-word;
     }
 
     /* Message Entry Animation */
@@ -293,33 +304,48 @@
         </div>
       </div>
 
-      <!-- Action Buttons for Selected Client -->
-      <div id="chatActions" class="flex items-center gap-1 sm:gap-2 shrink-0">
-        <!-- HD Voice Call Button -->
-        <button onclick="startAdminCall('audio')" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#12151f] hover:bg-[#1c2232] text-slate-300 hover:text-white border border-white/10 flex items-center justify-center transition-all active:scale-95 shadow-sm cursor-pointer shrink-0" title="HD Voice Call" aria-label="Voice Call">
-          <i data-lucide="phone" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400"></i>
+      <!-- Action Buttons for Selected Client (WhatsApp / Executive Monochromatic Icons) -->
+      <div id="chatActions" class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <!-- Voice Call Button -->
+        <button onclick="startAdminCall('audio')" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/[0.06] hover:bg-white/[0.12] active:bg-white/[0.18] text-slate-200 hover:text-white border border-white/[0.08] backdrop-blur-md transition-all active:scale-90 flex items-center justify-center cursor-pointer shadow-sm shrink-0" title="Voice Call" aria-label="Voice Call">
+          <svg class="w-4 h-4 sm:w-[18px] sm:h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+          </svg>
         </button>
 
-        <!-- HD 1080p Video Call Button -->
-        <button onclick="startAdminCall('video')" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#12151f] hover:bg-[#1c2232] text-slate-300 hover:text-white border border-white/10 flex items-center justify-center transition-all active:scale-95 shadow-sm cursor-pointer shrink-0" title="HD 1080p Video Call" aria-label="Video Call">
-          <i data-lucide="video" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-rose-400"></i>
+        <!-- Video Call Button -->
+        <button onclick="startAdminCall('video')" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/[0.06] hover:bg-white/[0.12] active:bg-white/[0.18] text-slate-200 hover:text-white border border-white/[0.08] backdrop-blur-md transition-all active:scale-90 flex items-center justify-center cursor-pointer shadow-sm shrink-0" title="Video Call" aria-label="Video Call">
+          <svg class="w-4 h-4 sm:w-[18px] sm:h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="23 7 16 12 23 17 23 7"/>
+            <rect x="1" y="5" width="15" height="14" rx="3" ry="3"/>
+          </svg>
         </button>
 
         <!-- Download ZIP Button -->
-        <button onclick="downloadClientZip()" id="zipBtn" class="w-8 h-8 sm:w-auto sm:h-9 px-0 sm:px-3 rounded-full bg-[#12151f] hover:bg-[#1c2232] text-slate-200 text-xs font-semibold flex items-center justify-center sm:justify-start gap-1.5 border border-white/10 transition-all shadow-sm active:scale-95 shrink-0" title="Download all documents sent by this client as a ZIP" aria-label="Download ZIP">
-          <i data-lucide="download" class="w-3.5 h-3.5 text-rose-400"></i>
+        <button onclick="downloadClientZip()" id="zipBtn" class="h-8 sm:h-9 px-2.5 sm:px-3 rounded-full bg-white/[0.06] hover:bg-white/[0.12] active:bg-white/[0.18] text-slate-200 hover:text-white border border-white/[0.08] backdrop-blur-md text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 shrink-0 cursor-pointer" title="Download all documents sent by this client as a ZIP" aria-label="Download ZIP">
+          <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
           <span class="hidden sm:inline">Download</span>
         </button>
 
         <!-- Copy Link Button -->
-        <button onclick="copyClientLink()" class="w-8 h-8 sm:w-auto sm:h-9 px-0 sm:px-3 rounded-full maroon-btn text-white text-xs font-semibold flex items-center justify-center sm:justify-start gap-1.5 transition-all active:scale-95 shrink-0" title="Copy client chat link" aria-label="Copy Client Link">
-          <i data-lucide="link" class="w-3.5 h-3.5"></i>
+        <button onclick="copyClientLink()" class="h-8 sm:h-9 px-2.5 sm:px-3 rounded-full bg-white/[0.06] hover:bg-white/[0.12] active:bg-white/[0.18] text-slate-200 hover:text-white border border-white/[0.08] backdrop-blur-md text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 shrink-0 cursor-pointer" title="Copy client chat link" aria-label="Copy Client Link">
+          <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+          </svg>
           <span class="hidden sm:inline">Copy Link</span>
         </button>
 
         <!-- Delete Chat Button -->
-        <button onclick="confirmDeleteActiveChat()" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-red-950/40 hover:bg-red-900/80 text-red-400 hover:text-white border border-red-800/40 flex items-center justify-center transition-all active:scale-95 shadow-sm shrink-0" title="Delete this chat & files" aria-label="Delete Chat">
-          <i data-lucide="trash-2" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+        <button onclick="confirmDeleteActiveChat()" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-red-500/10 hover:bg-red-500/20 active:bg-red-500/30 text-rose-300 hover:text-red-200 border border-red-500/20 active:scale-95 flex items-center justify-center transition-all shrink-0 cursor-pointer" title="Delete this chat & files" aria-label="Delete Chat">
+          <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
         </button>
       </div>
 
@@ -676,6 +702,6 @@
     </div>
   </div>
 
-  <script src="/admin.js"></script>
+  <script src="/admin.js?v=2.2"></script>
 </body>
 </html>

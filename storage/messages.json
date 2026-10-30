@@ -556,6 +556,15 @@
       "status": "seen",
       "timestamp": "2026-10-30T07:48:26.677Z",
       "seenAt": "2026-10-30T13:00:00.909Z"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Client",
+      "id": "msg_1793376168064_5t5z",
+      "text": "Active?",
+      "type": "text",
+      "status": "sent",
+      "timestamp": "2026-10-30T16:02:48.064Z"
     }
   ],
   "Dharmesh": [

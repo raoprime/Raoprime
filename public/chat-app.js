@@ -633,9 +633,9 @@ function renderMessages(messages) {
 
     if (msg.type === 'text') {
       bubbleContent = `
-        <div class="px-3.5 pt-2 pb-1.5 min-w-[96px] w-fit">
+        <div class="px-3.5 pt-2 pb-1.5 min-w-[105px] w-fit">
           ${quotedReplyHtml}
-          <div class="text-[14.5px] sm:text-[15px] leading-relaxed break-words whitespace-pre-wrap select-text">${formatMessageText(msg.text)}</div>
+          <div class="text-[14.5px] sm:text-[15px] bubble-text select-text">${formatMessageText(msg.text)}</div>
           <div class="flex items-center justify-end gap-1 mt-1 -mb-0.5">
             ${timeStatusHtml}
           </div>
