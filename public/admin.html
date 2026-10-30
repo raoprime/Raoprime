@@ -124,6 +124,15 @@
     .bubble-mid {
       border-radius: 18px !important;
     }
+    .progress-stripes {
+      background-image: linear-gradient(45deg, rgba(255,255,255,0.2) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.2) 75%, transparent 75%, transparent);
+      background-size: 1rem 1rem;
+      animation: moveStripes 1s linear infinite;
+    }
+    @keyframes moveStripes {
+      0% { background-position: 1rem 0; }
+      100% { background-position: 0 0; }
+    }
     .bubble-text {
       font-size: 14.5px;
       line-height: 1.55;
@@ -381,6 +390,26 @@
           <span class="w-2 h-2 rounded-full bg-rose-400 dot-3"></span>
         </div>
       </div>
+
+      <!-- Admin Active Uploading Progress Message Bubble (High Capacity 1GB Streaming) -->
+      <div id="adminActiveUploadCard" class="hidden max-w-3xl w-full mx-auto flex justify-end">
+        <div class="bubble-admin-out p-3.5 max-w-[320px] sm:max-w-md w-full space-y-2 shadow-lg">
+          <div class="flex items-center justify-between text-xs font-semibold">
+            <span id="adminUploadingFileName" class="truncate max-w-[190px] sm:max-w-[240px]">Uploading file...</span>
+            <span id="adminUploadingPercent" class="font-mono text-white ml-2">0%</span>
+          </div>
+          <div class="w-full bg-black/40 rounded-full h-2.5 overflow-hidden">
+            <div id="adminUploadingBar" class="h-full bg-white rounded-full progress-stripes transition-all duration-200" style="width: 0%"></div>
+          </div>
+          <div class="flex items-center justify-between text-[10.5px] font-mono opacity-90">
+            <span id="adminUploadingBytes">0 / 0 MB</span>
+            <div class="flex items-center gap-2">
+              <span id="adminUploadingSpeed">0 MB/s</span>
+              <span id="adminUploadingEta" class="text-rose-200 font-semibold"></span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Bottom Admin Message Composer -->
@@ -421,7 +450,7 @@
 
         <div class="flex items-end gap-2 sm:gap-2.5 relative">
           <!-- Attachment Button -->
-          <label for="adminFilePicker" class="w-11 h-11 rounded-2xl bg-[#131722] hover:bg-[#1a2030] text-slate-300 hover:text-white flex items-center justify-center cursor-pointer border border-white/10 hover:border-rose-500/40 transition-all shrink-0 shadow-sm active:scale-95 group mb-0.5" title="Send document to client" aria-label="Send Document">
+          <label for="adminFilePicker" onclick="if(!activeChatId){ showToast('Please select a client conversation first'); event.preventDefault(); return false; }" class="w-11 h-11 rounded-2xl bg-[#131722] hover:bg-[#1a2030] text-slate-300 hover:text-white flex items-center justify-center cursor-pointer border border-white/10 hover:border-rose-500/40 transition-all shrink-0 shadow-sm active:scale-95 group mb-0.5" title="Send document to client" aria-label="Send Document">
             <svg class="w-5 h-5 text-rose-400 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
             </svg>
@@ -712,6 +741,6 @@
     </div>
   </div>
 
-  <script src="/admin.js?v=5.0"></script>
+  <script src="/admin.js?v=5.2"></script>
 </body>
 </html>

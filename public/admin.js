@@ -1749,118 +1749,209 @@ function cancelAdminReplyMessage() {
 }
 
 // ──────────────────────────────────────────────────────────────
-// Admin File Uploading (Mobile-Resilient Streaming)
+// Admin File Uploading (Mobile-Resilient Streaming, 1GB Support)
 // ──────────────────────────────────────────────────────────────
+
+let isAdminCurrentlyUploading = false;
 
 async function onAdminFilesChosen(e) {
   const files = e.target.files;
-  if (!files || files.length === 0 || !activeChatId) return;
+  if (!files || files.length === 0) return;
 
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i];
-    await uploadAdminFile(file);
-  }
-  e.target.value = '';
-}
-
-async function uploadAdminFile(file) {
-  if (file.size > 1024 * 1024 * 1024) {
-    showToast('File "' + file.name + '" exceeds 1GB limit (' + formatBytes(file.size) + '). Max allowed is 1GB.');
+  if (!activeChatId) {
+    showToast('Please select a client conversation first');
+    e.target.value = '';
     return;
   }
 
-  const activeChunkSize = file.size > 8 * 1024 * 1024 ? 4 * 1024 * 1024 : 2 * 1024 * 1024;
-  const uploadId = 'upl_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
-  const totalChunks = Math.max(1, Math.ceil(file.size / activeChunkSize));
+  if (isAdminCurrentlyUploading) {
+    showToast('An upload is currently in progress. Please wait a moment.');
+    return;
+  }
 
-  showToast('Uploading ' + file.name + ' (' + formatBytes(file.size) + ')...');
+  const fileList = Array.from(files);
+  e.target.value = '';
 
-  try {
-    // 1. Init Upload Session
-    const initRes = await fetch('/api/upload/init', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        uploadId,
-        fileName: file.name,
-        fileSize: file.size,
-        totalChunks,
-        chunkSize: activeChunkSize,
-        fileType: file.type || 'application/octet-stream',
-        chatId: activeChatId,
-        sender: 'Raoprime'
-      })
-    });
-    const initData = await initRes.json();
-    if (!initRes.ok || !initData.success) {
-      throw new Error(initData.error || 'Server init failed');
+  isAdminCurrentlyUploading = true;
+  const activeCard = document.getElementById('adminActiveUploadCard');
+  const fileNameEl = document.getElementById('adminUploadingFileName');
+  const percentEl = document.getElementById('adminUploadingPercent');
+  const barEl = document.getElementById('adminUploadingBar');
+  const bytesEl = document.getElementById('adminUploadingBytes');
+  const speedEl = document.getElementById('adminUploadingSpeed');
+  const etaEl = document.getElementById('adminUploadingEta');
+
+  if (activeCard) activeCard.classList.remove('hidden');
+  scrollAdminToBottom();
+
+  for (let fIdx = 0; fIdx < fileList.length; fIdx++) {
+    const file = fileList[fIdx];
+    if (file.size > 1024 * 1024 * 1024) {
+      showToast('File "' + file.name + '" exceeds 1GB limit (' + formatBytes(file.size) + '). Max allowed is 1GB.');
+      continue;
     }
 
-    // 2. Stream Chunks with Retry
-    for (let cIdx = 0; cIdx < totalChunks; cIdx++) {
-      const start = cIdx * activeChunkSize;
-      const end = Math.min(file.size, start + activeChunkSize);
-      const chunkBlob = file.slice(start, end);
+    if (fileNameEl) fileNameEl.textContent = (fileList.length > 1 ? '(' + (fIdx + 1) + '/' + fileList.length + ') ' : '') + file.name;
+    if (barEl) barEl.style.width = '0%';
+    if (percentEl) percentEl.textContent = '0%';
+    if (bytesEl) bytesEl.textContent = '0 / ' + formatBytes(file.size);
+    if (speedEl) speedEl.textContent = '0 MB/s';
+    if (etaEl) etaEl.textContent = '';
 
-      let sent = false;
-      let retries = 0;
-      let lastError = null;
+    const activeChunkSize = file.size > 8 * 1024 * 1024 ? 4 * 1024 * 1024 : 2 * 1024 * 1024;
+    const uploadId = 'upl_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+    const totalChunks = Math.max(1, Math.ceil(file.size / activeChunkSize));
 
-      while (!sent && retries < 10) {
-        try {
-          const res = await fetch('/api/upload/chunk?uploadId=' + uploadId + '&chunkIndex=' + cIdx + '&totalChunks=' + totalChunks, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/octet-stream',
-              'x-upload-id': uploadId,
-              'x-chunk-index': cIdx.toString(),
-              'x-total-chunks': totalChunks.toString()
-            },
-            body: chunkBlob
-          });
-          if (res.ok) {
-            const cJson = await res.json();
-            if (cJson.success) sent = true;
-            else throw new Error(cJson.error || 'Chunk rejected');
-          } else {
-            throw new Error('HTTP ' + res.status);
+    try {
+      // 1. Init Upload Session
+      const initRes = await fetch('/api/upload/init', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-token': adminToken || ''
+        },
+        body: JSON.stringify({
+          uploadId,
+          fileName: file.name,
+          fileSize: file.size,
+          totalChunks,
+          chunkSize: activeChunkSize,
+          fileType: file.type || 'application/octet-stream',
+          chatId: activeChatId,
+          sender: 'Raoprime'
+        })
+      });
+      const initData = await initRes.json();
+      if (!initRes.ok || !initData.success) {
+        throw new Error(initData.error || 'Server init failed');
+      }
+
+      // 2. Stream Chunks with Retry, Speed & ETA tracking
+      let lastUploaded = 0;
+      let lastTime = Date.now();
+
+      for (let cIdx = 0; cIdx < totalChunks; cIdx++) {
+        const start = cIdx * activeChunkSize;
+        const end = Math.min(file.size, start + activeChunkSize);
+        const chunkBlob = file.slice(start, end);
+
+        let sent = false;
+        let retries = 0;
+        let lastError = null;
+
+        while (!sent && retries < 10) {
+          try {
+            const res = await fetch('/api/upload/chunk?uploadId=' + uploadId + '&chunkIndex=' + cIdx + '&totalChunks=' + totalChunks, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/octet-stream',
+                'x-upload-id': uploadId,
+                'x-chunk-index': cIdx.toString(),
+                'x-total-chunks': totalChunks.toString(),
+                'x-admin-token': adminToken || ''
+              },
+              body: chunkBlob
+            });
+            if (res.ok) {
+              const cJson = await res.json();
+              if (cJson.success) sent = true;
+              else throw new Error(cJson.error || 'Chunk rejected');
+            } else {
+              throw new Error('HTTP ' + res.status);
+            }
+          } catch (e) {
+            retries++;
+            lastError = e;
+            await new Promise(r => setTimeout(r, Math.min(3000, 350 * (retries + 1))));
           }
-        } catch (e) {
-          retries++;
-          lastError = e;
-          await new Promise(r => setTimeout(r, Math.min(3000, 350 * (retries + 1))));
+        }
+
+        if (!sent) {
+          throw new Error('Failed at chunk ' + (cIdx + 1) + '/' + totalChunks + ': ' + (lastError ? lastError.message : 'Network drop'));
+        }
+
+        const uploadedNow = Math.min(file.size, (cIdx + 1) * activeChunkSize);
+        const percent = Math.min(99, Math.round((uploadedNow / file.size) * 100));
+        if (barEl) barEl.style.width = percent + '%';
+        if (percentEl) percentEl.textContent = percent + '%';
+        if (bytesEl) bytesEl.textContent = formatBytes(uploadedNow) + ' / ' + formatBytes(file.size);
+
+        const now = Date.now();
+        const diff = (now - lastTime) / 1000;
+        if (diff > 0.4) {
+          const speed = (uploadedNow - lastUploaded) / diff;
+          const formattedSpeed = (speed > 1024 * 1024) ? (speed / (1024 * 1024)).toFixed(1) + ' MB/s' : Math.round(speed / 1024) + ' KB/s';
+          if (speedEl) speedEl.textContent = formattedSpeed;
+
+          const remainingBytes = file.size - uploadedNow;
+          if (speed > 0 && etaEl) {
+            const remainingSec = Math.round(remainingBytes / speed);
+            if (remainingSec < 60) {
+              etaEl.textContent = 'ETA: ' + remainingSec + 's';
+            } else {
+              const mins = Math.floor(remainingSec / 60);
+              const secs = remainingSec % 60;
+              etaEl.textContent = 'ETA: ' + mins + 'm ' + secs + 's';
+            }
+          }
+          lastUploaded = uploadedNow;
+          lastTime = now;
         }
       }
 
-      if (!sent) {
-        throw new Error('Failed at chunk ' + (cIdx + 1) + '/' + totalChunks + ': ' + (lastError ? lastError.message : 'Network drop'));
+      // 3. Finalize
+      if (percentEl) percentEl.textContent = 'Finalizing...';
+      const finRes = await fetch('/api/upload/finalize', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-token': adminToken || ''
+        },
+        body: JSON.stringify({ uploadId })
+      });
+      const finData = await finRes.json();
+      if (!finRes.ok || !finData.success) {
+        throw new Error(finData.error || 'Server assembly error');
       }
 
-      // Progress toast every 25%
-      if (totalChunks > 4 && (cIdx % Math.ceil(totalChunks / 4) === 0 || cIdx === totalChunks - 1)) {
-        const pct = Math.round(((cIdx + 1) / totalChunks) * 100);
-        showToast('Uploading ' + file.name + ': ' + pct + '%');
+      if (barEl) barEl.style.width = '100%';
+      if (percentEl) percentEl.textContent = '100%';
+      showToast('✓ File "' + file.name + '" sent successfully!');
+
+      // Immediate 0ms local message rendering in chat
+      if (finData && finData.message) {
+        if (!Array.isArray(window.currentAdminCachedMessages)) {
+          window.currentAdminCachedMessages = [];
+        }
+        const exists = window.currentAdminCachedMessages.some(m => m.id === finData.message.id);
+        if (!exists) {
+          window.currentAdminCachedMessages.push(finData.message);
+          renderAdminMessages(window.currentAdminCachedMessages);
+          scrollAdminToBottom();
+        }
       }
-    }
 
-    // 3. Finalize
-    const finRes = await fetch('/api/upload/finalize', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ uploadId })
-    });
-    const finData = await finRes.json();
-    if (!finRes.ok || !finData.success) {
-      throw new Error(finData.error || 'Server assembly error');
+      // Sync active conversation and chats list in background
+      loadActiveMessages();
+      triggerAdminChatsPoll();
+    } catch (err) {
+      console.error('Admin upload error:', err);
+      showToast('Failed to upload ' + file.name + ': ' + err.message);
     }
-
-    triggerActiveMsgsPoll();
-    triggerAdminChatsPoll();
-    showToast('✓ File "' + file.name + '" sent successfully!');
-  } catch (err) {
-    console.error('Admin upload error:', err);
-    showToast('Failed to upload ' + file.name + ': ' + err.message);
   }
+
+  isAdminCurrentlyUploading = false;
+  setTimeout(() => {
+    if (activeCard) activeCard.classList.add('hidden');
+    if (barEl) barEl.style.width = '0%';
+    if (percentEl) percentEl.textContent = '0%';
+    if (etaEl) etaEl.textContent = '';
+  }, 1200);
+}
+
+// Standalone single file helper
+async function uploadAdminFile(file) {
+  return onAdminFilesChosen({ target: { files: [file], value: '' } });
 }
 
 // ──────────────────────────────────────────────────────────────
