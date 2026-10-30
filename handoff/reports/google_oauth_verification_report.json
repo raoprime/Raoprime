@@ -1,0 +1,111 @@
+{
+  "suite": "Google Sign-In & OAuth Automated Verification",
+  "timestamp": "2026-10-30T23:27:47.077Z",
+  "expectedClientId": "1091556491172-qvg8ad21inph1u5f5i50dohnrp06uvri.apps.googleusercontent.com",
+  "environments": {
+    "local": {
+      "target": "local",
+      "label": "Local Development Server",
+      "baseUrl": "http://localhost:4000",
+      "expectedRedirectUri": "http://localhost:4000/api/auth/google/callback",
+      "status": "PASSED",
+      "clientFlow": {
+        "success": true,
+        "buttonText": "Verify & Sign in with Google",
+        "destinationUrl": "https://accounts.google.com/v3/signin/identifier?opparams=%253F&dsh=S-180577593%3A1793402870650574&client_id=1091556491172-qvg8ad21inph1u5f5i50dohnrp06uvri.apps.googleusercontent.com&o2v=2&prompt=select_account&redirect_uri=http%3A%2F%2Flocalhost%3A4000%2Fapi%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&service=lso&state=client&flowName=GeneralOAuthLite&continue=https%3A%2F%2Faccounts.google.com%2Fsignin%2Foauth%2Flegacy%2Fconsent%3Fauthuser%3Dunknown%26part%3DAJi8hAPt7mFhhZ7mNSEhQhaacr54LpJ7EaaehhHICJCdFl2PKq6QrbdhwbnPIq5L8ySzhjh5ileyQQQ1HfaB8PJX7CWwyQaFXIgMWx8hocyQl0pR25eB8jCyPvFJWg0ErB8PIS4dGJMuwzyHoLGjHDEaYJquBZMv6Z8jneZ1U2D32v8yBj4HaXqnUdF9Ye2lTzn2kx_svwoMcaVgnIy4sWbMakkRmQUZLAUkqtobRceLmFyL0L0o0jMqB23VIU8eaUCIKB03B-yZeteXGluB6U2bernXfu62CBJ9CSZ0Ldv9Wd3fB026rk6tqXWHXKMx7C5SePPGwF16C6jz3sr_OxqcdUKJXWYHs8PJYp-rKgDsq5DFu9rqyacL1qGOZenUf2ihePWiz-klARleLkzGy4E5OQb449FgE3uL5QujfaZiiEpeANMfZe5JBxyayZrNOFZDEOzS6P7cUa8LcxEYI-HD6JECMMDJhBUVpkGKCg9soRcXVNiRBKi_-07AgjXN0YzwD530_U9Lfyk0AhEJCajHIdyp_oaQkPIUG7Vf07x9zmFM-nzIuDTrRpbKzuWHAtvlidKa619CpK8wrRh6x9p1_2I4wVvf6Q96wFX3O61_U6auuhrtG_5iwyALKjlRwV1QkM4d_PWr%26flowName%3DGeneralOAuthFlow%26as%3DS-180577593%253A1793402870650574%26client_id%3D1091556491172-qvg8ad21inph1u5f5i50dohnrp06uvri.apps.googleusercontent.com%23&app_domain=http%3A%2F%2Flocalhost%3A4000&rart=ANgoxcdq8kKwIW1FNUvxFRvb7uZ_n4YlK1zmxXq5cvcp5IDexqXx1TmVWor3Roh2dE_6kJPGOM80IDL9Dkw_koGkMl2EMLQnvHYOL0pR_qoz8OVKGzmBc54",
+        "oauthUrlToVerify": "https://accounts.google.com/o/oauth2/v2/auth?client_id=1091556491172-qvg8ad21inph1u5f5i50dohnrp06uvri.apps.googleusercontent.com&redirect_uri=http%3A%2F%2Flocalhost%3A4000%2Fapi%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid%20email%20profile&state=client&prompt=select_account",
+        "hostname": "accounts.google.com",
+        "clientId": "1091556491172-qvg8ad21inph1u5f5i50dohnrp06uvri.apps.googleusercontent.com",
+        "redirectUri": "http://localhost:4000/api/auth/google/callback",
+        "responseType": "code",
+        "scope": "openid email profile",
+        "state": "client",
+        "clientIdValid": true,
+        "redirectUriValid": true,
+        "responseTypeValid": true,
+        "scopeValid": true,
+        "screenshotFile": "C:\\Users\\DELL\\.gemini\\antigravity\\scratch\\client-document-portal\\handoff\\reports\\oauth_consent_local.png",
+        "screenshotSize": 16011,
+        "interceptedHopsCount": 6
+      },
+      "adminFlow": {
+        "success": true,
+        "loginGatewayProtected": true,
+        "unlockedWithPassword": true,
+        "adminGoogleBtnPresent": false,
+        "identityRendering": {
+          "supported": true,
+          "hasGoogleSvg": true,
+          "hasVerifiedText": true,
+          "modalVisible": true,
+          "modalStatusText": "Google Verified Account ✓",
+          "modalPhoneText": "✉ raoprime.music@gmail.com",
+          "modalImgSrc": "https://lh3.googleusercontent.com/a/default-avatar=s96-c"
+        }
+      },
+      "apiConfigCheck": {
+        "status": 200,
+        "clientId": "1091556491172-qvg8ad21inph1u5f5i50dohnrp06uvri.apps.googleusercontent.com",
+        "matchesExpected": true
+      },
+      "consoleErrors": [
+        "[Admin Console Error] Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "httpFailures": [],
+      "timing": {
+        "durationMs": 11528
+      }
+    },
+    "live": {
+      "target": "live",
+      "label": "Live Cloud Deployment (Render)",
+      "baseUrl": "https://raoprime.onrender.com",
+      "expectedRedirectUri": "https://raoprime.onrender.com/api/auth/google/callback",
+      "status": "PASSED",
+      "clientFlow": {
+        "success": true,
+        "buttonText": "Verify & Sign in with Google",
+        "destinationUrl": "https://accounts.google.com/v3/signin/identifier?opparams=%253F&dsh=S336298722%3A1793402886717996&client_id=1091556491172-qvg8ad21inph1u5f5i50dohnrp06uvri.apps.googleusercontent.com&o2v=2&prompt=select_account&redirect_uri=https%3A%2F%2Fraoprime.onrender.com%2Fapi%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&service=lso&state=client&flowName=GeneralOAuthLite&continue=https%3A%2F%2Faccounts.google.com%2Fsignin%2Foauth%2Flegacy%2Fconsent%3Fauthuser%3Dunknown%26part%3DAJi8hAM7k2dFLqi_guBx1hDv5D-XsvQgjCx0zhBGCjdg8xcWDOwQbj6ibJeXcvQLGlI9VuFq1HSnk-66Kq2jM-IL-Ai_ydDNFLxXSCtBfWr7iNoO4uaWs_Er16o8jRhyT0X_5KaQfqKOH2bFaq1cBpgmOZUlF1ZaBPk0pP67cEbbHWux9bDoIiHxwkQXJctpwxiFFVVsR6lFlRDs8pfo4b6J5pBTaCswZJ9RyJIrYNnIE4MHw20WzqUR5LAxNBIB-qutn6K7Z9bWfzRvWGK7mdglCVyOXLtq5y7RFkZkAyBaQ0JmTUry3j_w7LMYLbDwXNN_xYL06ieAh2F9I1Hdy88pnN0ZmokXHxJC5UGmQII9QCrqid27TU9TwHRx4FQJBMUFS4FGuJigfz1s-T6zPOL7tFb3bdG8euFf1GrilHQ5CZ18ewR3tA5VyoLr5xjRIAOHzKM0MSkb34gAq4CJdk5fKxj3EAWospR_Iuc8Vgrkp3BN2SdPBFJ2HtaLjwgcU7isDkkifTDmcwFdyIF7CgNT-9yajAKmQ2-IKixUjRNecAeLlOQuAYthYc20zwWqmAx6UxLgfghWbWw8CqnZgoxJnp2t12sK3NJ4b48qXejctqRTUPHnAZSQ55uwmhGjy1Cz-pVF0Ucbb2Fen6uGsSsvfP0nsUGRNQ%26flowName%3DGeneralOAuthFlow%26as%3DS336298722%253A1793402886717996%26client_id%3D1091556491172-qvg8ad21inph1u5f5i50dohnrp06uvri.apps.googleusercontent.com%23&app_domain=https%3A%2F%2Fraoprime.onrender.com&rart=ANgoxceW-774CHT4Requ77JsXV5S-T2680ZfC1htlDjnSmbkpJ5PvCvYzsp2QnsGz9P1WZZqY8cnaMWbizR2pkeKcNT-_M03NZRjw5mDSm21VALaipxwFhs",
+        "oauthUrlToVerify": "https://accounts.google.com/o/oauth2/v2/auth?client_id=1091556491172-qvg8ad21inph1u5f5i50dohnrp06uvri.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fraoprime.onrender.com%2Fapi%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid%20email%20profile&state=client&prompt=select_account",
+        "hostname": "accounts.google.com",
+        "clientId": "1091556491172-qvg8ad21inph1u5f5i50dohnrp06uvri.apps.googleusercontent.com",
+        "redirectUri": "https://raoprime.onrender.com/api/auth/google/callback",
+        "responseType": "code",
+        "scope": "openid email profile",
+        "state": "client",
+        "clientIdValid": true,
+        "redirectUriValid": true,
+        "responseTypeValid": true,
+        "scopeValid": true,
+        "screenshotFile": "C:\\Users\\DELL\\.gemini\\antigravity\\scratch\\client-document-portal\\handoff\\reports\\oauth_consent_live.png",
+        "screenshotSize": 16410,
+        "interceptedHopsCount": 6
+      },
+      "adminFlow": {
+        "success": true,
+        "loginGatewayProtected": true,
+        "unlockedWithPassword": true,
+        "adminGoogleBtnPresent": false,
+        "identityRendering": {
+          "supported": true,
+          "hasGoogleSvg": true,
+          "hasVerifiedText": true,
+          "modalVisible": true,
+          "modalStatusText": "Google Verified Account ✓",
+          "modalPhoneText": "✉ raoprime.music@gmail.com",
+          "modalImgSrc": "https://lh3.googleusercontent.com/a/default-avatar=s96-c"
+        }
+      },
+      "apiConfigCheck": {
+        "status": 200,
+        "clientId": "1091556491172-qvg8ad21inph1u5f5i50dohnrp06uvri.apps.googleusercontent.com",
+        "matchesExpected": true
+      },
+      "consoleErrors": [],
+      "httpFailures": [],
+      "timing": {
+        "durationMs": 12841
+      }
+    }
+  }
+}
