@@ -1,4 +1,8 @@
 /**
+// ─── Global Cache (must be at top before any function uses it) ───────────────
+const adminChatCache = {};
+window.adminChatCache = adminChatCache;
+
  * Raoprime Admin Portal Logic (Secured with Cryptographic HMAC Authentication)
  * Mobile-First High-Performance Architecture
  */
@@ -884,8 +888,6 @@ function showInboxOnMobile() {
 // Message Stream for Active Chat (Real-time Seen / Delivered / Active)
 // ──────────────────────────────────────────────────────────────
 
-const adminChatCache = {};
-window.adminChatCache = adminChatCache;
 let lastAdminMsgSig = '';
 let isPollingActiveMsgs = false;
 let activeMsgsPollTimer = null;
@@ -948,7 +950,7 @@ async function triggerActiveMsgsPoll() {
   } catch (e) {
   } finally {
     isPollingActiveMsgs = false;
-    const interval = isAdminWsConnected ? 30000 : (document.hidden ? 5000 : 2000);
+    const interval = document.hidden ? 4000 : 2000; // Always fast-poll for real-time feel
     if (activeMsgsPollTimer) clearTimeout(activeMsgsPollTimer);
     activeMsgsPollTimer = setTimeout(triggerActiveMsgsPoll, interval);
   }

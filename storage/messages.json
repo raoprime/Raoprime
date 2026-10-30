@@ -178,6 +178,16 @@
       "status": "seen",
       "timestamp": "2026-10-30T18:32:00.234Z",
       "seenAt": "2026-10-30T20:39:23.692Z"
+    },
+    {
+      "chatId": "Priya",
+      "sender": "Client",
+      "id": "msg_1793393015723_xx0e",
+      "text": "hi",
+      "type": "text",
+      "timestamp": "2026-10-30T20:43:35.723Z",
+      "seenAt": "2026-10-30T20:45:56.576Z",
+      "status": "seen"
     }
   ],
   "Experiment_Client": [
@@ -2535,8 +2545,18 @@
       "id": "msg_1793389145886_y1hy",
       "text": "hi",
       "type": "text",
-      "status": "delivered",
-      "timestamp": "2026-10-30T19:39:05.864Z"
+      "status": "seen",
+      "timestamp": "2026-10-30T19:39:05.864Z",
+      "seenAt": "2026-10-30T20:45:08.566Z"
+    },
+    {
+      "chatId": "Dharmesh",
+      "sender": "Client",
+      "id": "msg_1793393165083_5p0n",
+      "text": "Hello",
+      "type": "text",
+      "status": "sent",
+      "timestamp": "2026-10-30T20:46:04.909Z"
     }
   ],
   "Test_Large_Room": [
