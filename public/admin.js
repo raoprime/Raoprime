@@ -690,24 +690,23 @@ function renderAdminMessageStatus(status, isRaoprime) {
   if (!isRaoprime) return '';
   const s = status || 'delivered';
   if (s === 'seen') {
-    return `<span class="inline-flex items-center gap-1 text-sky-400 font-semibold ml-1.5" title="Seen by Client">
-      <svg class="w-4 h-4 inline" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+    return `<span class="inline-flex items-center text-sky-400 shrink-0 select-none ml-1" title="Seen by Client">
+      <svg class="w-3.5 h-3.5 inline" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
         <path d="M18 6L7 17l-5-5"></path>
         <path d="M22 10l-7.5 7.5-2-2"></path>
       </svg>
-      <span class="text-[10px]">Seen</span>
     </span>`;
   }
   if (s === 'delivered') {
-    return `<span class="inline-flex items-center gap-0.5 text-slate-400 ml-1.5" title="Delivered">
-      <svg class="w-4 h-4 inline" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    return `<span class="inline-flex items-center text-slate-400/90 shrink-0 select-none ml-1" title="Delivered">
+      <svg class="w-3.5 h-3.5 inline" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M18 6L7 17l-5-5"></path>
         <path d="M22 10l-7.5 7.5-2-2"></path>
       </svg>
     </span>`;
   }
-  return `<span class="inline-flex items-center gap-0.5 text-slate-500 ml-1.5" title="Sent">
-    <svg class="w-3.5 h-3.5 inline" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+  return `<span class="inline-flex items-center text-slate-400/70 shrink-0 select-none ml-1" title="Sent">
+    <svg class="w-3 h-3 inline" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
       <polyline points="20 6 9 17 4 12"></polyline>
     </svg>
   </span>`;
@@ -804,13 +803,17 @@ function renderAdminMessages(messages) {
   let lastDateStr = '';
 
   try {
-    container.innerHTML = messages.map(msg => {
+    container.innerHTML = messages.map((msg, index) => {
     const isRaoprime = msg.sender === 'Raoprime' || msg.sender === 'RP';
+    const prevMsg = index > 0 ? messages[index - 1] : null;
+    const nextMsg = index < messages.length - 1 ? messages[index + 1] : null;
+
     const msgDate = new Date(msg.timestamp);
     const dateFormatted = msgDate.toDateString();
     let dateDividerHtml = '';
 
-    if (dateFormatted !== lastDateStr) {
+    const isNewDay = dateFormatted !== lastDateStr;
+    if (isNewDay) {
       lastDateStr = dateFormatted;
       const now = new Date();
       let label = msgDate.toLocaleDateString([], { month: 'short', day: 'numeric', year: msgDate.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
@@ -821,39 +824,61 @@ function renderAdminMessages(messages) {
 
       dateDividerHtml = `
         <div class="flex justify-center my-3 select-none">
-          <span class="px-3.5 py-1 rounded-full bg-[#111520]/80 border border-white/10 text-[11px] font-semibold text-slate-400 tracking-wider uppercase backdrop-blur-md shadow-sm">
+          <span class="px-3.5 py-1 rounded-full bg-[#111520]/90 border border-white/10 text-[10.5px] font-semibold text-slate-400 tracking-wider uppercase backdrop-blur-md shadow-sm">
             ${label}
           </span>
         </div>
       `;
     }
 
+    const isSameSenderAsPrev = !isNewDay && prevMsg && (prevMsg.sender === msg.sender || ((prevMsg.sender === 'Raoprime' || prevMsg.sender === 'RP') && isRaoprime));
+    const isSameSenderAsNext = nextMsg && (nextMsg.sender === msg.sender || ((nextMsg.sender === 'Raoprime' || nextMsg.sender === 'RP') && isRaoprime)) && (new Date(nextMsg.timestamp)).toDateString() === dateFormatted;
+
+    const topSpacing = isNewDay ? 'mt-1' : (isSameSenderAsPrev ? 'mt-1' : 'mt-3.5');
+    const midClass = isSameSenderAsNext ? 'bubble-mid' : '';
+
     const timeFormatted = msgDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const senderTitle = isRaoprime ? 'Raoprime (You)' : (document.getElementById('activeClientName')?.textContent || 'Client');
-    const editedBadge = msg.isEdited ? `<span class="text-[10px] text-slate-400/80 italic ml-1" title="Edited message">(edited)</span>` : '';
+    const editedBadge = msg.isEdited ? `<span class="text-[9.5px] ${isRaoprime ? 'text-rose-200/80' : 'text-slate-400/80'} italic mr-0.5" title="Edited message">(edited)</span>` : '';
     const canEdit = Boolean(msg && msg.type === 'text');
     const isEditingThis = adminEditingMessageId === msg.id;
 
     // WhatsApp Quoted Reply card
     const quotedReplyHtml = msg.replyTo ? `
-      <div class="mb-2 p-2 rounded-xl bg-black/30 border-l-[3.5px] border-rose-400 text-xs select-none">
-        <div class="font-bold text-rose-300 text-[11px]">${escapeHtml(msg.replyTo.sender)}</div>
-        <div class="text-slate-300 truncate text-[12px] mt-0.5">${escapeHtml(msg.replyTo.text)}</div>
+      <div class="mb-1.5 p-2 rounded-xl bg-black/25 border-l-[3.5px] border-rose-400 text-xs select-none">
+        <div class="font-bold text-rose-300 text-[11px] leading-tight">${escapeHtml(msg.replyTo.sender)}</div>
+        <div class="text-slate-300 truncate text-[12px] mt-0.5 leading-snug">${escapeHtml(msg.replyTo.text)}</div>
       </div>
     ` : '';
 
     // WhatsApp Reaction pill
     const reactionEntries = Object.entries(msg.reactions || {});
     const reactionBadgeHtml = reactionEntries.length ? `
-      <div class="absolute -bottom-2.5 ${isRaoprime ? 'right-2' : 'left-2'} z-10 flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#111520] border border-white/20 text-xs shadow-md select-none hover:scale-105 transition-transform" title="Reactions: ${reactionEntries.map(([s, e]) => `${s}: ${e}`).join(', ')}">
+      <div class="absolute -bottom-2.5 ${isRaoprime ? 'right-2.5' : 'left-2.5'} z-10 flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#111520] border border-white/20 text-xs shadow-md select-none hover:scale-105 transition-transform" title="Reactions: ${reactionEntries.map(([s, e]) => `${s}: ${e}`).join(', ')}">
         ${Array.from(new Set(reactionEntries.map(([, e]) => e))).map(e => `<span>${e}</span>`).join('')}
       </div>
     ` : '';
 
+    // In-bubble time & status element
+    const timeStatusHtml = `
+      <span class="inline-flex items-center gap-0.5 shrink-0 select-none text-[10.5px] leading-none ${isRaoprime ? 'text-rose-200/80' : 'text-slate-400'}">
+        ${editedBadge}
+        <span class="tracking-tight">${timeFormatted}</span>
+        ${renderAdminMessageStatus(msg.status, isRaoprime)}
+      </span>
+    `;
+
     let bubbleContent = '';
 
     if (msg.type === 'text') {
-      bubbleContent = `<div class="px-4 sm:px-5 py-2.5 sm:py-3 text-[15px] sm:text-[15.5px] leading-[1.65] font-normal whitespace-pre-wrap break-words tracking-[-0.01em] select-text">${formatAdminMessageText(msg.text)}</div>`;
+      bubbleContent = `
+        <div class="px-3.5 pt-2 pb-1.5 min-w-[96px] w-fit">
+          ${quotedReplyHtml}
+          <div class="text-[14.5px] sm:text-[15px] leading-relaxed break-words whitespace-pre-wrap select-text">${formatAdminMessageText(msg.text)}</div>
+          <div class="flex items-center justify-end gap-1 mt-1 -mb-0.5">
+            ${timeStatusHtml}
+          </div>
+        </div>
+      `;
     } else if (msg.type === 'file' && msg.file) {
       const f = msg.file;
       const ext = (f.originalName.split('.').pop() || '').toLowerCase();
@@ -863,13 +888,21 @@ function renderAdminMessages(messages) {
 
       if (isImg) {
         bubbleContent = `
-          <div class="overflow-hidden rounded-2xl">
-            <a href="${f.downloadUrl}" target="_blank" rel="noopener">
-              <img src="${f.downloadUrl}?preview=1" alt="${escapeHtml(f.originalName)}" loading="lazy" class="max-w-[280px] sm:max-w-sm max-h-72 object-cover hover:scale-[1.01] transition-transform duration-300">
+          <div class="overflow-hidden rounded-2xl min-w-[200px]">
+            ${quotedReplyHtml ? `<div class="p-2">${quotedReplyHtml}</div>` : ''}
+            <a href="${f.downloadUrl}" target="_blank" rel="noopener" class="block bg-black/40">
+              <img src="${f.downloadUrl}?preview=1" alt="${escapeHtml(f.originalName)}" loading="lazy" class="max-w-[280px] sm:max-w-sm max-h-72 w-full object-cover hover:scale-[1.01] transition-transform duration-300">
             </a>
-            <div class="p-2.5 sm:p-3 flex items-center justify-between text-xs border-t border-white/10 bg-black/25 backdrop-blur-md">
-              <span class="truncate max-w-[170px] sm:max-w-[200px] font-semibold text-[13px] text-white">${escapeHtml(f.originalName)}</span>
-              <a href="${f.downloadUrl}" download class="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 active:scale-90 flex items-center justify-center text-white ml-2 transition-all" aria-label="Download image" title="Download">
+            <div class="p-2 sm:p-2.5 flex items-center justify-between text-xs border-t border-white/10 bg-black/30 backdrop-blur-md">
+              <div class="min-w-0 pr-2">
+                <span class="truncate block font-semibold text-[13px] text-white">${escapeHtml(f.originalName)}</span>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                  <span class="font-mono text-[10.5px] text-slate-300/80">${f.formattedSize}</span>
+                  <span class="text-slate-500">•</span>
+                  ${timeStatusHtml}
+                </div>
+              </div>
+              <a href="${f.downloadUrl}" download class="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 active:scale-90 flex items-center justify-center text-white shrink-0 transition-all" aria-label="Download image" title="Download">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
               </a>
             </div>
@@ -877,7 +910,8 @@ function renderAdminMessages(messages) {
         `;
       } else if (isAudio) {
         bubbleContent = `
-          <div class="p-3 sm:p-3.5 space-y-2.5 max-w-[280px] sm:max-w-sm">
+          <div class="p-3 sm:p-3.5 space-y-2 max-w-[280px] sm:max-w-sm min-w-[220px]">
+            ${quotedReplyHtml}
             <div class="flex items-center gap-2.5">
               <div class="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-300 flex items-center justify-center shrink-0">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
@@ -885,56 +919,81 @@ function renderAdminMessages(messages) {
               <span class="text-[13px] font-semibold truncate text-white">${escapeHtml(f.originalName)}</span>
             </div>
             <audio src="${f.downloadUrl}" controls preload="metadata" class="w-full h-8 rounded-lg"></audio>
-            <div class="flex items-center justify-between text-[11px] opacity-80 pt-0.5">
+            <div class="flex items-center justify-between text-[10.5px] opacity-90 pt-0.5">
               <span class="font-mono text-slate-300">${f.formattedSize}</span>
-              <a href="${f.downloadUrl}" download class="hover:underline flex items-center gap-1 font-semibold text-rose-300 p-1">
-                Download
-              </a>
+              <div class="flex items-center gap-2">
+                <a href="${f.downloadUrl}" download class="hover:underline font-semibold text-rose-300">Download</a>
+                ${timeStatusHtml}
+              </div>
             </div>
           </div>
         `;
       } else if (isVideo) {
         bubbleContent = `
-          <div class="overflow-hidden rounded-2xl max-w-[280px] sm:max-w-sm">
+          <div class="overflow-hidden rounded-2xl max-w-[280px] sm:max-w-sm min-w-[220px]">
+            ${quotedReplyHtml ? `<div class="p-2">${quotedReplyHtml}</div>` : ''}
             <video src="${f.downloadUrl}" controls playsinline webkit-playsinline class="w-full max-h-72 object-cover bg-black"></video>
-            <div class="p-2.5 flex items-center justify-between text-xs border-t border-white/10 bg-black/25 backdrop-blur-md">
-              <span class="truncate max-w-[170px] sm:max-w-[200px] font-semibold text-[13px] text-white">${escapeHtml(f.originalName)}</span>
-              <span class="opacity-80 text-[11px] font-mono text-slate-300">${f.formattedSize}</span>
+            <div class="p-2 sm:p-2.5 flex items-center justify-between text-xs border-t border-white/10 bg-black/30 backdrop-blur-md">
+              <div class="min-w-0 pr-2">
+                <span class="truncate block font-semibold text-[13px] text-white">${escapeHtml(f.originalName)}</span>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                  <span class="font-mono text-[10.5px] text-slate-300/80">${f.formattedSize}</span>
+                  <span class="text-slate-500">•</span>
+                  ${timeStatusHtml}
+                </div>
+              </div>
+              <a href="${f.downloadUrl}" download class="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 active:scale-90 flex items-center justify-center text-white shrink-0 transition-all" title="Download">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              </a>
             </div>
           </div>
         `;
       } else {
         const tag = (ext || 'FILE').toUpperCase().slice(0, 4);
         bubbleContent = `
-          <div class="p-3 sm:p-3.5 flex items-center justify-between gap-3 max-w-[280px] sm:max-w-sm">
-            <div class="flex items-center gap-3 min-w-0">
-              <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-300 flex flex-col items-center justify-center shrink-0 border border-rose-500/20">
-                <span class="text-[10px] font-black tracking-tighter uppercase">${tag}</span>
+          <div class="p-3 sm:p-3.5 max-w-[280px] sm:max-w-sm min-w-[220px]">
+            ${quotedReplyHtml}
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-300 flex flex-col items-center justify-center shrink-0 border border-rose-500/20">
+                  <span class="text-[10px] font-black tracking-tighter uppercase">${tag}</span>
+                </div>
+                <div class="min-w-0">
+                  <p class="text-[13px] font-semibold truncate text-white leading-tight" title="${escapeHtml(f.originalName)}">${escapeHtml(f.originalName)}</p>
+                  <p class="text-[10.5px] text-slate-300/80 font-mono mt-0.5">${f.formattedSize}</p>
+                </div>
               </div>
-              <div class="min-w-0">
-                <p class="text-[13.5px] font-semibold truncate text-white leading-tight" title="${escapeHtml(f.originalName)}">${escapeHtml(f.originalName)}</p>
-                <p class="text-[11px] text-slate-300/80 font-mono mt-0.5">${f.formattedSize}</p>
-              </div>
+              <a href="${f.downloadUrl}" download class="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white shrink-0 flex items-center justify-center transition-all shadow-sm" title="Download">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              </a>
             </div>
-            <a href="${f.downloadUrl}" download class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white shrink-0 flex items-center justify-center transition-all shadow-sm" title="Download">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-            </a>
+            <div class="flex items-center justify-end mt-2 pt-1 border-t border-white/5">
+              ${timeStatusHtml}
+            </div>
           </div>
         `;
       }
     }
 
+    // Sender Label:
+    // Never show for outgoing Raoprime messages.
+    // For incoming client messages, only show at start of cluster.
+    const showSenderLabel = !isRaoprime && !isSameSenderAsPrev;
+    const clientName = document.getElementById('activeClientName')?.textContent || msg.sender || 'Client';
+    const senderHeaderHtml = showSenderLabel ? `
+      <div class="text-[11px] font-semibold text-rose-300/90 mb-1 px-1.5 select-none flex items-center gap-1">
+        <span>${escapeHtml(clientName)}</span>
+      </div>
+    ` : '';
+
     return `
       ${dateDividerHtml}
-      <div class="admin-message-row flex flex-col ${isRaoprime ? 'items-end' : 'items-start'} group mb-2.5 relative" data-msg-id="${msg.id}" data-msg-sender="${msg.sender}">
-        <div class="text-[11px] font-medium text-slate-400 mb-1 px-1 flex items-center gap-1.5 select-none">
-          <span class="${isRaoprime ? 'text-rose-300/90' : 'text-slate-300'} font-semibold">${senderTitle}</span>
-        </div>
+      <div class="admin-message-row flex flex-col ${isRaoprime ? 'items-end' : 'items-start'} ${topSpacing} ${reactionEntries.length ? 'mb-2' : ''} group relative" data-msg-id="${msg.id}" data-msg-sender="${msg.sender}">
+        ${senderHeaderHtml}
 
         <div class="relative flex items-center gap-1.5 ${isRaoprime ? 'flex-row-reverse' : 'flex-row'} max-w-full">
           <!-- Main Bubble -->
-          <div class="${isRaoprime ? 'bubble-admin-out' : 'bubble-admin-in'} max-w-[88%] sm:max-w-lg shadow-md cursor-pointer select-text relative group/bubble ${isEditingThis ? 'ring-2 ring-rose-400 shadow-rose-500/30' : ''}">
-            ${quotedReplyHtml}
+          <div class="${isRaoprime ? 'bubble-admin-out' : 'bubble-admin-in'} ${midClass} shadow-md cursor-pointer select-text relative group/bubble ${isEditingThis ? 'ring-2 ring-rose-400 shadow-rose-500/30' : ''}">
             ${bubbleContent}
             ${reactionBadgeHtml}
 
@@ -970,12 +1029,6 @@ function renderAdminMessages(messages) {
               </svg>
             </button>
           </div>
-        </div>
-
-        <div class="text-[11px] text-slate-400/90 mt-1 px-1 flex items-center ${isRaoprime ? 'justify-end' : 'justify-start'} select-none">
-          <span>${timeFormatted}</span>
-          ${editedBadge}
-          ${renderAdminMessageStatus(msg.status, isRaoprime)}
         </div>
       </div>
     `;

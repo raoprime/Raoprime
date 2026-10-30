@@ -391,8 +391,9 @@
       "id": "msg_1793305182423_vh1k",
       "text": "Live Render test message",
       "type": "text",
-      "status": "delivered",
-      "timestamp": "2026-10-29T20:19:42.423Z"
+      "status": "seen",
+      "timestamp": "2026-10-29T20:19:42.423Z",
+      "seenAt": "2026-10-30T13:00:00.909Z"
     },
     {
       "chatId": "Affaque Ahmed",
@@ -536,14 +537,15 @@
       },
       "id": "msg_1793307135613_fnii",
       "type": "text",
-      "status": "sent",
+      "status": "seen",
       "timestamp": "2026-10-29T20:52:15.613Z",
       "reactions": {
         "Client": "❤️"
       },
       "isEdited": true,
       "editedAt": "2026-10-29T20:52:21.457Z",
-      "text": "Admin edited text message successfully"
+      "text": "Admin edited text message successfully",
+      "seenAt": "2026-10-30T13:00:00.909Z"
     },
     {
       "chatId": "Affaque Ahmed",
@@ -551,8 +553,9 @@
       "id": "msg_1793346506677_uudd",
       "text": "ap Apna time Bata dena kis time shift Hote Apke",
       "type": "text",
-      "status": "sent",
-      "timestamp": "2026-10-30T07:48:26.677Z"
+      "status": "seen",
+      "timestamp": "2026-10-30T07:48:26.677Z",
+      "seenAt": "2026-10-30T13:00:00.909Z"
     }
   ],
   "Dharmesh": [
@@ -658,8 +661,9 @@
       "id": "msg_1793305691649_fcve",
       "text": "Hi",
       "type": "text",
-      "status": "delivered",
-      "timestamp": "2026-10-29T20:28:11.649Z"
+      "status": "seen",
+      "timestamp": "2026-10-29T20:28:11.649Z",
+      "seenAt": "2026-10-30T13:00:37.026Z"
     },
     {
       "chatId": "Dharmesh",
@@ -703,8 +707,20 @@
       "id": "msg_1793345251499_fg5q",
       "text": "Hello",
       "type": "text",
+      "status": "seen",
+      "timestamp": "2026-10-30T07:27:31.499Z",
+      "seenAt": "2026-10-30T13:00:37.026Z"
+    }
+  ],
+  "test_user_1": [
+    {
+      "id": "msg_1793363497260_bchv",
+      "sender": "Client",
+      "type": "text",
+      "text": "Hello via 0ms WebSocket!",
       "status": "sent",
-      "timestamp": "2026-10-30T07:27:31.499Z"
+      "timestamp": "2026-10-30T12:31:37.260Z",
+      "chatId": "test_user_1"
     }
   ]
 }
