@@ -1338,43 +1338,102 @@ app.post('/api/chat/verify-photo', (req, res) => {
 
     const photoUrl = `/api/download/${storedFileName}`;
     const cleanPhone = (phoneNumber || '').toString().trim();
-    const now = Date.now();
+    const now = new Date().toISOString();
 
-    // Set as pending for 20 minutes (simulated realistic security review)
-    verificationsStore[chatId] = {
-      verified: false,
-      status: 'pending',
-      photoUrl,
-      phoneNumber: cleanPhone,
-      submittedAt: now,
-      verifiedAt: null,
-      isRequested: false
-    };
+    // Authentic Instant Profile Photo Update (No fake delays)
+    if (!verificationsStore[chatId]) {
+      verificationsStore[chatId] = {
+        verified: false,
+        status: 'active',
+        provider: 'custom',
+        email: null,
+        name: chatId
+      };
+    }
+
+    verificationsStore[chatId].photoUrl = photoUrl;
+    if (cleanPhone) verificationsStore[chatId].phoneNumber = cleanPhone;
+    verificationsStore[chatId].updatedAt = now;
     saveVerifications(verificationsStore);
 
-    // Broadcast update so admin & client see photo DP immediately and review status
+    if (!clientIntelStore[chatId]) clientIntelStore[chatId] = { chatId };
+    clientIntelStore[chatId].photoUrl = photoUrl;
+    if (cleanPhone) clientIntelStore[chatId].phoneNumber = cleanPhone;
+    saveClientIntel(clientIntelStore);
+
+    // Broadcast instant update so client & admin see new DP immediately
     broadcastToRoom(chatId, 'chat:verification-updated', {
       chatId,
-      verified: false,
-      status: 'pending',
-      photoUrl,
-      phoneNumber: cleanPhone,
-      submittedAt: now,
-      remainingMs: VERIFICATION_DELAY_MS,
-      remainingMinutes: 20
+      ...verificationsStore[chatId]
+    });
+    broadcastToAdmins('chat:verification-updated', {
+      chatId,
+      ...verificationsStore[chatId]
     });
 
     res.json({
       success: true,
-      verified: false,
-      status: 'pending',
+      profile: verificationsStore[chatId],
       photoUrl,
-      phoneNumber: cleanPhone,
-      submittedAt: now,
-      remainingMinutes: 20
+      phoneNumber: cleanPhone
     });
   } catch (err) {
     console.error('verify-photo error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Update Profile Details Endpoint (Name, WhatsApp Phone, Avatar)
+app.post('/api/chat/profile/update', (req, res) => {
+  try {
+    const { chatId: rawChatId = 'default', name, phoneNumber, photoUrl } = req.body;
+    const chatId = normalizeChatId(rawChatId);
+    const now = new Date().toISOString();
+
+    if (!verificationsStore[chatId]) {
+      verificationsStore[chatId] = {
+        verified: false,
+        status: 'guest',
+        provider: 'direct',
+        photoUrl: null,
+        email: null,
+        name: chatId,
+        phoneNumber: null,
+        updatedAt: now
+      };
+    }
+
+    if (name && typeof name === 'string' && name.trim()) {
+      verificationsStore[chatId].name = name.trim();
+    }
+    if (phoneNumber !== undefined) {
+      verificationsStore[chatId].phoneNumber = phoneNumber ? String(phoneNumber).trim() : null;
+    }
+    if (photoUrl) {
+      verificationsStore[chatId].photoUrl = photoUrl;
+    }
+    verificationsStore[chatId].updatedAt = now;
+
+    saveVerifications(verificationsStore);
+
+    if (!clientIntelStore[chatId]) clientIntelStore[chatId] = { chatId };
+    if (verificationsStore[chatId].name) clientIntelStore[chatId].clientName = verificationsStore[chatId].name;
+    if (verificationsStore[chatId].phoneNumber) clientIntelStore[chatId].phoneNumber = verificationsStore[chatId].phoneNumber;
+    if (verificationsStore[chatId].photoUrl) clientIntelStore[chatId].photoUrl = verificationsStore[chatId].photoUrl;
+    saveClientIntel(clientIntelStore);
+
+    broadcastToRoom(chatId, 'chat:verification-updated', {
+      chatId,
+      ...verificationsStore[chatId]
+    });
+    broadcastToAdmins('chat:verification-updated', {
+      chatId,
+      ...verificationsStore[chatId]
+    });
+
+    res.json({ success: true, profile: verificationsStore[chatId] });
+  } catch (err) {
+    console.error('profile/update error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
