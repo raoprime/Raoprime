@@ -316,7 +316,7 @@ function updateNotificationUi() {
       bellBtn.title = '🔔 Notifications Active (Click to test alert)';
     }
     if (bellIcon) {
-      bellIcon.classList.remove('text-amber-400', 'text-rose-400', 'text-slate-200');
+      bellIcon.classList.remove('text-amber-400', 'text-zinc-300', 'text-slate-200');
       bellIcon.classList.add('text-emerald-400');
     }
     if (bellDot) {
@@ -332,7 +332,7 @@ function updateNotificationUi() {
     }
     if (bellIcon) {
       bellIcon.classList.remove('text-emerald-400', 'text-amber-400');
-      bellIcon.classList.add('text-rose-400');
+      bellIcon.classList.add('text-zinc-300');
     }
     if (bellDot) {
       bellDot.classList.remove('bg-emerald-400', 'bg-amber-400', 'hidden');
@@ -350,7 +350,7 @@ function updateNotificationUi() {
       bellBtn.title = '🔔 Turn on Device Notifications';
     }
     if (bellIcon) {
-      bellIcon.classList.remove('text-emerald-400', 'text-rose-400');
+      bellIcon.classList.remove('text-emerald-400', 'text-zinc-300');
       bellIcon.classList.add('text-amber-400');
     }
     if (bellDot) {
@@ -640,8 +640,8 @@ function updateTypingUI(isOnline, isTyping) {
   if (isTyping) {
     if (headerStatus) {
       headerStatus.innerHTML = `
-        <span class="text-rose-400 font-medium flex items-center gap-1.5 animate-pulse">
-          <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span> Raoprime is typing...
+        <span class="text-zinc-300 font-medium flex items-center gap-1.5 animate-pulse">
+          <span class="w-1.5 h-1.5 rounded-full bg-zinc-400"></span> Raoprime is typing...
         </span>`;
     }
     if (bubble && bubble.classList.contains('hidden')) {
@@ -675,7 +675,7 @@ function setSenderRole(role) {
   const roleText = document.getElementById('roleText');
   if (roleText) {
     roleText.textContent = role === 'Raoprime' ? 'Raoprime' : 'Client';
-    roleText.className = role === 'Raoprime' ? 'font-bold text-emerald-400' : 'font-bold text-rose-400';
+    roleText.className = role === 'Raoprime' ? 'font-bold text-emerald-400' : 'font-bold text-zinc-300';
   }
   if (isWsConnected) {
     sendWsEvent('join', { chatId: currentChatId, role, sender: role });
@@ -769,14 +769,14 @@ function formatMessageText(text) {
   // Auto-detect & format URLs with clean styling & external icon
   const urlRegex = /(https?:\/\/[^\s<]+[^<.,:;"')\]\s])/g;
   escaped = escaped.replace(urlRegex, (url) => {
-    return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="underline decoration-rose-300/60 hover:decoration-rose-200 text-rose-200 font-medium inline-flex items-center gap-1 hover:text-white transition-colors" onclick="event.stopPropagation()">${url}<svg class="w-3.5 h-3.5 inline shrink-0 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a>`;
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="underline decoration-rose-300/60 hover:decoration-rose-200 text-zinc-200 font-medium inline-flex items-center gap-1 hover:text-white transition-colors" onclick="event.stopPropagation()">${url}<svg class="w-3.5 h-3.5 inline shrink-0 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a>`;
   });
 
   // Format bold **text**
   escaped = escaped.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-white">$1</strong>');
 
   // Format inline code `code`
-  escaped = escaped.replace(/`([^`]+)`/g, '<code class="bg-black/30 border border-white/10 px-1.5 py-0.5 rounded text-[13px] font-mono text-rose-200">$1</code>');
+  escaped = escaped.replace(/`([^`]+)`/g, '<code class="bg-black/30 border border-white/10 px-1.5 py-0.5 rounded text-[13px] font-mono text-zinc-200">$1</code>');
 
   return escaped;
 }
@@ -910,14 +910,14 @@ function renderSingleMessageHtml(msg, index, messages) {
     const midClass = isSameSenderAsNext ? 'bubble-mid' : '';
 
     const timeFormatted = msgDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const editedBadge = msg.isEdited ? `<span class="text-[9.5px] ${isOut ? 'text-rose-200/80' : 'text-slate-400/80'} italic mr-0.5" title="Edited message">(edited)</span>` : '';
+    const editedBadge = msg.isEdited ? `<span class="text-[9.5px] ${isOut ? 'text-zinc-200/80' : 'text-slate-400/80'} italic mr-0.5" title="Edited message">(edited)</span>` : '';
     const canEdit = canEditMessage(msg);
     const isEditingThis = editingMessageId === msg.id;
 
     // WhatsApp Quoted Reply card
     const quotedReplyHtml = msg.replyTo ? `
-      <div class="mb-1.5 p-2 rounded-xl bg-black/25 border-l-[3.5px] border-rose-400 text-xs select-none">
-        <div class="font-bold text-rose-300 text-[11px] leading-tight">${escapeHtml(msg.replyTo.sender)}</div>
+      <div class="mb-1.5 p-2 rounded-xl bg-black/25 border-l-[3.5px] border-[#d4af37] text-xs select-none">
+        <div class="font-bold text-[#d4af37] text-[11px] leading-tight">${escapeHtml(msg.replyTo.sender)}</div>
         <div class="text-slate-300 truncate text-[12px] mt-0.5 leading-snug">${escapeHtml(msg.replyTo.text)}</div>
       </div>
     ` : '';
@@ -932,7 +932,7 @@ function renderSingleMessageHtml(msg, index, messages) {
 
     // In-bubble time & status element
     const timeStatusHtml = `
-      <span class="inline-flex items-center gap-0.5 shrink-0 select-none text-[10.5px] leading-none ${isOut ? 'text-rose-200/80' : 'text-slate-400'}">
+      <span class="inline-flex items-center gap-0.5 shrink-0 select-none text-[10.5px] leading-none ${isOut ? 'text-zinc-200/80' : 'text-slate-400'}">
         ${editedBadge}
         <span class="tracking-tight">${timeFormatted}</span>
         ${renderMessageStatus(msg.status, isOut)}
@@ -943,8 +943,8 @@ function renderSingleMessageHtml(msg, index, messages) {
       return `
         ${dateDividerHtml}
         <div class="flex justify-center my-4 select-none animate-in fade-in zoom-in-95 duration-200">
-          <div class="px-4 py-2 rounded-2xl bg-rose-950/40 border border-rose-500/30 text-rose-200 text-xs font-semibold flex items-center gap-2 backdrop-blur-md shadow-lg">
-            <span class="w-2 h-2 rounded-full bg-rose-400"></span>
+          <div class="px-4 py-2 rounded-2xl bg-rose-950/40 border border-rose-500/30 text-zinc-200 text-xs font-semibold flex items-center gap-2 backdrop-blur-md shadow-lg">
+            <span class="w-2 h-2 rounded-full bg-zinc-400"></span>
             <span>${escapeHtml(msg.text || 'Your chat Ends')}</span>
           </div>
         </div>
@@ -997,7 +997,7 @@ function renderSingleMessageHtml(msg, index, messages) {
           <div class="p-3 sm:p-3.5 space-y-2 max-w-[280px] sm:max-w-sm min-w-[220px]">
             ${quotedReplyHtml}
             <div class="flex items-center gap-2.5">
-              <div class="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-300 flex items-center justify-center shrink-0">
+              <div class="w-8 h-8 rounded-xl bg-white/[0.06] text-[#d4af37] flex items-center justify-center shrink-0">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
               </div>
               <span class="text-[13px] font-semibold truncate text-white">${escapeHtml(f.originalName)}</span>
@@ -1006,7 +1006,7 @@ function renderSingleMessageHtml(msg, index, messages) {
             <div class="flex items-center justify-between text-[10.5px] opacity-90 pt-0.5">
               <span class="font-mono text-slate-300">${f.formattedSize}</span>
               <div class="flex items-center gap-2">
-                <a href="${f.downloadUrl}" download class="hover:underline font-semibold text-rose-300">Download</a>
+                <a href="${f.downloadUrl}" download class="hover:underline font-semibold text-[#d4af37]">Download</a>
                 ${timeStatusHtml}
               </div>
             </div>
@@ -1039,7 +1039,7 @@ function renderSingleMessageHtml(msg, index, messages) {
             ${quotedReplyHtml}
             <div class="flex items-center justify-between gap-3">
               <div class="flex items-center gap-3 min-w-0">
-                <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-300 flex flex-col items-center justify-center shrink-0 border border-rose-500/20">
+                <div class="w-10 h-10 rounded-xl bg-white/[0.06] text-[#d4af37] flex flex-col items-center justify-center shrink-0 border border-white/[0.1]">
                   <span class="text-[10px] font-black tracking-tighter uppercase">${tag}</span>
                 </div>
                 <div class="min-w-0">
@@ -1064,7 +1064,7 @@ function renderSingleMessageHtml(msg, index, messages) {
     // For incoming messages, only show the sender name if this is the start of a cluster.
     const showSenderLabel = !isOut && !isSameSenderAsPrev;
     const senderHeaderHtml = showSenderLabel ? `
-      <div class="text-[11px] font-semibold text-rose-300/90 mb-1 px-1.5 select-none flex items-center gap-1">
+      <div class="text-[11px] font-semibold text-[#d4af37]/90 mb-1 px-1.5 select-none flex items-center gap-1">
         <span>${escapeHtml(msg.sender || 'Raoprime')}</span>
       </div>
     ` : '';
@@ -1076,7 +1076,7 @@ function renderSingleMessageHtml(msg, index, messages) {
         
         <div class="relative flex items-center gap-1.5 ${isOut ? 'flex-row-reverse' : 'flex-row'} max-w-full">
           <!-- Main Bubble -->
-          <div class="${isOut ? 'bubble-out' : 'bubble-in'} ${midClass} shadow-md cursor-pointer select-text relative group/bubble ${isEditingThis ? 'ring-2 ring-rose-400 shadow-rose-500/30' : ''}">
+          <div class="${isOut ? 'bubble-out' : 'bubble-in'} ${midClass} shadow-md cursor-pointer select-text relative group/bubble ${isEditingThis ? 'ring-2 ring-white/40 shadow-black/50' : ''}">
             ${bubbleContent}
             ${reactionBadgeHtml}
 
@@ -1098,7 +1098,7 @@ function renderSingleMessageHtml(msg, index, messages) {
               </svg>
             </button>
             ${canEdit ? `
-              <button type="button" onclick="quickEditMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-rose-300 hover:bg-white/10 rounded-full transition-colors cursor-pointer" title="Edit Message">
+              <button type="button" onclick="quickEditMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-[#d4af37] hover:bg-white/10 rounded-full transition-colors cursor-pointer" title="Edit Message">
                 <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M12 20h9"></path>
                   <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
@@ -1112,7 +1112,7 @@ function renderSingleMessageHtml(msg, index, messages) {
               </svg>
             </button>
             ${(msg.sender === currentRole) ? `
-              <button type="button" onclick="quickUnsendMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 rounded-full transition-colors cursor-pointer" title="Unsend Message">
+              <button type="button" onclick="quickUnsendMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-zinc-300 hover:bg-white/[0.06] rounded-full transition-colors cursor-pointer" title="Unsend Message">
                 <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="3 6 5 6 21 6"></polyline>
                   <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -1123,7 +1123,7 @@ function renderSingleMessageHtml(msg, index, messages) {
         </div>
       </div>
     `;
-  return `${dateDividerHtml}<div class="message-row flex flex-col ${isOut ? 'items-end' : 'items-start'} ${topSpacing} ${reactionEntries.length ? 'mb-2' : ''} group relative" data-msg-id="${msg.id}" data-msg-sender="${msg.sender}"><div class="relative flex items-center gap-1.5 ${isOut ? 'flex-row-reverse' : 'flex-row'} max-w-full"><div class="${isOut ? 'bubble-out' : 'bubble-in'} ${midClass} shadow-md cursor-pointer select-text relative group/bubble ${isEditingThis ? 'ring-2 ring-rose-400 shadow-rose-500/30' : ''}">${bubbleContent}${reactionBadgeHtml}<button type="button" onclick="openMessageContextMenuById('${msg.id}', event)" class="message-action-btn absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/40 hover:bg-black/70 text-slate-300 hover:text-white opacity-0 sm:group-hover/bubble:opacity-100 flex items-center justify-center transition-all shadow-sm cursor-pointer z-10" title="Options"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button></div><div class="hidden sm:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity select-none z-10 px-1 py-0.5 rounded-full bg-[#121622]/95 border border-white/10 backdrop-blur-md shadow-lg shrink-0"><button type="button" onclick="quickReactMessage('${msg.id}', '👍', event)" class="p-1 hover:scale-125 transition-transform text-xs" title="React 👍">👍</button><button type="button" onclick="quickCopyMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-sky-300 hover:bg-white/10 rounded-full transition-colors cursor-pointer" title="Copy Text"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>${canEdit ? `<button type="button" onclick="quickEditMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-rose-300 hover:bg-white/10 rounded-full transition-colors cursor-pointer" title="Edit Message"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></button>` : ''}<button type="button" onclick="quickReplyMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-emerald-300 hover:bg-white/10 rounded-full transition-colors cursor-pointer" title="Reply"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"></polyline><path d="M20 18v-2a4 4 0 0 0-4-4H4"></path></svg></button>${(msg.sender === currentRole) ? `<button type="button" onclick="quickUnsendMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 rounded-full transition-colors cursor-pointer" title="Unsend Message"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>` : ''}</div></div></div>`;
+  return `${dateDividerHtml}<div class="message-row flex flex-col ${isOut ? 'items-end' : 'items-start'} ${topSpacing} ${reactionEntries.length ? 'mb-2' : ''} group relative" data-msg-id="${msg.id}" data-msg-sender="${msg.sender}"><div class="relative flex items-center gap-1.5 ${isOut ? 'flex-row-reverse' : 'flex-row'} max-w-full"><div class="${isOut ? 'bubble-out' : 'bubble-in'} ${midClass} shadow-md cursor-pointer select-text relative group/bubble ${isEditingThis ? 'ring-2 ring-white/40 shadow-black/50' : ''}">${bubbleContent}${reactionBadgeHtml}<button type="button" onclick="openMessageContextMenuById('${msg.id}', event)" class="message-action-btn absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/40 hover:bg-black/70 text-slate-300 hover:text-white opacity-0 sm:group-hover/bubble:opacity-100 flex items-center justify-center transition-all shadow-sm cursor-pointer z-10" title="Options"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button></div><div class="hidden sm:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity select-none z-10 px-1 py-0.5 rounded-full bg-[#121622]/95 border border-white/10 backdrop-blur-md shadow-lg shrink-0"><button type="button" onclick="quickReactMessage('${msg.id}', '👍', event)" class="p-1 hover:scale-125 transition-transform text-xs" title="React 👍">👍</button><button type="button" onclick="quickCopyMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-sky-300 hover:bg-white/10 rounded-full transition-colors cursor-pointer" title="Copy Text"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>${canEdit ? `<button type="button" onclick="quickEditMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-[#d4af37] hover:bg-white/10 rounded-full transition-colors cursor-pointer" title="Edit Message"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></button>` : ''}<button type="button" onclick="quickReplyMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-emerald-300 hover:bg-white/10 rounded-full transition-colors cursor-pointer" title="Reply"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"></polyline><path d="M20 18v-2a4 4 0 0 0-4-4H4"></path></svg></button>${(msg.sender === currentRole) ? `<button type="button" onclick="quickUnsendMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-zinc-300 hover:bg-white/[0.06] rounded-full transition-colors cursor-pointer" title="Unsend Message"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>` : ''}</div></div></div>`;
 }
 
 function renderMessages(messages) {

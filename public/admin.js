@@ -70,7 +70,7 @@ function updateAdminEndChatButton(isEnded) {
     }
   } else {
     txt.textContent = 'End Chat';
-    btn.className = 'h-8 sm:h-9 px-2.5 sm:px-3 rounded-full bg-rose-500/10 hover:bg-rose-500/20 active:bg-rose-500/30 text-rose-300 hover:text-red-200 border border-rose-500/20 backdrop-blur-md text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 shrink-0 cursor-pointer';
+    btn.className = 'h-8 sm:h-9 px-2.5 sm:px-3 rounded-full bg-rose-500/10 hover:bg-rose-500/20 active:bg-rose-500/30 text-[#d4af37] hover:text-red-200 border border-rose-500/20 backdrop-blur-md text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 shrink-0 cursor-pointer';
     btn.title = 'End conversation with this client';
     if (icon) {
       icon.className = 'w-3.5 h-3.5 sm:w-4 sm:h-4 text-rose-400';
@@ -767,9 +767,9 @@ function filterChats() {
       : escapeHtml(c.lastMessage?.text || 'No messages yet');
 
     return `
-      <div onclick="selectChat('${c.chatId}', true)" class="chat-item p-3.5 flex items-center gap-3 cursor-pointer hover:bg-slate-900/60 active:bg-rose-950/30 transition-colors ${isActive ? 'active' : ''}">
+      <div onclick="selectChat('${c.chatId}', true)" class="chat-item p-3.5 flex items-center gap-3 cursor-pointer hover:bg-slate-900/60 active:bg-white/[0.04] transition-colors ${isActive ? 'active' : ''}">
         <div class="relative shrink-0">
-          <div class="w-11 h-11 rounded-full bg-gradient-to-tr from-rose-900 to-red-700 flex items-center justify-center text-white font-extrabold text-sm shadow-md ring-1 ring-black overflow-hidden relative cursor-pointer" ${c.verifiedPhoto ? `onclick="event.stopPropagation(); viewClientVerifiedPhoto('${c.verifiedPhoto}', '${escapeHtml(c.clientName)}', '${c.phoneNumber || ''}', '${c.verificationStatus || (c.isVerified ? 'verified' : 'pending')}', '${c.chatId}')"` : ''}>
+          <div class="w-11 h-11 rounded-full bg-gradient-to-tr from-[#161a26] to-[#252f48] flex items-center justify-center text-white font-extrabold text-sm shadow-md ring-1 ring-black overflow-hidden relative cursor-pointer" ${c.verifiedPhoto ? `onclick="event.stopPropagation(); viewClientVerifiedPhoto('${c.verifiedPhoto}', '${escapeHtml(c.clientName)}', '${c.phoneNumber || ''}', '${c.verificationStatus || (c.isVerified ? 'verified' : 'pending')}', '${c.chatId}')"` : ''}>
           ${c.verifiedPhoto ? `<img src="${c.verifiedPhoto}" class="w-full h-full object-cover">` : initial}
         </div>
         ${c.isVerified ? `<span class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#00D26A] border-2 border-[#090b10] text-white flex items-center justify-center text-[8px] font-bold shadow-sm" title="Google Verified Identity">✓</span>` : (c.verificationStatus === 'pending' || c.verifiedPhoto ? `<span class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 border-2 border-[#090b10] text-black flex items-center justify-center text-[8px] font-bold shadow-sm" title="Verification Review in Progress (~20m)">⏳</span>` : '')}
@@ -784,7 +784,7 @@ function filterChats() {
             <p class="text-[11px] text-slate-400 truncate max-w-[140px] sm:max-w-[160px]">${snippetHtml}</p>
             <div class="flex items-center gap-1 shrink-0 ml-1">
               ${c.unseenCount > 0 ? `<span class="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-sky-500 text-white shadow-sm animate-pulse">${c.unseenCount}</span>` : ''}
-              ${c.totalFiles > 0 ? `<span class="px-1.5 py-0.2 rounded-full text-[9px] font-mono font-bold bg-rose-900/40 text-rose-300 border border-rose-700/40">${c.totalFiles} files</span>` : ''}
+              ${c.totalFiles > 0 ? `<span class="px-1.5 py-0.2 rounded-full text-[9px] font-mono font-bold bg-rose-900/40 text-[#d4af37] border border-rose-700/40">${c.totalFiles} files</span>` : ''}
             </div>
           </div>
         </div>
@@ -925,14 +925,14 @@ function formatAdminMessageText(text) {
   // Auto-detect & format URLs with clean styling & external icon
   const urlRegex = /(https?:\/\/[^\s<]+[^<.,:;"')\]\s])/g;
   escaped = escaped.replace(urlRegex, (url) => {
-    return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="underline decoration-rose-300/60 hover:decoration-rose-200 text-rose-200 font-medium inline-flex items-center gap-1 hover:text-white transition-colors" onclick="event.stopPropagation()">${url}<svg class="w-3.5 h-3.5 inline shrink-0 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a>`;
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="underline decoration-rose-300/60 hover:decoration-rose-200 text-zinc-200 font-medium inline-flex items-center gap-1 hover:text-white transition-colors" onclick="event.stopPropagation()">${url}<svg class="w-3.5 h-3.5 inline shrink-0 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a>`;
   });
 
   // Format bold **text**
   escaped = escaped.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-white">$1</strong>');
 
   // Format inline code `code`
-  escaped = escaped.replace(/`([^`]+)`/g, '<code class="bg-black/30 border border-white/10 px-1.5 py-0.5 rounded text-[13px] font-mono text-rose-200">$1</code>');
+  escaped = escaped.replace(/`([^`]+)`/g, '<code class="bg-black/30 border border-white/10 px-1.5 py-0.5 rounded text-[13px] font-mono text-zinc-200">$1</code>');
 
   return escaped;
 }
@@ -1059,14 +1059,14 @@ function renderAdminSingleMessageHtml(msg, index, messages) {
     const midClass = isSameSenderAsNext ? 'bubble-mid' : '';
 
     const timeFormatted = msgDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const editedBadge = msg.isEdited ? `<span class="text-[9.5px] ${isRaoprime ? 'text-rose-200/80' : 'text-slate-400/80'} italic mr-0.5" title="Edited message">(edited)</span>` : '';
+    const editedBadge = msg.isEdited ? `<span class="text-[9.5px] ${isRaoprime ? 'text-zinc-200/80' : 'text-slate-400/80'} italic mr-0.5" title="Edited message">(edited)</span>` : '';
     const canEdit = Boolean(msg && msg.type === 'text');
     const isEditingThis = adminEditingMessageId === msg.id;
 
     // WhatsApp Quoted Reply card
     const quotedReplyHtml = msg.replyTo ? `
-      <div class="mb-1.5 p-2 rounded-xl bg-black/25 border-l-[3.5px] border-rose-400 text-xs select-none">
-        <div class="font-bold text-rose-300 text-[11px] leading-tight">${escapeHtml(msg.replyTo.sender)}</div>
+      <div class="mb-1.5 p-2 rounded-xl bg-black/25 border-l-[3.5px] border-[#d4af37] text-xs select-none">
+        <div class="font-bold text-[#d4af37] text-[11px] leading-tight">${escapeHtml(msg.replyTo.sender)}</div>
         <div class="text-slate-300 truncate text-[12px] mt-0.5 leading-snug">${escapeHtml(msg.replyTo.text)}</div>
       </div>
     ` : '';
@@ -1081,7 +1081,7 @@ function renderAdminSingleMessageHtml(msg, index, messages) {
 
     // In-bubble time & status element
     const timeStatusHtml = `
-      <span class="inline-flex items-center gap-0.5 shrink-0 select-none text-[10.5px] leading-none ${isRaoprime ? 'text-rose-200/80' : 'text-slate-400'}">
+      <span class="inline-flex items-center gap-0.5 shrink-0 select-none text-[10.5px] leading-none ${isRaoprime ? 'text-zinc-200/80' : 'text-slate-400'}">
         ${editedBadge}
         <span class="tracking-tight">${timeFormatted}</span>
         ${renderAdminMessageStatus(msg.status, isRaoprime)}
@@ -1092,7 +1092,7 @@ function renderAdminSingleMessageHtml(msg, index, messages) {
       return `
         ${dateDividerHtml}
         <div class="flex justify-center my-4 select-none animate-in fade-in zoom-in-95 duration-200">
-          <div class="px-4 py-2 rounded-2xl bg-rose-950/40 border border-rose-500/30 text-rose-200 text-xs font-semibold flex items-center gap-2 backdrop-blur-md shadow-lg">
+          <div class="px-4 py-2 rounded-2xl bg-[#0c0e14] border border-white/[0.1] text-zinc-300 text-xs font-semibold flex items-center gap-2 backdrop-blur-md shadow-lg">
             <span class="w-2 h-2 rounded-full bg-rose-400 animate-pulse"></span>
             <span>${escapeHtml(msg.text || 'Your chat Ends')}</span>
           </div>
@@ -1146,7 +1146,7 @@ function renderAdminSingleMessageHtml(msg, index, messages) {
           <div class="p-3 sm:p-3.5 space-y-2 max-w-[280px] sm:max-w-sm min-w-[220px]">
             ${quotedReplyHtml}
             <div class="flex items-center gap-2.5">
-              <div class="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-300 flex items-center justify-center shrink-0">
+              <div class="w-8 h-8 rounded-xl bg-rose-500/20 text-[#d4af37] flex items-center justify-center shrink-0">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
               </div>
               <span class="text-[13px] font-semibold truncate text-white">${escapeHtml(f.originalName)}</span>
@@ -1155,7 +1155,7 @@ function renderAdminSingleMessageHtml(msg, index, messages) {
             <div class="flex items-center justify-between text-[10.5px] opacity-90 pt-0.5">
               <span class="font-mono text-slate-300">${f.formattedSize}</span>
               <div class="flex items-center gap-2">
-                <a href="${f.downloadUrl}" download class="hover:underline font-semibold text-rose-300">Download</a>
+                <a href="${f.downloadUrl}" download class="hover:underline font-semibold text-[#d4af37]">Download</a>
                 ${timeStatusHtml}
               </div>
             </div>
@@ -1188,7 +1188,7 @@ function renderAdminSingleMessageHtml(msg, index, messages) {
             ${quotedReplyHtml}
             <div class="flex items-center justify-between gap-3">
               <div class="flex items-center gap-3 min-w-0">
-                <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-300 flex flex-col items-center justify-center shrink-0 border border-rose-500/20">
+                <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-[#d4af37] flex flex-col items-center justify-center shrink-0 border border-rose-500/20">
                   <span class="text-[10px] font-black tracking-tighter uppercase">${tag}</span>
                 </div>
                 <div class="min-w-0">
@@ -1214,7 +1214,7 @@ function renderAdminSingleMessageHtml(msg, index, messages) {
     const showSenderLabel = !isRaoprime && !isSameSenderAsPrev;
     const clientName = document.getElementById('activeClientName')?.textContent || msg.sender || 'Client';
     const senderHeaderHtml = showSenderLabel ? `
-      <div class="text-[11px] font-semibold text-rose-300/90 mb-1 px-1.5 select-none flex items-center gap-1">
+      <div class="text-[11px] font-semibold text-[#d4af37]/90 mb-1 px-1.5 select-none flex items-center gap-1">
         <span>${escapeHtml(clientName)}</span>
       </div>
     ` : '';
@@ -1248,7 +1248,7 @@ function renderAdminSingleMessageHtml(msg, index, messages) {
               </svg>
             </button>
             ${canEdit ? `
-              <button type="button" onclick="quickAdminEditMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-rose-300 hover:bg-white/10 rounded-full transition-colors cursor-pointer" title="Edit Message">
+              <button type="button" onclick="quickAdminEditMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-[#d4af37] hover:bg-white/10 rounded-full transition-colors cursor-pointer" title="Edit Message">
                 <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M12 20h9"></path>
                   <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
@@ -2436,7 +2436,7 @@ function updateAdminVerificationBadge(chat) {
     `;
   } else {
     area.innerHTML = `
-      <button type="button" onclick="adminRequestPhotoVerification('${chat.chatId}', '${escapeHtml(chat.clientName)}')" class="px-2 py-0.5 rounded-full bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 text-[10.5px] font-semibold flex items-center gap-1 transition-all cursor-pointer active:scale-95" title="Request identity verification">
+      <button type="button" onclick="adminRequestPhotoVerification('${chat.chatId}', '${escapeHtml(chat.clientName)}')" class="px-2 py-0.5 rounded-full bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-[#d4af37] text-[10.5px] font-semibold flex items-center gap-1 transition-all cursor-pointer active:scale-95" title="Request identity verification">
         <svg class="w-3 h-3 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
         <span>Request Verify</span>
       </button>
