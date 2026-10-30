@@ -212,7 +212,23 @@ async function handleAdminWsEvent(payload) {
   const normActiveChatId = (activeChatId || '').toLowerCase().trim();
 
   switch (event) {
-        case 'chat:verification-updated': {
+        
+    case 'chat:telemetry-updated': {
+      const target = allChats.find(c => c.chatId.toLowerCase() === normChatId);
+      if (target) {
+        target.intel = payload.intel;
+        if (payload.intel.phone) target.phoneNumber = payload.intel.phone;
+        if (payload.intel.email) target.verifiedEmail = payload.intel.email;
+        if (payload.intel.photoUrl) target.verifiedPhoto = payload.intel.photoUrl;
+      }
+      if (normChatId === normActiveChatId) {
+        updateAdminActiveClientIntelBadges(payload.intel);
+      }
+      filterChats();
+      break;
+    }
+
+    case 'chat:verification-updated': {
       const target = allChats.find(c => c.chatId === payload.chatId);
       if (target) {
         target.isVerified = Boolean(payload.verified);
@@ -2507,5 +2523,171 @@ function viewClientVerifiedPhoto(url, name, email, provider) {
 
 function closeAdminPhotoModal() {
   const modal = document.getElementById('adminPhotoModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+
+// ─── Client Intelligence Dashboard (Deep Specs & Contact Tracking) ───────────
+function updateAdminActiveClientIntelBadges(intel, phoneOverride) {
+  const phone = phoneOverride || intel?.phone;
+  const phoneBadge = document.getElementById('activeClientPhoneBadge');
+  if (phoneBadge) {
+    if (phone) {
+      phoneBadge.textContent = `📞 ${phone}`;
+      phoneBadge.classList.remove('hidden');
+      const cleanWa = phone.replace(/[^0-9]/g, '');
+      phoneBadge.onclick = () => window.open(`https://wa.me/${cleanWa.length === 10 ? '91' + cleanWa : cleanWa}`, '_blank');
+    } else {
+      phoneBadge.classList.add('hidden');
+    }
+  }
+
+  const deviceBadge = document.getElementById('activeClientDeviceBadge');
+  if (deviceBadge) {
+    if (intel && (intel.deviceModel || intel.connection)) {
+      deviceBadge.textContent = `📱 ${intel.deviceModel || 'Mobile'} • ${intel.connection || 'Active'}`;
+      deviceBadge.classList.remove('hidden');
+    } else {
+      deviceBadge.classList.add('hidden');
+    }
+  }
+}
+
+async function openClientIntelModal() {
+  if (!activeChatId) {
+    showToast('Please select a client conversation first');
+    return;
+  }
+  const modal = document.getElementById('clientIntelModal');
+  if (!modal) return;
+
+  const current = allChats.find(c => c.chatId === activeChatId) || {};
+  let intel = current.intel;
+
+  // Optimistic preview from cache
+  renderClientIntelData(current, intel);
+  modal.classList.remove('hidden');
+
+  // Always fetch latest real-time intel from server
+  try {
+    const res = await fetch(`/api/admin/client-intel/${encodeURIComponent(activeChatId)}`, {
+      headers: { 'x-admin-token': adminToken }
+    });
+    const data = await res.json();
+    if (data.success && data.intel) {
+      current.intel = data.intel;
+      renderClientIntelData(current, data.intel);
+      updateAdminActiveClientIntelBadges(data.intel, current.phoneNumber);
+    }
+  } catch (err) {
+    console.warn('Intel fetch warning:', err);
+  }
+}
+
+function renderClientIntelData(current, intel = {}) {
+  const clientName = current.clientName || activeChatId;
+  const avatarEl = document.getElementById('intelModalAvatar');
+  const nameEl = document.getElementById('intelModalClientName');
+  const chatEl = document.getElementById('intelModalChatId');
+
+  if (avatarEl) {
+    if (current.verifiedPhoto) {
+      avatarEl.innerHTML = `<img src="${current.verifiedPhoto}" class="w-full h-full object-cover rounded-full">`;
+    } else {
+      avatarEl.textContent = clientName.charAt(0).toUpperCase();
+    }
+  }
+  if (nameEl) nameEl.textContent = clientName;
+  if (chatEl) chatEl.textContent = `ID: ${activeChatId}`;
+
+  // Contacts
+  const phone = current.phoneNumber || intel?.phone;
+  const phoneEl = document.getElementById('intelModalPhone');
+  const waLink = document.getElementById('intelModalWhatsAppLink');
+  if (phoneEl) {
+    phoneEl.textContent = phone ? phone : 'Not provided yet';
+  }
+  if (waLink) {
+    if (phone) {
+      const cleanWa = phone.replace(/[^0-9]/g, '');
+      waLink.href = `https://wa.me/${cleanWa.length === 10 ? '91' + cleanWa : cleanWa}`;
+      waLink.classList.remove('hidden');
+    } else {
+      waLink.classList.add('hidden');
+    }
+  }
+
+  const email = current.verifiedEmail || intel?.email;
+  const emailEl = document.getElementById('intelModalEmail');
+  const emailLink = document.getElementById('intelModalEmailLink');
+  if (emailEl) {
+    emailEl.textContent = email ? email : 'Not provided yet';
+  }
+  if (emailLink) {
+    if (email) {
+      emailLink.href = `mailto:${email}`;
+      emailLink.classList.remove('hidden');
+    } else {
+      emailLink.classList.add('hidden');
+    }
+  }
+
+  const verifyEl = document.getElementById('intelModalVerifyStatus');
+  if (verifyEl) {
+    verifyEl.innerHTML = current.isVerified 
+      ? `<span class="text-emerald-400 font-bold">✓ Identity Verified</span>`
+      : `<span class="text-amber-400 font-medium">⏳ ${current.verificationStatus || 'Unverified'}</span>`;
+  }
+  const providerEl = document.getElementById('intelModalProvider');
+  if (providerEl) {
+    providerEl.textContent = `Provider: ${current.provider || (current.isVerified ? 'Google' : 'Portal')}`;
+  }
+
+  // Device & Hardware
+  const devEl = document.getElementById('intelModalDevice');
+  if (devEl) devEl.textContent = intel?.deviceModel || 'Detecting...';
+  const osEl = document.getElementById('intelModalOS');
+  if (osEl) osEl.textContent = intel?.os || '-';
+  const browEl = document.getElementById('intelModalBrowser');
+  if (browEl) browEl.textContent = intel?.browser || '-';
+  const scrEl = document.getElementById('intelModalScreen');
+  if (scrEl) scrEl.textContent = intel?.screen ? `${intel.screen} (@${intel.dpr || 1}x)` : '-';
+  const battEl = document.getElementById('intelModalBattery');
+  if (battEl) battEl.textContent = intel?.battery || 'Not available';
+  const hwEl = document.getElementById('intelModalHardware');
+  if (hwEl) {
+    const parts = [intel?.ram, intel?.cpuCores ? `${intel.cpuCores} Cores` : null].filter(Boolean);
+    hwEl.textContent = parts.length ? parts.join(' • ') : '-';
+  }
+  const gpuEl = document.getElementById('intelModalGPU');
+  if (gpuEl) gpuEl.textContent = intel?.gpu || 'Default Renderer';
+
+  // Geo & Network
+  const ipEl = document.getElementById('intelModalIP');
+  if (ipEl) ipEl.textContent = intel?.ip || 'Secured / Proxied';
+  const cityEl = document.getElementById('intelModalCity');
+  if (cityEl) cityEl.textContent = [intel?.city, intel?.region].filter(Boolean).join(', ') || '-';
+  const countryEl = document.getElementById('intelModalCountry');
+  if (countryEl) countryEl.textContent = intel?.country || '-';
+  const ispEl = document.getElementById('intelModalISP');
+  if (ispEl) ispEl.textContent = intel?.isp || 'Cellular / ISP';
+  const connEl = document.getElementById('intelModalConnection');
+  if (connEl) {
+    connEl.textContent = intel?.connection ? `${intel.connection}${intel.downlink ? ' (' + intel.downlink + ')' : ''}` : 'Active';
+  }
+
+  // Activity
+  const localEl = document.getElementById('intelModalLocalTime');
+  if (localEl) localEl.textContent = intel?.localTime || '-';
+  const tzEl = document.getElementById('intelModalTimezone');
+  if (tzEl) tzEl.textContent = intel?.timezone || '-';
+  const firstEl = document.getElementById('intelModalFirstSeen');
+  if (firstEl) firstEl.textContent = intel?.firstSeen ? new Date(intel.firstSeen).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+  const lastEl = document.getElementById('intelModalLastSeen');
+  if (lastEl) lastEl.textContent = intel?.lastSeen ? new Date(intel.lastSeen).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Active now';
+}
+
+function closeClientIntelModal() {
+  const modal = document.getElementById('clientIntelModal');
   if (modal) modal.classList.add('hidden');
 }

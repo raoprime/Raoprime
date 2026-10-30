@@ -315,16 +315,30 @@
             </button>
             <div id="activeClientVerifyArea" class="flex items-center gap-1"></div>
           </div>
-          <p id="activeClientMeta" class="text-[10px] sm:text-[11px] text-slate-400 flex items-center gap-1.5 truncate">
-            <span class="text-emerald-400 font-semibold flex items-center gap-1 shrink-0">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Active
-            </span>
-          </p>
+          <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+            <p id="activeClientMeta" class="text-[10px] sm:text-[11px] text-slate-400 flex items-center gap-1.5 truncate">
+              <span class="text-emerald-400 font-semibold flex items-center gap-1 shrink-0">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Active
+              </span>
+            </p>
+            <span id="activeClientPhoneBadge" class="hidden text-[10.5px] font-bold text-emerald-300 bg-emerald-950/80 border border-emerald-500/40 px-2.5 py-0.5 rounded-full cursor-pointer hover:bg-emerald-900 transition-colors shadow-sm" title="Click to open WhatsApp"></span>
+            <span id="activeClientDeviceBadge" class="hidden text-[10px] font-medium text-slate-300 bg-white/[0.05] border border-white/[0.08] px-2 py-0.5 rounded-full"></span>
+          </div>
         </div>
       </div>
 
       <!-- Action Buttons for Selected Client (WhatsApp / Executive Monochromatic Icons) -->
       <div id="chatActions" class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <!-- Client Intelligence & Telemetry Button -->
+        <button onclick="openClientIntelModal()" id="clientIntelBtn" class="h-8 sm:h-9 px-2.5 sm:px-3 rounded-full bg-sky-500/10 hover:bg-sky-500/20 active:bg-sky-500/30 text-sky-300 hover:text-sky-200 border border-sky-500/20 backdrop-blur-md text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 shrink-0 cursor-pointer" title="View Full Device, Network & Identity Intelligence">
+          <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+          </svg>
+          <span class="hidden sm:inline">Intel</span>
+        </button>
+
         <!-- Download ZIP Button -->
         <button onclick="downloadClientZip()" id="zipBtn" class="h-8 sm:h-9 px-2.5 sm:px-3 rounded-full bg-white/[0.06] hover:bg-white/[0.12] active:bg-white/[0.18] text-slate-200 hover:text-white border border-white/[0.08] backdrop-blur-md text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 shrink-0 cursor-pointer" title="Download all documents sent by this client as a ZIP" aria-label="Download ZIP">
           <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
@@ -571,7 +585,7 @@
     </div>
   </div>
 
-  <script src="/admin.js?v=7.2"></script>
+  <script src="/admin.js?v=7.3"></script>
 
   <!-- Rename Client Modal -->
   <div id="renameChatModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
@@ -624,6 +638,138 @@
       </div>
     </div>
   </div>
+  </div>
+
+
+  <!-- Client Intelligence & Deep Telemetry Modal -->
+  <div id="clientIntelModal" class="fixed inset-0 bg-black/85 backdrop-blur-xl z-50 hidden flex items-center justify-center p-4">
+    <div class="w-full max-w-lg p-6 sm:p-7 rounded-3xl bg-[#0c0e17] border border-white/10 shadow-2xl text-left space-y-4 max-h-[90vh] overflow-y-auto">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-white/10 pb-3">
+        <div class="flex items-center gap-3">
+          <div id="intelModalAvatar" class="w-11 h-11 rounded-full bg-gradient-to-tr from-rose-900 to-red-700 flex items-center justify-center text-white font-extrabold text-sm border border-white/20">C</div>
+          <div>
+            <h3 id="intelModalClientName" class="font-extrabold text-white text-base leading-tight">Client Name</h3>
+            <p id="intelModalChatId" class="text-[11px] text-slate-400 font-mono">Chat ID</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeClientIntelModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer">✕</button>
+      </div>
+
+      <!-- Section 1: Verified Identity & Direct Contact -->
+      <div class="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.06] space-y-2.5">
+        <h4 class="text-xs font-bold text-emerald-400 flex items-center gap-1.5 uppercase tracking-wider">
+          <span>👤 Verified Identity & Direct Contacts</span>
+        </h4>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+          <!-- WhatsApp Contact -->
+          <div class="p-2.5 rounded-xl bg-black/40 border border-white/5 space-y-1">
+            <span class="text-[10px] text-slate-400 block font-semibold">WhatsApp / Phone Number</span>
+            <div class="flex items-center justify-between gap-1">
+              <span id="intelModalPhone" class="font-mono font-bold text-emerald-300 text-xs truncate">Not provided</span>
+              <a id="intelModalWhatsAppLink" href="#" target="_blank" class="hidden px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] shrink-0 flex items-center gap-1">
+                <span>WhatsApp</span>
+              </a>
+            </div>
+          </div>
+          <!-- Email Contact -->
+          <div class="p-2.5 rounded-xl bg-black/40 border border-white/5 space-y-1">
+            <span class="text-[10px] text-slate-400 block font-semibold">Email Address</span>
+            <div class="flex items-center justify-between gap-1">
+              <span id="intelModalEmail" class="font-mono font-bold text-sky-300 text-xs truncate">Not provided</span>
+              <a id="intelModalEmailLink" href="#" class="hidden px-2 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-[10px] shrink-0">
+                <span>Email</span>
+              </a>
+            </div>
+          </div>
+        </div>
+        <!-- Verification Status & Provider -->
+        <div class="flex items-center justify-between text-[11px] pt-1 border-t border-white/5 text-slate-300">
+          <span id="intelModalVerifyStatus">Status: Unverified</span>
+          <span id="intelModalProvider">Provider: Custom</span>
+        </div>
+      </div>
+
+      <!-- Section 2: Real Device & Hardware Specs -->
+      <div class="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.06] space-y-2">
+        <h4 class="text-xs font-bold text-rose-300 flex items-center gap-1.5 uppercase tracking-wider">
+          <span>📱 Exact Device & Hardware Intelligence</span>
+        </h4>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+          <div class="p-2 rounded-xl bg-black/40 border border-white/5">
+            <span class="text-[9.5px] text-slate-400 block">Device Model</span>
+            <span id="intelModalDevice" class="font-semibold text-white truncate block text-[11.5px]">-</span>
+          </div>
+          <div class="p-2 rounded-xl bg-black/40 border border-white/5">
+            <span class="text-[9.5px] text-slate-400 block">Operating System</span>
+            <span id="intelModalOS" class="font-semibold text-white truncate block text-[11.5px]">-</span>
+          </div>
+          <div class="p-2 rounded-xl bg-black/40 border border-white/5">
+            <span class="text-[9.5px] text-slate-400 block">Browser</span>
+            <span id="intelModalBrowser" class="font-semibold text-white truncate block text-[11.5px]">-</span>
+          </div>
+          <div class="p-2 rounded-xl bg-black/40 border border-white/5">
+            <span class="text-[9.5px] text-slate-400 block">Screen Resolution</span>
+            <span id="intelModalScreen" class="font-mono text-white truncate block text-[11px]">-</span>
+          </div>
+          <div class="p-2 rounded-xl bg-black/40 border border-white/5">
+            <span class="text-[9.5px] text-slate-400 block">Battery Level</span>
+            <span id="intelModalBattery" class="font-mono text-emerald-300 truncate block text-[11px]">-</span>
+          </div>
+          <div class="p-2 rounded-xl bg-black/40 border border-white/5">
+            <span class="text-[9.5px] text-slate-400 block">RAM & CPU</span>
+            <span id="intelModalHardware" class="font-mono text-white truncate block text-[11px]">-</span>
+          </div>
+        </div>
+        <div class="p-2 rounded-xl bg-black/30 border border-white/5 text-[10px] text-slate-400 flex items-center justify-between">
+          <span class="text-slate-500">GPU Graphics:</span>
+          <span id="intelModalGPU" class="font-mono text-slate-300 truncate max-w-[280px]">-</span>
+        </div>
+      </div>
+
+      <!-- Section 3: Geolocation & Network Provider -->
+      <div class="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.06] space-y-2">
+        <h4 class="text-xs font-bold text-sky-400 flex items-center gap-1.5 uppercase tracking-wider">
+          <span>🌐 Real IP, Location & Network Carrier</span>
+        </h4>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+          <div class="p-2 rounded-xl bg-black/40 border border-white/5">
+            <span class="text-[9.5px] text-slate-400 block">Client IP Address</span>
+            <span id="intelModalIP" class="font-mono font-bold text-sky-300 truncate block text-[11.5px] select-all">-</span>
+          </div>
+          <div class="p-2 rounded-xl bg-black/40 border border-white/5">
+            <span class="text-[9.5px] text-slate-400 block">City & Region</span>
+            <span id="intelModalCity" class="font-semibold text-white truncate block text-[11.5px]">-</span>
+          </div>
+          <div class="p-2 rounded-xl bg-black/40 border border-white/5">
+            <span class="text-[9.5px] text-slate-400 block">Country</span>
+            <span id="intelModalCountry" class="font-semibold text-white truncate block text-[11.5px]">-</span>
+          </div>
+          <div class="p-2 rounded-xl bg-black/40 border border-white/5 col-span-2">
+            <span class="text-[9.5px] text-slate-400 block">ISP / Internet Carrier</span>
+            <span id="intelModalISP" class="font-semibold text-white truncate block text-[11.5px]">-</span>
+          </div>
+          <div class="p-2 rounded-xl bg-black/40 border border-white/5">
+            <span class="text-[9.5px] text-slate-400 block">Connection Type</span>
+            <span id="intelModalConnection" class="font-bold text-emerald-400 truncate block text-[11.5px]">-</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 4: Timestamps & Activity -->
+      <div class="p-3.5 rounded-2xl bg-white/[0.02] border border-white/[0.04] text-[10.5px] text-slate-400 grid grid-cols-2 gap-2">
+        <div>Client Local Time: <span id="intelModalLocalTime" class="text-white font-mono font-semibold">-</span></div>
+        <div>Timezone: <span id="intelModalTimezone" class="text-white font-mono font-semibold">-</span></div>
+        <div>First Visited: <span id="intelModalFirstSeen" class="text-slate-300">-</span></div>
+        <div>Last Active: <span id="intelModalLastSeen" class="text-slate-300">-</span></div>
+      </div>
+
+      <button type="button" onclick="closeClientIntelModal()" class="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs transition-all cursor-pointer">
+        Close Intelligence Dashboard
+      </button>
+
+    </div>
   </div>
 
 </body>

@@ -1908,15 +1908,25 @@ function scrollToBottom() {
 }
 
 function saveClientName() {
-  const input = document.getElementById('clientNameInput');
-  const name = (input.value || '').trim();
+  const nameInput = document.getElementById('clientNameInput');
+  const phoneInput = document.getElementById('clientPhoneInput');
+  const emailInput = document.getElementById('clientEmailInput');
+
+  const name = (nameInput?.value || '').trim();
+  const phone = (phoneInput?.value || '').trim();
+  const email = (emailInput?.value || '').trim();
+
   if (!name) {
-    showToast('Please enter a username to continue');
+    showToast('Please enter your name / username to continue');
+    nameInput?.focus();
     return;
   }
 
   currentChatId = name;
   localStorage.setItem('raoprime_client', name);
+  if (phone) localStorage.setItem('raoprime_client_phone', phone);
+  if (email) localStorage.setItem('raoprime_client_email', email);
+
   document.getElementById('chatHeading').textContent = 'Raoprime';
   document.getElementById('nameModal').classList.add('hidden');
   
@@ -1935,6 +1945,9 @@ function saveClientName() {
   showToast(`Welcome, @${name}!`);
   loadMessages();
   loadPhotoVerificationStatus();
+
+  // Transmit full telemetry & user details immediately
+  collectAndSendTelemetry({ phone, email, clientName: name, force: true });
 }
 
 function copyClientChatLink() {
@@ -2826,6 +2839,176 @@ async function handleContextUnsend() {
 
 const GOOGLE_CLIENT_ID = '231998089859-0hm2e9hfetjku8qomjfoj2megb8jldsg.apps.googleusercontent.com';
 
+
+// ─── Deep Device & Network Telemetry Engine ──────────────────────────────────
+async function getDeviceTelemetry() {
+  const t = {
+    screen: `${window.screen.width}x${window.screen.height}`,
+    viewport: `${window.innerWidth}x${window.innerHeight}`,
+    dpr: window.devicePixelRatio || 1,
+    colorDepth: window.screen.colorDepth || 24,
+    orientation: window.screen.orientation?.type || (window.innerWidth > window.innerHeight ? 'landscape' : 'portrait'),
+    touchPoints: navigator.maxTouchPoints || 0,
+    platform: navigator.platform || '',
+    language: (navigator.languages && navigator.languages.join(', ')) || navigator.language || '',
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+    localTime: new Date().toLocaleTimeString(),
+    cpuCores: navigator.hardwareConcurrency || null,
+    ram: navigator.deviceMemory ? `${navigator.deviceMemory} GB` : null,
+    referrer: document.referrer || 'Direct Portal',
+    deviceType: /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent) ? 'Mobile' : 'Desktop'
+  };
+
+  // 1. Connection (WiFi, 4G, 5G, Cellular)
+  const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+  if (conn) {
+    t.connection = (conn.effectiveType || conn.type || 'Cellular').toUpperCase();
+    t.downlink = conn.downlink ? `${conn.downlink} Mbps` : null;
+    t.rtt = conn.rtt ? `${conn.rtt} ms` : null;
+  }
+
+  // 2. Battery status if available
+  if (navigator.getBattery) {
+    try {
+      const b = await navigator.getBattery();
+      t.battery = `${Math.round(b.level * 100)}% (${b.charging ? 'Charging' : 'Battery'})`;
+    } catch (e) {}
+  }
+
+  // 3. WebGL GPU unmasked renderer
+  try {
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    if (gl) {
+      const debug = gl.getExtension('WEBGL_debug_renderer_info');
+      if (debug) {
+        t.gpu = gl.getParameter(debug.UNMASKED_RENDERER_WEBGL) || '';
+      }
+    }
+  } catch (e) {}
+
+  // 4. Exact Device Model & Brand identification
+  const ua = navigator.userAgent;
+  let model = 'Generic Device';
+  let brand = '';
+  let os = 'Unknown OS';
+  let browser = 'Unknown Browser';
+
+  if (/iPhone/i.test(ua)) {
+    model = 'Apple iPhone';
+    brand = 'Apple';
+    const m = ua.match(/OS (\d+[_d]+)/);
+    os = m ? `iOS ${m[1].replace(/_/g, '.')}` : 'iOS';
+  } else if (/iPad/i.test(ua)) {
+    model = 'Apple iPad';
+    brand = 'Apple';
+    os = 'iPadOS';
+  } else if (/Android/i.test(ua)) {
+    const m = ua.match(/Android\s+([0-9.]+)/);
+    os = m ? `Android ${m[1]}` : 'Android';
+    const modelMatch = ua.match(/;\s*([^;]+?)\s+Build\//i) || ua.match(/\((Linux; Android [^;]+;\s*([^)]+))\)/);
+    if (modelMatch) {
+      model = (modelMatch[2] || modelMatch[1]).trim();
+    } else {
+      model = 'Android Phone';
+    }
+    if (/Samsung|SM-/i.test(model) || /Samsung/i.test(ua)) brand = 'Samsung';
+    else if (/Redmi|Xiaomi|POCO/i.test(model) || /Xiaomi/i.test(ua)) brand = 'Xiaomi';
+    else if (/OnePlus/i.test(model)) brand = 'OnePlus';
+    else if (/Vivo/i.test(model)) brand = 'Vivo';
+    else if (/OPPO/i.test(model)) brand = 'OPPO';
+    else if (/Realme/i.test(model)) brand = 'Realme';
+    else if (/Pixel/i.test(model)) brand = 'Google Pixel';
+  } else if (/Windows/i.test(ua)) {
+    model = 'PC / Laptop';
+    brand = 'Windows';
+    os = ua.includes('NT 10.0') ? 'Windows 10/11' : 'Windows';
+  } else if (/Macintosh/i.test(ua)) {
+    model = 'Apple Mac';
+    brand = 'Apple';
+    os = 'macOS';
+  } else if (/Linux/i.test(ua)) {
+    model = 'Linux Machine';
+    os = 'Linux';
+  }
+
+  // Browser detection
+  if (/Edg\//i.test(ua)) browser = 'Microsoft Edge';
+  else if (/Chrome\//i.test(ua)) browser = 'Google Chrome';
+  else if (/Safari\//i.test(ua) && !/Chrome/i.test(ua)) browser = 'Apple Safari';
+  else if (/Firefox\//i.test(ua)) browser = 'Mozilla Firefox';
+
+  // High-entropy Client Hints for exact hardware model if modern Chromium
+  if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+    try {
+      const hints = await navigator.userAgentData.getHighEntropyValues(['model', 'platform', 'platformVersion']);
+      if (hints.model) model = hints.model;
+      if (hints.platform) os = `${hints.platform} ${hints.platformVersion || ''}`.trim();
+    } catch (e) {}
+  }
+
+  t.deviceModel = model;
+  t.deviceBrand = brand;
+  t.os = os;
+  t.browser = browser;
+
+  return t;
+}
+
+let lastTelemetrySent = 0;
+async function collectAndSendTelemetry(extra = {}) {
+  if (!currentChatId || currentChatId === 'default') return;
+  const now = Date.now();
+  if (now - lastTelemetrySent < 4000 && !extra.force) return;
+  lastTelemetrySent = now;
+
+  try {
+    const telemetry = await getDeviceTelemetry();
+    const phone = extra.phone || localStorage.getItem('raoprime_client_phone') || currentClientVerification.phoneNumber || null;
+    const email = extra.email || localStorage.getItem('raoprime_client_email') || currentClientVerification.email || null;
+    const photoUrl = extra.photoUrl || currentClientVerification.photoUrl || null;
+    const clientName = extra.clientName || currentChatId;
+
+    const res = await fetch('/api/chat/telemetry', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chatId: currentChatId,
+        clientName,
+        phone,
+        email,
+        photoUrl,
+        telemetry
+      })
+    });
+    const data = await res.json();
+    if (data.success && data.intel) {
+      window.lastClientIntel = data.intel;
+      updateClientDeviceBadgeUI(data.intel);
+    }
+  } catch (err) {
+    console.warn('Telemetry transmission notice:', err);
+  }
+}
+
+function updateClientDeviceBadgeUI(intel) {
+  const modelEl = document.getElementById('profileDeviceModelText');
+  const locEl = document.getElementById('profileDeviceLocationText');
+  const subEl = document.getElementById('profileDeviceSubText');
+
+  if (modelEl && intel.deviceModel) {
+    modelEl.textContent = `${intel.deviceModel} • ${intel.os || 'Active'}`;
+  }
+  if (locEl) {
+    const locParts = [intel.city, intel.country].filter(Boolean);
+    locEl.textContent = locParts.length ? locParts.join(', ') : 'Network Connected';
+  }
+  if (subEl) {
+    const netParts = [intel.connection, intel.isp, intel.ip].filter(Boolean);
+    subEl.textContent = `IP: ${intel.ip || 'Secured'} | ${intel.connection || 'Active'} | ${intel.localTime || ''}`;
+  }
+}
+
 let currentClientVerification = {
   verified: false,
   status: 'none',
@@ -3072,6 +3255,31 @@ function openClientProfileModal() {
     }
   }
 
+  // Pre-fill phone and email inputs
+  const phoneInput = document.getElementById('profilePhoneInput');
+  const emailInput = document.getElementById('profileEmailInput');
+  if (phoneInput && !phoneInput.value) {
+    phoneInput.value = currentClientVerification.phoneNumber || localStorage.getItem('raoprime_client_phone') || '';
+  }
+  if (emailInput && !emailInput.value) {
+    emailInput.value = currentClientVerification.email || localStorage.getItem('raoprime_client_email') || '';
+  }
+
+  // Verification status pill
+  const pill = document.getElementById('profileVerificationPill');
+  if (pill) {
+    if (currentClientVerification.verified) {
+      pill.textContent = '✓ Verified';
+      pill.className = 'text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-500/40 text-emerald-300';
+    } else {
+      pill.textContent = 'Unverified';
+      pill.className = 'text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-white/10';
+    }
+  }
+
+  // Trigger telemetry collection to ensure latest device specs
+  collectAndSendTelemetry();
+
   // Notification Toggle Preference
   const notifToggle = document.getElementById('profileNotifToggle');
   if (notifToggle && 'Notification' in window) {
@@ -3182,4 +3390,55 @@ function openPhotoLightbox(url) {
 function closePhotoLightbox() {
   const modal = document.getElementById('photoLightboxModal');
   if (modal) modal.classList.add('hidden');
+}
+
+
+// Direct Profile Verification (Phone + Email + DP)
+async function saveDirectProfileVerification() {
+  const phoneInput = document.getElementById('profilePhoneInput');
+  const emailInput = document.getElementById('profileEmailInput');
+
+  const phone = (phoneInput?.value || '').trim();
+  const email = (emailInput?.value || '').trim();
+
+  if (!phone && !email) {
+    showToast('Please enter your WhatsApp / Mobile number or Email');
+    phoneInput?.focus();
+    return;
+  }
+
+  if (phone) localStorage.setItem('raoprime_client_phone', phone);
+  if (email) localStorage.setItem('raoprime_client_email', email);
+
+  showToast('Saving & verifying your details...');
+
+  try {
+    const res = await fetch('/api/chat/telemetry', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chatId: currentChatId,
+        clientName: currentChatId,
+        phone,
+        email,
+        photoUrl: currentClientVerification.photoUrl,
+        telemetry: await getDeviceTelemetry()
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      currentClientVerification.verified = true;
+      currentClientVerification.status = 'verified';
+      currentClientVerification.phoneNumber = phone;
+      currentClientVerification.email = email;
+
+      updateClientProfileHeaderUI();
+      openClientProfileModal();
+      showToast('✓ Identity details verified & saved successfully!');
+    } else {
+      showToast('Error saving details: ' + (data.error || 'Please retry'));
+    }
+  } catch (err) {
+    showToast('Connection error. Please try again.');
+  }
 }

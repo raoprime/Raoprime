@@ -104,6 +104,61 @@ function checkAutoVerifications() {
 }
 setInterval(checkAutoVerifications, 10000); // Check every 10 seconds
 
+const INTEL_FILE = path.join(BASE_STORAGE, 'client_intel.json');
+
+function loadClientIntel() {
+  try {
+    if (fs.existsSync(INTEL_FILE)) {
+      return JSON.parse(fs.readFileSync(INTEL_FILE, 'utf8'));
+    }
+  } catch (e) {
+    console.error('Error reading client intel:', e);
+  }
+  return {};
+}
+
+function saveClientIntel(data) {
+  try {
+    fs.writeFileSync(INTEL_FILE, JSON.stringify(data, null, 2), 'utf8');
+  } catch (e) {
+    console.error('Error saving client intel:', e);
+  }
+}
+
+let clientIntelStore = loadClientIntel();
+const ipGeoCache = {};
+
+async function lookupIpGeo(ip) {
+  if (!ip || ip === '127.0.0.1' || ip === '::1' || ip.startsWith('192.168.') || ip.startsWith('10.')) {
+    return { ip: ip || 'Localhost', city: 'Local Network', region: 'LAN', country: 'Localhost', isp: 'Internal' };
+  }
+  if (ipGeoCache[ip]) return ipGeoCache[ip];
+
+  try {
+    const res = await fetch(`https://freeipapi.com/api/json/${encodeURIComponent(ip)}`, { timeout: 3500 });
+    if (res.ok) {
+      const data = await res.json();
+      const geo = {
+        ip,
+        city: data.cityName || '',
+        region: data.regionName || '',
+        country: data.countryName || '',
+        countryCode: data.countryCode || '',
+        zip: data.zipCode || '',
+        isp: data.asnOrganization || '',
+        timezone: (data.timeZones && data.timeZones[0]) || '',
+        isProxy: Boolean(data.isProxy)
+      };
+      ipGeoCache[ip] = geo;
+      return geo;
+    }
+  } catch (e) {
+    console.warn('Geo IP lookup notice:', e.message);
+  }
+  return { ip, city: '', region: '', country: '', isp: '' };
+}
+
+
 
 try {
   [BASE_STORAGE, VAULT_DIR, CHUNKS_DIR].forEach((dir) => {
@@ -915,6 +970,110 @@ app.get('/api/chat/verification', (req, res) => {
 
 
 // Original Google Identity Verification (Auto-fetches Profile Picture & Verified Email)
+
+// ─── Client Intelligence & Rich Telemetry Collector ──────────────────────────
+app.post('/api/chat/telemetry', async (req, res) => {
+  try {
+    const { chatId: rawChatId, clientName, phone, email, photoUrl, telemetry } = req.body || {};
+    if (!rawChatId) return res.status(400).json({ success: false, error: 'chatId required' });
+    const chatId = normalizeChatId(rawChatId);
+
+    const clientIp = (
+      req.headers['x-forwarded-for']?.split(',')[0] ||
+      req.headers['cf-connecting-ip'] ||
+      req.socket.remoteAddress ||
+      ''
+    ).trim();
+
+    const geo = await lookupIpGeo(clientIp);
+    const now = new Date().toISOString();
+    const existing = clientIntelStore[chatId] || {};
+
+    const cleanPhone = phone || existing.phone || verificationsStore[chatId]?.phoneNumber || null;
+    const cleanEmail = email || existing.email || verificationsStore[chatId]?.email || null;
+    const cleanPhoto = photoUrl || existing.photoUrl || verificationsStore[chatId]?.photoUrl || null;
+
+    const updated = {
+      chatId,
+      clientName: clientName || existing.clientName || chatId,
+      phone: cleanPhone,
+      email: cleanEmail,
+      photoUrl: cleanPhoto,
+      isVerified: Boolean(verificationsStore[chatId]?.verified),
+      verificationStatus: verificationsStore[chatId]?.status || 'none',
+
+      // Network & Location Telemetry
+      ip: clientIp || existing.ip || 'Unknown',
+      city: geo.city || existing.city || '',
+      region: geo.region || existing.region || '',
+      country: geo.country || existing.country || '',
+      countryCode: geo.countryCode || existing.countryCode || '',
+      zip: geo.zip || existing.zip || '',
+      isp: geo.isp || existing.isp || '',
+
+      // Deep Device Specs
+      deviceModel: telemetry?.deviceModel || existing.deviceModel || 'Unknown Device',
+      deviceBrand: telemetry?.deviceBrand || existing.deviceBrand || '',
+      deviceType: telemetry?.deviceType || existing.deviceType || 'Mobile',
+      os: telemetry?.os || existing.os || 'Unknown OS',
+      browser: telemetry?.browser || existing.browser || 'Unknown Browser',
+      screen: telemetry?.screen || existing.screen || '',
+      viewport: telemetry?.viewport || existing.viewport || '',
+      dpr: telemetry?.dpr || existing.dpr || 1,
+      connection: telemetry?.connection || existing.connection || 'WiFi/Cellular',
+      downlink: telemetry?.downlink || existing.downlink || null,
+      rtt: telemetry?.rtt || existing.rtt || null,
+      battery: telemetry?.battery || existing.battery || null,
+      gpu: telemetry?.gpu || existing.gpu || '',
+      ram: telemetry?.ram || existing.ram || '',
+      cpuCores: telemetry?.cpuCores || existing.cpuCores || null,
+      touchPoints: telemetry?.touchPoints || existing.touchPoints || null,
+      platform: telemetry?.platform || existing.platform || '',
+      language: telemetry?.language || existing.language || '',
+      timezone: telemetry?.timezone || geo.timezone || existing.timezone || 'Asia/Kolkata',
+      localTime: telemetry?.localTime || existing.localTime || '',
+      referrer: telemetry?.referrer || existing.referrer || '',
+
+      firstSeen: existing.firstSeen || now,
+      lastSeen: now,
+      visitCount: (existing.visitCount || 0) + 1
+    };
+
+    clientIntelStore[chatId] = updated;
+    saveClientIntel(clientIntelStore);
+
+    // Sync phone/email/photo into verificationsStore if available
+    if (cleanPhone || cleanEmail || cleanPhoto) {
+      if (!verificationsStore[chatId]) verificationsStore[chatId] = { verified: false, status: 'none' };
+      if (cleanPhone) verificationsStore[chatId].phoneNumber = cleanPhone;
+      if (cleanEmail) verificationsStore[chatId].email = cleanEmail;
+      if (cleanPhoto) verificationsStore[chatId].photoUrl = cleanPhoto;
+      saveVerifications(verificationsStore);
+    }
+
+    // Broadcast live telemetry update to admin & room
+    broadcastToRoom(chatId, 'chat:telemetry-updated', { chatId, intel: updated });
+    broadcastToRoom('all', 'chat:telemetry-updated', { chatId, intel: updated });
+
+    res.json({ success: true, intel: updated });
+  } catch (err) {
+    console.error('telemetry error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/admin/client-intel/:chatId', requireAdminAuth, (req, res) => {
+  try {
+    const rawChatId = req.params.chatId;
+    if (!rawChatId) return res.status(400).json({ success: false, error: 'chatId required' });
+    const chatId = normalizeChatId(rawChatId);
+    const intel = clientIntelStore[chatId] || null;
+    res.json({ success: true, intel });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 app.post('/api/chat/verify-google', (req, res) => {
   try {
     const { chatId: rawChatId = 'default', profile } = req.body;
@@ -1751,7 +1910,8 @@ app.get('/api/admin/chats', requireAdminAuth, async (req, res) => {
         verifiedPhoto: ver.photoUrl || null,
         verifiedEmail: ver.email || null,
         provider: ver.provider || 'custom',
-        phoneNumber: ver.phoneNumber || null,
+        phoneNumber: ver.phoneNumber || clientIntelStore[chatId]?.phone || null,
+        intel: clientIntelStore[chatId] || null,
         verifiedAt: ver.verifiedAt || null,
         submittedAt: ver.submittedAt || null,
         remainingMinutes: Math.ceil(remainingMs / 60000),

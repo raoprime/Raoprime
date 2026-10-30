@@ -1,1 +1,8 @@
-{}
+{
+  "Dharmesh": {
+    "verified": false,
+    "status": "none",
+    "phoneNumber": "+91 98765 43210",
+    "email": "dharmesh@example.com"
+  }
+}
