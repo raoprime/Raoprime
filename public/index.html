@@ -24,10 +24,10 @@
       --sab: env(safe-area-inset-bottom, 0px);
       --sal: env(safe-area-inset-left, 0px);
       --sar: env(safe-area-inset-right, 0px);
-      --wa-bg: #0b141a;
+      --wa-bg: #080a0f;
       --wa-card-in: #202c33;
-      --wa-card-out: #005c4b;
-      --wa-emerald: #00a884;
+      --wa-card-out: #741728;
+      --wa-emerald: #9e1b32;
     }
 
     *, *::before, *::after {
@@ -75,9 +75,9 @@
 
     /* Authentic WhatsApp Dark Mode Wallpaper */
     .chat-wallpaper {
-      background-color: #0b141a;
+      background-color: #080a0f;
       background-image: 
-        radial-gradient(ellipse at 50% 0%, rgba(0, 168, 132, 0.08) 0%, transparent 55%),
+        radial-gradient(ellipse at 50% 0%, rgba(116, 23, 40, 0.22) 0%, transparent 60%),
         url('/assets/chat-wallpaper.svg');
       background-repeat: repeat;
       background-size: 380px 380px;
@@ -85,11 +85,12 @@
 
     /* WhatsApp Dark Mode Signature Outgoing Bubble */
     .bubble-out {
-      background: #005c4b;
+      background: linear-gradient(145deg, #741728 0%, #540f1c 50%, #3e0a14 100%);
       color: #ffffff;
-      border: 1px solid rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-top: 1px solid rgba(255, 255, 255, 0.22);
       border-radius: 16px 16px 4px 16px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(62, 10, 20, 0.35);
       min-width: 95px;
       width: fit-content;
       max-width: 84%;
@@ -113,6 +114,22 @@
 
     .bubble-mid {
       border-radius: 16px !important;
+    }
+
+    
+    .maroon-btn {
+      background: linear-gradient(135deg, #7e192c 0%, #58101e 100%);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(88, 16, 30, 0.45);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .maroon-btn:hover {
+      background: linear-gradient(135deg, #921c33 0%, #681324 100%);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45), 0 3px 10px rgba(104, 19, 36, 0.55);
+      transform: translateY(-1px);
+    }
+    .maroon-btn:active {
+      transform: scale(0.96);
     }
 
     .bubble-text {
@@ -166,7 +183,7 @@
   </style>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
-<body class="h-[100dvh] w-full max-w-full flex flex-col bg-[#0b141a] text-slate-100 overflow-hidden select-none">
+<body class="h-[100dvh] w-full max-w-full flex flex-col bg-[#080a0f] text-slate-100 overflow-hidden select-none">
 
   <!-- Zero horizontal overflow guaranteed -->
 
@@ -185,7 +202,7 @@
     <!-- User Info & Circular RP Logo (Click to View Raoprime Profile) -->
     <div class="flex items-center gap-3 sm:gap-3.5 min-w-0">
       <div onclick="openProfileModal()" class="relative shrink-0 cursor-pointer group" title="View Raoprime Profile">
-        <img src="/assets/rp-logo.jpg" alt="Raoprime Logo" class="w-10 h-10 sm:w-11 sm:h-11 rounded-full object-cover border border-white/20 shadow-md ring-1 ring-white/10 group-hover:border-[#d4af37]/60 group-hover:scale-105 transition-all">
+        <img src="/assets/rp-logo.jpg" alt="Raoprime Logo" class="w-10 h-10 sm:w-11 sm:h-11 rounded-full object-cover border border-white/20 shadow-md ring-1 ring-rose-950/60 group-hover:border-rose-500/60 group-hover:scale-105 transition-all">
         <!-- Instagram Active Indicator Dot -->
         <span id="headerRadarDot" class="absolute bottom-0 right-0 w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full ig-active-dot"></span>
       </div>
@@ -277,9 +294,9 @@
     <!-- Working Real-Time Typing Indicator Bubble (Instagram / WhatsApp Grade) -->
     <div id="typingBubbleContainer" class="hidden max-w-3xl w-full mx-auto flex items-start">
       <div class="px-4 py-3 rounded-2xl bg-[#12151f] border border-white/10 flex items-center gap-1.5 shadow-xl">
-        <span class="w-2 h-2 rounded-full bg-zinc-400 dot-1"></span>
-        <span class="w-2 h-2 rounded-full bg-zinc-400 dot-2"></span>
-        <span class="w-2 h-2 rounded-full bg-zinc-400 dot-3"></span>
+        <span class="w-2 h-2 rounded-full bg-rose-400 dot-1"></span>
+        <span class="w-2 h-2 rounded-full bg-rose-400 dot-2"></span>
+        <span class="w-2 h-2 rounded-full bg-rose-400 dot-3"></span>
       </div>
     </div>
 
@@ -353,12 +370,12 @@
           </label>
 
           <!-- Message Textarea Input (Auto-Expanding, Preserves All Paragraph Breaks & Gaps) -->
-          <div class="flex-1 relative flex items-center bg-[#202c33] border border-transparent focus-within:border-[#00a884]/60 rounded-2xl transition-all shadow-inner px-3.5 py-2">
+          <div class="flex-1 relative flex items-center bg-[#202c33] border border-transparent focus-within:border-rose-500/70 focus-within:ring-1 focus-within:ring-rose-500/30 rounded-2xl transition-all shadow-inner px-3.5 py-2">
             <textarea id="messageInput" rows="1" placeholder="Type a message... (Shift+Enter for new line)" autocomplete="off" class="w-full bg-transparent text-[15px] sm:text-base text-white placeholder-slate-400 focus:outline-none resize-none max-h-36 leading-relaxed custom-scrollbar overflow-y-auto block"></textarea>
           </div>
 
           <!-- Dynamic Modern Upright Send Button -->
-          <button type="button" onclick="sendTextMessage(event)" id="sendBtn" class="w-11 h-11 rounded-full bg-[#00a884] hover:bg-[#008f6f] text-white flex items-center justify-center transition-all shrink-0 cursor-pointer active:scale-95 shadow-lg shadow-emerald-950/40 group mb-0.5" aria-label="Send Message">
+          <button type="button" onclick="sendTextMessage(event)" id="sendBtn" class="w-11 h-11 rounded-full maroon-btn text-white flex items-center justify-center transition-all shrink-0 cursor-pointer active:scale-95 shadow-lg shadow-rose-950/50 group mb-0.5" aria-label="Send Message">
             <svg class="w-5 h-5 transition-transform group-hover:-translate-y-0.5 group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="22" y1="2" x2="11" y2="13"></line>
               <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
@@ -612,11 +629,11 @@
         <!-- Fast-Track Instant Verification Fallback -->
         <button
           type="button"
-          onclick="promptInstantGoogleSync()"
+          onclick="promptInstantGoogleSync('raodharmeshy@gmail.com')"
           class="w-full py-2.5 px-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white border border-white/[0.06] text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95"
         >
           <svg class="w-3.5 h-3.5 text-[#00D26A]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          <span>Fast-Track Instant Verify (Gmail DP)</span>
+          <span>Instant 1-Tap Google Sync (Gmail DP)</span>
         </button>
 
         <!-- Background GSI container -->

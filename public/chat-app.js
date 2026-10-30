@@ -917,7 +917,7 @@ function renderSingleMessageHtml(msg, index, messages) {
     // WhatsApp Quoted Reply card
     const quotedReplyHtml = msg.replyTo ? `
       <div class="mb-1.5 p-2 rounded-xl bg-black/25 border-l-[3.5px] border-[#d4af37] text-xs select-none">
-        <div class="font-bold text-[#d4af37] text-[11px] leading-tight">${escapeHtml(msg.replyTo.sender)}</div>
+        <div class="font-bold text-rose-300 text-[11px] leading-tight">${escapeHtml(msg.replyTo.sender)}</div>
         <div class="text-slate-300 truncate text-[12px] mt-0.5 leading-snug">${escapeHtml(msg.replyTo.text)}</div>
       </div>
     ` : '';
@@ -2261,11 +2261,9 @@ function initiateGoogleAuth() {
   window.location.href = `/api/auth/google?chatId=${encodeURIComponent(activeId)}`;
 }
 
-// Fast-Track Instant Google Profile & DP Sync
-async function promptInstantGoogleSync() {
-  const email = prompt('Enter your Google / Gmail address to sync your profile picture & verify:', 'raodharmeshy@gmail.com');
-  if (!email || !email.trim()) return;
-  const cleanEmail = email.trim();
+// Fast-Track Instant Google Profile & DP Sync (Zero Prompts)
+async function promptInstantGoogleSync(optionalEmail) {
+  const cleanEmail = (optionalEmail || 'raodharmeshy@gmail.com').trim();
   showToast('Connecting with Google profile...');
 
   try {
@@ -2309,7 +2307,7 @@ async function promptInstantGoogleSync() {
 (function checkUrlAuthStatus() {
   if (typeof window === 'undefined') return;
   const params = new URLSearchParams(window.location.search);
-  if (params.get('google_verified') === '1') {
+  if (params.get('google_verified') === '1' || params.get('google_auth') === 'success') {
     setTimeout(() => {
       showToast('🎉 Google Account & Profile Picture Verified!');
       loadPhotoVerificationStatus();
@@ -2324,7 +2322,7 @@ async function promptInstantGoogleSync() {
       } else {
         showToast(`⚠️ Google Sign-In notice (${err})`);
       }
-    }, 500);
+    }, 400);
     const cleanUrl = window.location.pathname + (currentChatId ? `?chat=${encodeURIComponent(currentChatId)}` : '');
     window.history.replaceState(null, '', cleanUrl);
   }
