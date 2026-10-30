@@ -143,22 +143,16 @@
       animation: messagePopIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
-    /* Radar Ping Animation for Online Activity Indicator */
-    @keyframes radarPing {
-      0% { transform: scale(1); opacity: 0.8; }
-      100% { transform: scale(2.6); opacity: 0; }
+    /* Instagram Signature Active Indicator */
+    .ig-active-dot {
+      background-color: #00d26a;
+      border: 2px solid #0a0c12;
+      box-shadow: 0 0 0 1px rgba(0, 210, 106, 0.25), 0 0 6px rgba(0, 210, 106, 0.5);
     }
-    .radar-pulse {
-      position: relative;
-    }
-    .radar-pulse::after {
-      content: '';
-      position: absolute;
-      inset: -2px;
-      border-radius: 9999px;
-      background-color: #10b981;
-      animation: radarPing 2s cubic-bezier(0, 0, 0.2, 1) infinite;
-      z-index: 0;
+    .ig-active-dot-lg {
+      background-color: #00d26a;
+      border: 3px solid #0e1118;
+      box-shadow: 0 0 0 1.5px rgba(0, 210, 106, 0.3), 0 0 10px rgba(0, 210, 106, 0.6);
     }
 
     /* Bouncing Typing Dots */
@@ -257,19 +251,18 @@
     <div class="flex items-center gap-3 sm:gap-3.5 min-w-0">
       <div onclick="openProfileModal()" class="relative shrink-0 cursor-pointer group" title="View Raoprime Profile">
         <img src="/assets/rp-logo.jpg" alt="Raoprime Logo" class="w-10 h-10 sm:w-11 sm:h-11 rounded-full object-cover border-2 border-[#7a182a] shadow-md shadow-rose-950/60 ring-2 ring-black group-hover:scale-105 transition-transform">
-        <!-- Live Radar Activity Indicator on Avatar -->
-        <span id="headerRadarDot" class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-[#0a0c12] rounded-full radar-pulse"></span>
+        <!-- Instagram Active Indicator Dot -->
+        <span id="headerRadarDot" class="absolute bottom-0 right-0 w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full ig-active-dot"></span>
       </div>
       <div onclick="openProfileModal()" class="min-w-0 cursor-pointer">
         <div class="flex items-center gap-1.5">
           <h2 id="chatHeading" class="font-extrabold text-sm sm:text-base text-white tracking-tight truncate max-w-[100px] xs:max-w-[160px] sm:max-w-none group-hover:text-rose-200 transition-colors">Raoprime</h2>
           <svg class="w-4 h-4 text-rose-500 fill-current shrink-0" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
         </div>
-        <!-- Status / Real-time Typing Text -->
-        <p id="headerStatus" class="text-[11px] text-slate-400 flex items-center gap-1.5 truncate">
-          <span class="text-emerald-400 font-medium">Active now</span>
-          <span class="text-slate-600 hidden xs:inline">•</span>
-          <span class="hidden sm:inline text-slate-400">Encrypted Client Desk</span>
+        <!-- Status / Real-time Typing Text (Instagram DM Style) -->
+        <p id="headerStatus" class="text-[11.5px] sm:text-[12px] text-slate-400 font-normal flex items-center gap-1.5 truncate">
+          <span class="w-1.5 h-1.5 rounded-full bg-[#00D26A] inline-block shrink-0"></span>
+          <span>Active now</span>
         </p>
       </div>
     </div>
@@ -730,7 +723,7 @@
       <div class="relative -mt-14 mb-3 flex justify-center">
         <div class="relative">
           <img src="/assets/rp-logo.jpg" alt="Raoprime" class="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover border-4 border-[#0e1118] shadow-2xl ring-4 ring-[#641322]/80">
-          <span class="absolute bottom-1 right-1 w-4 h-4 bg-emerald-500 border-2 border-[#0e1118] rounded-full radar-pulse"></span>
+          <span class="absolute bottom-1 right-1 w-5 h-5 rounded-full ig-active-dot-lg"></span>
         </div>
       </div>
 
@@ -773,6 +766,6 @@
     </div>
   </div>
 
-  <script src="/chat-app.js?v=5.6"></script>
+  <script src="/chat-app.js?v=5.7"></script>
 </body>
 </html>

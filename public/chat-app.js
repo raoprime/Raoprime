@@ -505,6 +505,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize Native OS Notification Alerts & Service Worker
   initServiceWorkerAndNotifications();
+  // Instagram Always-Active Indicator
+  updateTypingUI(true, false);
 
   setupMobileViewport();
 
@@ -643,10 +645,11 @@ function updateTypingUI(isOnline, isTyping) {
   const bubble = document.getElementById('typingBubbleContainer');
   const radarDot = document.getElementById('headerRadarDot');
 
+  // Instagram Style: Admin is ALWAYS active
   if (isTyping) {
     if (headerStatus) {
       headerStatus.innerHTML = `
-        <span class="text-rose-400 font-semibold flex items-center gap-1.5 animate-pulse">
+        <span class="text-rose-400 font-medium flex items-center gap-1.5 animate-pulse">
           <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span> Raoprime is typing...
         </span>`;
     }
@@ -655,34 +658,18 @@ function updateTypingUI(isOnline, isTyping) {
       scrollToBottom();
     }
     if (radarDot) {
-      radarDot.className = 'absolute bottom-0 right-0 w-3 h-3 bg-rose-500 border-2 border-[#0a0c12] rounded-full animate-ping';
-    }
-  } else if (isOnline) {
-    if (headerStatus) {
-      headerStatus.innerHTML = `
-        <span class="text-emerald-400 font-semibold flex items-center gap-1">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Active now
-        </span>
-        <span class="text-slate-600 hidden xs:inline">•</span>
-        <span class="hidden sm:inline text-slate-400">Encrypted Client Desk</span>`;
-    }
-    if (bubble) bubble.classList.add('hidden');
-    if (radarDot) {
-      radarDot.className = 'absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-[#0a0c12] rounded-full radar-pulse';
+      radarDot.className = 'absolute bottom-0 right-0 w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full ig-active-dot';
     }
   } else {
-    // Offline
+    // Always Active (Instagram DM Signature Style)
     if (headerStatus) {
       headerStatus.innerHTML = `
-        <span class="text-slate-400 font-medium flex items-center gap-1">
-          <span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span> Offline
-        </span>
-        <span class="text-slate-600 hidden xs:inline">•</span>
-        <span class="hidden sm:inline text-slate-400">Encrypted Client Desk</span>`;
+        <span class="w-1.5 h-1.5 rounded-full bg-[#00D26A] inline-block shrink-0"></span>
+        <span class="text-slate-400 font-normal">Active now</span>`;
     }
     if (bubble) bubble.classList.add('hidden');
     if (radarDot) {
-      radarDot.className = 'absolute bottom-0 right-0 w-3 h-3 bg-slate-500 border-2 border-[#0a0c12] rounded-full';
+      radarDot.className = 'absolute bottom-0 right-0 w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full ig-active-dot';
     }
   }
 }
@@ -847,11 +834,11 @@ async function loadMessages() {
       // Check if other party (Raoprime Admin) is typing or online
       const otherSender = currentRole === 'Client' ? 'Raoprime' : 'Client';
       const isOtherTyping = Boolean(data.typing && data.typing[otherSender]);
-      const isOtherOnline = Boolean(data.online && data.online[otherSender]);
-      const currentTypingSig = `${isOtherOnline}:${isOtherTyping}`;
+      const isOtherTyping = Boolean(data.typing && data.typing[otherSender]);
+      const currentTypingSig = `online:${isOtherTyping}`;
       if (currentTypingSig !== lastTypingSig) {
         lastTypingSig = currentTypingSig;
-        updateTypingUI(isOtherOnline, isOtherTyping);
+        updateTypingUI(true, isOtherTyping);
       }
     }
   } catch (err) {

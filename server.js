@@ -376,16 +376,14 @@ function broadcastToAdmins(event, data, excludeWs = null) {
 function getRoomPresence(chatId) {
   const normChatId = normalizeChatId(chatId);
   let isClientOnline = false;
-  let isAdminOnline = false;
 
   for (const [, meta] of wsClients.entries()) {
-    if (meta.role === 'Raoprime') {
-      isAdminOnline = true;
-    } else if (meta.chatId === normChatId) {
+    if (meta.chatId === normChatId) {
       isClientOnline = true;
     }
   }
-  return { isClientOnline, isAdminOnline };
+  // Admin is ALWAYS active (Instagram style always-online)
+  return { isClientOnline, isAdminOnline: true };
 }
 
 wss.on('connection', (ws) => {
@@ -767,11 +765,12 @@ app.get('/api/chat/messages', async (req, res) => {
     }
 
     const isClientOnline = Boolean(chatPresence.Client && (now - chatPresence.Client < 10000));
-    const isRaoprimeOnline = Boolean((now - globalAdminPresence < 10000) || (chatPresence.Raoprime && (now - chatPresence.Raoprime < 10000)));
+    // Admin is ALWAYS active (Instagram style always-online)
+    const isRaoprimeOnline = true;
 
     const onlineStatus = {
       Client: isClientOnline,
-      Raoprime: isRaoprimeOnline
+      Raoprime: true
     };
 
     res.json({
@@ -829,7 +828,7 @@ app.post('/api/chat/send', async (req, res) => {
 
     const otherSender = (sender === 'Raoprime' || sender === 'RP') ? 'Client' : 'Raoprime';
     const isOtherOnline = otherSender === 'Raoprime'
-      ? Boolean(now - globalAdminPresence < 10000 || (presenceStatus[chatId]?.Raoprime && now - presenceStatus[chatId].Raoprime < 10000))
+      ? true // Admin is ALWAYS active
       : Boolean(presenceStatus[chatId]?.Client && (now - presenceStatus[chatId].Client < 10000));
 
     const newMsg = {
@@ -1702,7 +1701,7 @@ app.post('/api/upload/finalize', async (req, res) => {
     const nowMs = Date.now();
     const otherSender = (sender === 'Raoprime' || sender === 'RP') ? 'Client' : 'Raoprime';
     const isOtherOnline = otherSender === 'Raoprime'
-      ? Boolean(nowMs - globalAdminPresence < 10000 || (presenceStatus[chatId]?.Raoprime && nowMs - presenceStatus[chatId].Raoprime < 10000))
+      ? true // Admin is ALWAYS active
       : Boolean(presenceStatus[chatId]?.Client && (nowMs - presenceStatus[chatId].Client < 10000));
 
     const fileMessage = {

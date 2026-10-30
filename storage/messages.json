@@ -1324,8 +1324,9 @@
       "id": "msg_1793381175628_8v2j",
       "text": "https://youtu.be/nDu5p_0Gwsg?si=y9S4MpxMDlRfv1Ce",
       "type": "text",
-      "status": "sent",
-      "timestamp": "2026-10-30T17:26:15.628Z"
+      "status": "seen",
+      "timestamp": "2026-10-30T17:26:15.628Z",
+      "seenAt": "2026-10-30T18:57:01.963Z"
     },
     {
       "chatId": "Affaque Ahmed",
@@ -1691,8 +1692,9 @@
       "id": "msg_1793384278010_a4f8",
       "text": "bhai m samjh sakta hu problem bdi h",
       "type": "text",
-      "status": "sent",
-      "timestamp": "2026-10-30T18:17:58.010Z"
+      "status": "seen",
+      "timestamp": "2026-10-30T18:17:58.010Z",
+      "seenAt": "2026-10-30T18:57:01.963Z"
     },
     {
       "chatId": "Affaque Ahmed",
@@ -1700,8 +1702,9 @@
       "id": "msg_1793384294231_q4w6",
       "text": "lekin kai baar kuch cheeze",
       "type": "text",
-      "status": "sent",
-      "timestamp": "2026-10-30T18:18:14.231Z"
+      "status": "seen",
+      "timestamp": "2026-10-30T18:18:14.231Z",
+      "seenAt": "2026-10-30T18:57:01.963Z"
     },
     {
       "chatId": "Affaque Ahmed",
@@ -1718,8 +1721,9 @@
       "id": "msg_1793384308330_7bkq",
       "text": "hamari job kha sakti h",
       "type": "text",
-      "status": "sent",
-      "timestamp": "2026-10-30T18:18:28.330Z"
+      "status": "seen",
+      "timestamp": "2026-10-30T18:18:28.330Z",
+      "seenAt": "2026-10-30T18:57:01.963Z"
     },
     {
       "chatId": "Affaque Ahmed",
@@ -1727,8 +1731,9 @@
       "id": "msg_1793384628587_u219",
       "text": "tumhare ghar par koi nahi h",
       "type": "text",
-      "status": "sent",
-      "timestamp": "2026-10-30T18:23:48.706Z"
+      "status": "seen",
+      "timestamp": "2026-10-30T18:23:48.706Z",
+      "seenAt": "2026-10-30T18:57:01.963Z"
     },
     {
       "chatId": "Affaque Ahmed",
@@ -1736,8 +1741,9 @@
       "id": "msg_1793384641553_e4w6",
       "text": "jo tumhari baat video me samjha sakke",
       "type": "text",
-      "status": "sent",
-      "timestamp": "2026-10-30T18:24:01.685Z"
+      "status": "seen",
+      "timestamp": "2026-10-30T18:24:01.685Z",
+      "seenAt": "2026-10-30T18:57:01.963Z"
     },
     {
       "chatId": "Affaque Ahmed",
@@ -1745,8 +1751,27 @@
       "id": "msg_1793384646819_ihfr",
       "text": "ya koi dost",
       "type": "text",
+      "status": "seen",
+      "timestamp": "2026-10-30T18:24:07.012Z",
+      "seenAt": "2026-10-30T18:57:01.963Z"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Client",
+      "id": "msg_1793386679573_txen",
+      "text": "Bhai Jo age dost banane wale Hote hai us age me Me chal tak nhi sakhta phr bhi jata tha Kaam k Koshish karta tha family n kisi chez ko serious h nhi Liya howa mere phr m mujhse 1 Bara Bhai hai baki mujhse chote hai like 18*19 age k Lekin sab ko hlt Nazar aty hai itna nhi hota unse k serious le Esa nhi k koie gareeb ghr s Hain acha sa ghr hai city m rehty Hain phr PTA nhi Syd andhi Hain",
+      "type": "text",
       "status": "sent",
-      "timestamp": "2026-10-30T18:24:07.012Z"
+      "timestamp": "2026-10-30T18:58:01.055Z"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Client",
+      "id": "msg_1793387025022_tzmn",
+      "text": "Bhai me Kuch chezain Bata deta hon me koie chez unclear nhi rakhna chata inko lagta hai k mere ye hlt us chez k waja s koie Nasha wagera nhi karta Sirf wahi ek chez hai jis k waja s Me pure life stress anxiety depression m Raha hon",
+      "type": "text",
+      "status": "sent",
+      "timestamp": "2026-10-30T19:03:46.519Z"
     }
   ],
   "Dharmesh": [
@@ -2118,6 +2143,35 @@
       "timestamp": "2026-10-30T18:27:39.504Z",
       "seenAt": "2026-10-30T18:27:44.081Z",
       "status": "seen"
+    },
+    {
+      "chatId": "Dharmesh",
+      "sender": "Client",
+      "id": "msg_1793388998934_jj3t",
+      "text": "Hi",
+      "type": "text",
+      "timestamp": "2026-10-30T19:36:38.753Z",
+      "seenAt": "2026-10-30T19:38:14.495Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Dharmesh",
+      "sender": "Raoprime",
+      "id": "msg_1793389097212_kglb",
+      "text": "hi",
+      "type": "text",
+      "timestamp": "2026-10-30T19:38:17.171Z",
+      "seenAt": "2026-10-30T19:38:53.585Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Dharmesh",
+      "sender": "Raoprime",
+      "id": "msg_1793389145886_y1hy",
+      "text": "hi",
+      "type": "text",
+      "status": "delivered",
+      "timestamp": "2026-10-30T19:39:05.864Z"
     }
   ],
   "Test_Large_Room": [
