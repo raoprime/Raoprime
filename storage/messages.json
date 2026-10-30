@@ -366,56 +366,12 @@
     {
       "chatId": "Affaque Ahmed",
       "sender": "Client",
-      "id": "msg_1793305135873_wckn",
-      "type": "text",
-      "timestamp": "2026-10-29T20:18:55.873Z",
-      "editedAt": "2026-10-29T20:18:55.882Z",
-      "isEdited": true,
-      "text": "Hello, this is the EDITED message!",
-      "seenAt": "2026-10-29T20:25:13.510Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Affaque Ahmed",
-      "sender": "Client",
       "id": "msg_1793305157586_gson",
       "text": "Bhai idhar agr koie Esa idara hota bhi hai to Kaam nhi hota",
       "type": "text",
       "timestamp": "2026-10-29T20:19:17.586Z",
       "seenAt": "2026-10-29T20:19:19.729Z",
       "status": "seen"
-    },
-    {
-      "chatId": "Affaque Ahmed",
-      "sender": "Client",
-      "id": "msg_1793305182423_vh1k",
-      "text": "Live Render test message",
-      "type": "text",
-      "status": "seen",
-      "timestamp": "2026-10-29T20:19:42.423Z",
-      "seenAt": "2026-10-30T13:00:00.909Z"
-    },
-    {
-      "chatId": "Affaque Ahmed",
-      "sender": "Client",
-      "id": "msg_1793305236678_2n4m",
-      "type": "text",
-      "timestamp": "2026-10-29T20:20:36.678Z",
-      "editedAt": "2026-10-29T20:20:36.964Z",
-      "isEdited": true,
-      "text": "Test message (EDITED SUCCESSFULLY ON LIVE RENDER!)",
-      "seenAt": "2026-10-29T20:25:13.510Z",
-      "status": "seen"
-    },
-    {
-      "chatId": "Affaque Ahmed",
-      "sender": "Raoprime",
-      "id": "msg_1793305665868_hwbe",
-      "text": "Test normalization sync",
-      "type": "text",
-      "status": "seen",
-      "timestamp": "2026-10-29T20:27:45.868Z",
-      "seenAt": "2026-10-30T07:41:34.857Z"
     },
     {
       "chatId": "Affaque Ahmed",
@@ -530,26 +486,6 @@
     {
       "chatId": "Affaque Ahmed",
       "sender": "Client",
-      "replyTo": {
-        "sender": "Client",
-        "id": "msg_1793303735773_0jk2",
-        "text": "Ajkal bohot sare option hai like crypto wallets Mera Dil nhi karta kisi s Lene Lekin bohot Bure jga phans chuka ho is liye pareshan home msg kar deta hon 😢"
-      },
-      "id": "msg_1793307135613_fnii",
-      "type": "text",
-      "status": "seen",
-      "timestamp": "2026-10-29T20:52:15.613Z",
-      "reactions": {
-        "Client": "❤️"
-      },
-      "isEdited": true,
-      "editedAt": "2026-10-29T20:52:21.457Z",
-      "text": "Admin edited text message successfully",
-      "seenAt": "2026-10-30T13:00:00.909Z"
-    },
-    {
-      "chatId": "Affaque Ahmed",
-      "sender": "Client",
       "id": "msg_1793346506677_uudd",
       "text": "ap Apna time Bata dena kis time shift Hote Apke",
       "type": "text",
@@ -563,8 +499,9 @@
       "id": "msg_1793376168064_5t5z",
       "text": "Active?",
       "type": "text",
-      "status": "sent",
-      "timestamp": "2026-10-30T16:02:48.064Z"
+      "status": "seen",
+      "timestamp": "2026-10-30T16:02:48.064Z",
+      "seenAt": "2026-10-30T16:15:27.447Z"
     }
   ],
   "Dharmesh": [
