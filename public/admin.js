@@ -320,8 +320,20 @@ async function handleAdminWsEvent(payload) {
     }
 
     case 'call:signal': {
-      if (isCallActive && payload.from !== 'Raoprime' && payload.signal) {
-        await handleIncomingSignal(payload.signal);
+      const fromRole = payload.from || payload.sender;
+      if (fromRole === 'Raoprime' || fromRole === 'RP') break; // Ignore our own echo
+      if (payload.signal) {
+        if (isCallActive && peerConnection && peerConnection.signalingState !== 'closed') {
+          await handleIncomingSignal(payload.signal);
+        } else {
+          // Buffer signals that arrive during ringing or before acceptance
+          if (payload.signal.sdp && payload.signal.sdp.type === 'offer') {
+            pendingSdpOffer = payload.signal.sdp;
+          }
+          if (payload.signal.candidate) {
+            pendingCandidates.push(payload.signal.candidate);
+          }
+        }
       }
       break;
     }
@@ -329,6 +341,9 @@ async function handleAdminWsEvent(payload) {
     case 'call:accepted': {
       if (isCallActive) {
         showToast('Client connected in Ultra HD!');
+        if (peerConnection && peerConnection.localDescription) {
+          sendAdminCallSignal({ sdp: peerConnection.localDescription });
+        }
       }
       break;
     }
@@ -1266,9 +1281,9 @@ async function sendAdminTextMessage() {
   sendAdminTypingStatus(false);
 
   // 1. Instant 0ms Optimistic UI Rendering (guarantees message appears instantly)
-  const tempMsgId = 'msg_opt_' + Date.now();
+  const clientMsgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
   const optimisticMsg = {
-    id: tempMsgId,
+    id: clientMsgId,
     chatId: activeChatId,
     sender: 'Raoprime',
     type: 'text',
@@ -1282,38 +1297,48 @@ async function sendAdminTextMessage() {
   renderAdminMessages(window.currentAdminCachedMessages);
   scrollAdminToBottom();
 
-  // 2. Instant 0ms WebSocket broadcast
-  sendAdminWsEvent('chat:message', { chatId: activeChatId, text, replyTo: replyPayload });
+  // 2. High-speed WebSocket delivery (0ms)
+  const sentViaWs = sendAdminWsEvent('chat:message', {
+    id: clientMsgId,
+    chatId: activeChatId,
+    sender: 'Raoprime',
+    role: 'Raoprime',
+    text,
+    replyTo: replyPayload
+  });
 
-  // 3. Guaranteed HTTP Database Persistence
-  try {
-    const res = await fetch('/api/chat/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-admin-token': adminToken
-      },
-      body: JSON.stringify({
-        chatId: activeChatId,
-        sender: 'Raoprime',
-        text,
-        replyTo: replyPayload
-      })
-    });
-    const data = await res.json();
-    if (data.success && data.message) {
-      const idx = window.currentAdminCachedMessages.findIndex(m => m.id === tempMsgId);
-      if (idx >= 0) {
-        window.currentAdminCachedMessages[idx] = data.message;
-        renderAdminMessages(window.currentAdminCachedMessages);
+  // 3. Fallback to HTTP only if WebSocket is disconnected or failed
+  if (!sentViaWs) {
+    try {
+      const res = await fetch('/api/chat/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-token': adminToken
+        },
+        body: JSON.stringify({
+          id: clientMsgId,
+          chatId: activeChatId,
+          sender: 'Raoprime',
+          text,
+          replyTo: replyPayload
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.message) {
+        const idx = window.currentAdminCachedMessages.findIndex(m => m.id === clientMsgId);
+        if (idx >= 0) {
+          window.currentAdminCachedMessages[idx] = data.message;
+          renderAdminMessages(window.currentAdminCachedMessages);
+        }
+      } else if (data.error) {
+        showToast('Notice: ' + data.error);
       }
-    } else if (data.error) {
-      showToast('Notice: ' + data.error);
+      triggerActiveMsgsPoll();
+      triggerAdminChatsPoll();
+    } catch (err) {
+      console.warn('HTTP send notice:', err);
     }
-    triggerActiveMsgsPoll();
-    triggerAdminChatsPoll();
-  } catch (err) {
-    console.warn('HTTP send notice:', err);
   }
 }
 
@@ -2174,7 +2199,11 @@ function showAdminIncomingModal(call, cid) {
 
 async function startAdminCall(type = 'video') {
   if (isCallActive) return;
-  const targetChat = activeChatId || (allChats.length > 0 ? allChats[0].chatId : 'default');
+  if (!activeChatId) {
+    showToast('Please select a client chat first to call');
+    return;
+  }
+  const targetChat = activeChatId;
 
   currentCallType = type;
   isCallActive = true;

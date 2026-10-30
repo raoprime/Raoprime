@@ -193,8 +193,20 @@ async function handleWsEvent(payload) {
     }
 
     case 'call:signal': {
-      if (isCallActive && payload.from !== currentRole && payload.signal) {
-        await handleIncomingSignal(payload.signal);
+      const fromRole = payload.from || payload.sender;
+      if (fromRole && fromRole === currentRole) break; // Ignore our own echo
+      if (payload.signal) {
+        if (isCallActive && peerConnection && peerConnection.signalingState !== 'closed') {
+          await handleIncomingSignal(payload.signal);
+        } else {
+          // Buffer signals that arrive during ringing or before acceptance
+          if (payload.signal.sdp && payload.signal.sdp.type === 'offer') {
+            pendingSdpOffer = payload.signal.sdp;
+          }
+          if (payload.signal.candidate) {
+            pendingCandidates.push(payload.signal.candidate);
+          }
+        }
       }
       break;
     }
@@ -202,6 +214,9 @@ async function handleWsEvent(payload) {
     case 'call:accepted': {
       if (isCallActive) {
         showToast('Ultra HD connected!');
+        if (peerConnection && peerConnection.localDescription) {
+          sendCallSignal({ sdp: peerConnection.localDescription });
+        }
       }
       break;
     }
@@ -1028,9 +1043,9 @@ async function sendTextMessage() {
   sendTypingStatus(false);
 
   // 1. Instant 0ms Optimistic UI Rendering
-  const tempMsgId = 'msg_opt_' + Date.now();
+  const clientMsgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
   const optimisticMsg = {
-    id: tempMsgId,
+    id: clientMsgId,
     chatId: currentChatId,
     sender: currentRole,
     type: 'text',
@@ -1044,33 +1059,43 @@ async function sendTextMessage() {
   renderMessages(window.currentCachedMessages);
   scrollToBottom();
 
-  // 2. Instant 0ms WebSocket broadcast
-  sendWsEvent('chat:message', { text, replyTo: replyPayload });
+  // 2. High-speed WebSocket delivery (0ms)
+  const sentViaWs = sendWsEvent('chat:message', {
+    id: clientMsgId,
+    chatId: currentChatId,
+    sender: currentRole,
+    role: currentRole,
+    text,
+    replyTo: replyPayload
+  });
 
-  // 3. Guaranteed HTTP Database Persistence
-  try {
-    const res = await fetch('/api/chat/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chatId: currentChatId,
-        sender: currentRole,
-        text,
-        replyTo: replyPayload
-      })
-    });
-    const data = await res.json();
-    if (data.success && data.message) {
-      const idx = window.currentCachedMessages.findIndex(m => m.id === tempMsgId);
-      if (idx >= 0) {
-        window.currentCachedMessages[idx] = data.message;
-        renderMessages(window.currentCachedMessages);
+  // 3. Fallback to HTTP Database Persistence only if WebSocket is not open
+  if (!sentViaWs) {
+    try {
+      const res = await fetch('/api/chat/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: clientMsgId,
+          chatId: currentChatId,
+          sender: currentRole,
+          text,
+          replyTo: replyPayload
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.message) {
+        const idx = window.currentCachedMessages.findIndex(m => m.id === clientMsgId);
+        if (idx >= 0) {
+          window.currentCachedMessages[idx] = data.message;
+          renderMessages(window.currentCachedMessages);
+        }
+      } else if (data.error) {
+        showToast(data.error);
       }
-    } else if (data.error) {
-      showToast(data.error);
+    } catch (err) {
+      console.warn('HTTP send notice:', err);
     }
-  } catch (err) {
-    console.warn('HTTP send notice:', err);
   }
 }
 

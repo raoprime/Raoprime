@@ -307,6 +307,96 @@
       "timestamp": "2026-10-30T17:52:50.277Z",
       "seenAt": "2026-10-30T17:52:50.627Z",
       "status": "seen"
+    },
+    {
+      "chatId": "Client_172627",
+      "sender": "Client",
+      "id": "msg_1793382856811_wppt",
+      "text": "?",
+      "type": "text",
+      "timestamp": "2026-10-30T17:54:16.811Z",
+      "seenAt": "2026-10-30T17:54:31.141Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Client_172627",
+      "sender": "Client",
+      "id": "msg_1793383424375_z5zk",
+      "text": "Bhai Kuch bataya nhi",
+      "type": "text",
+      "timestamp": "2026-10-30T18:03:44.375Z",
+      "seenAt": "2026-10-30T18:03:44.897Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Client_172627",
+      "sender": "Client",
+      "id": "msg_1793383424392_m4rt",
+      "text": "Bhai Kuch bataya nhi",
+      "type": "text",
+      "timestamp": "2026-10-30T18:03:44.392Z",
+      "seenAt": "2026-10-30T18:03:44.897Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Client_172627",
+      "sender": "Raoprime",
+      "id": "msg_1793383460466_7x4l",
+      "text": "bhai is video ko kya kahke dikhau",
+      "type": "text",
+      "timestamp": "2026-10-30T18:04:20.466Z",
+      "seenAt": "2026-10-30T18:04:20.850Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Client_172627",
+      "sender": "Raoprime",
+      "id": "msg_1793383460500_hwqq",
+      "text": "bhai is video ko kya kahke dikhau",
+      "type": "text",
+      "timestamp": "2026-10-30T18:04:20.500Z",
+      "seenAt": "2026-10-30T18:04:20.850Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Client_172627",
+      "sender": "Client",
+      "id": "msg_1793383529895_x32h",
+      "text": "Bhai apko mene Jo chezain bataie Hain AP pory story bataio  y or ye hlt dekh k koie to help karega I think",
+      "type": "text",
+      "timestamp": "2026-10-30T18:05:29.895Z",
+      "seenAt": "2026-10-30T18:05:30.394Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Client_172627",
+      "sender": "Client",
+      "id": "msg_1793383529922_i112",
+      "text": "Bhai apko mene Jo chezain bataie Hain AP pory story bataio  y or ye hlt dekh k koie to help karega I think",
+      "type": "text",
+      "timestamp": "2026-10-30T18:05:29.922Z",
+      "seenAt": "2026-10-30T18:05:30.394Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Client_172627",
+      "sender": "Client",
+      "id": "msg_1793383798970_h6xg",
+      "text": "Bhai agr Ap hlt dekh k Keh Rahe ho k Kuch nhi ho sakhta Bhai mujhy umeed hai me agr continuesly Kam karo zyada nhi Bhai 1 Saal 2,4% to behtar ho jaiegy na phr caheye 4,5 Saal h ku na Lag jaie me mehnat and wait kar longa mere pass full plain hai Thora Thora Karke behtar ho sakhta hon bus mujhy Kuch paise k support mil jaie",
+      "type": "text",
+      "timestamp": "2026-10-30T18:09:58.970Z",
+      "seenAt": "2026-10-30T18:09:59.448Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Client_172627",
+      "sender": "Client",
+      "id": "msg_1793383799005_k5yn",
+      "text": "Bhai agr Ap hlt dekh k Keh Rahe ho k Kuch nhi ho sakhta Bhai mujhy umeed hai me agr continuesly Kam karo zyada nhi Bhai 1 Saal 2,4% to behtar ho jaiegy na phr caheye 4,5 Saal h ku na Lag jaie me mehnat and wait kar longa mere pass full plain hai Thora Thora Karke behtar ho sakhta hon bus mujhy Kuch paise k support mil jaie",
+      "type": "text",
+      "timestamp": "2026-10-30T18:09:59.005Z",
+      "seenAt": "2026-10-30T18:09:59.448Z",
+      "status": "seen"
     }
   ],
   "Priya": [
@@ -390,14 +480,14 @@
       "seenAt": "2026-10-30T17:49:59.737Z"
     },
     {
-      "id": "msg_1793382577561_2kwd",
-      "sender": "Client",
-      "type": "text",
-      "text": "hi",
-      "status": "seen",
-      "timestamp": "2026-10-30T17:49:37.561Z",
       "chatId": "Priya",
-      "seenAt": "2026-10-30T17:49:59.737Z"
+      "sender": "Client",
+      "id": "msg_1793382577561_2kwd",
+      "text": "hi",
+      "type": "text",
+      "timestamp": "2026-10-30T17:49:37.561Z",
+      "seenAt": "2026-10-30T17:49:59.737Z",
+      "status": "seen"
     },
     {
       "id": "msg_1793382581535_tkzh",
@@ -410,14 +500,14 @@
       "seenAt": "2026-10-30T17:49:59.737Z"
     },
     {
-      "id": "msg_1793382581563_aua4",
-      "sender": "Client",
-      "type": "text",
-      "text": "hi",
-      "status": "seen",
-      "timestamp": "2026-10-30T17:49:41.563Z",
       "chatId": "Priya",
-      "seenAt": "2026-10-30T17:49:59.737Z"
+      "sender": "Client",
+      "id": "msg_1793382581563_aua4",
+      "text": "hi",
+      "type": "text",
+      "timestamp": "2026-10-30T17:49:41.563Z",
+      "seenAt": "2026-10-30T17:49:59.737Z",
+      "status": "seen"
     },
     {
       "id": "msg_1793382586663_0dpt",
@@ -430,14 +520,54 @@
       "seenAt": "2026-10-30T17:49:59.737Z"
     },
     {
-      "id": "msg_1793382586689_75ts",
-      "sender": "Client",
-      "type": "text",
-      "text": "hi",
-      "status": "seen",
-      "timestamp": "2026-10-30T17:49:46.689Z",
       "chatId": "Priya",
-      "seenAt": "2026-10-30T17:49:59.737Z"
+      "sender": "Client",
+      "id": "msg_1793382586689_75ts",
+      "text": "hi",
+      "type": "text",
+      "timestamp": "2026-10-30T17:49:46.689Z",
+      "seenAt": "2026-10-30T17:49:59.737Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Priya",
+      "sender": "Raoprime",
+      "id": "msg_1793382925173_bv7s",
+      "text": "tumhare",
+      "type": "text",
+      "timestamp": "2026-10-30T17:55:25.173Z",
+      "seenAt": "2026-10-30T17:55:25.633Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Priya",
+      "sender": "Raoprime",
+      "id": "msg_1793382925184_t4zd",
+      "text": "tumhare",
+      "type": "text",
+      "timestamp": "2026-10-30T17:55:25.184Z",
+      "seenAt": "2026-10-30T17:55:25.633Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Priya",
+      "sender": "Raoprime",
+      "id": "msg_1793383076361_roxn",
+      "text": "bhai iska hum Nitin sir ko kya dikhaye",
+      "type": "text",
+      "timestamp": "2026-10-30T17:57:56.361Z",
+      "seenAt": "2026-10-30T17:57:56.763Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Priya",
+      "sender": "Raoprime",
+      "id": "msg_1793383076379_jkx2",
+      "text": "bhai iska hum Nitin sir ko kya dikhaye",
+      "type": "text",
+      "timestamp": "2026-10-30T17:57:56.379Z",
+      "seenAt": "2026-10-30T17:57:56.763Z",
+      "status": "seen"
     }
   ],
   "Experiment_Client": [
@@ -572,6 +702,24 @@
       },
       "timestamp": "2026-10-30T17:53:28.527Z",
       "chatId": "Experiment_Client"
+    },
+    {
+      "chatId": "Experiment_Client",
+      "sender": "Raoprime",
+      "id": "msg_1793383091162_9aoe",
+      "text": "hi",
+      "type": "text",
+      "status": "sent",
+      "timestamp": "2026-10-30T17:58:11.162Z"
+    },
+    {
+      "chatId": "Experiment_Client",
+      "sender": "Raoprime",
+      "id": "msg_1793383091184_3b5u",
+      "text": "hi",
+      "type": "text",
+      "status": "sent",
+      "timestamp": "2026-10-30T17:58:11.184Z"
     }
   ],
   "Affaque Ahmed": [

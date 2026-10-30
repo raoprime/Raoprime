@@ -409,8 +409,9 @@ wss.on('connection', (ws) => {
       if (event === 'chat:message') {
         const text = (data.text || '').trim();
         if (!text) return;
+        const msgId = data.id || ('msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6));
         const newMsg = {
-          id: 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+          id: msgId,
           sender,
           type: 'text',
           text,
@@ -481,23 +482,36 @@ wss.on('connection', (ws) => {
           type,
           caller,
           status: 'ringing',
-          startedAt: Date.now()
+          startedAt: Date.now(),
+          signals: [],
+          signalSeq: 0
         };
         activeCalls[chatId] = newCall;
+        if (chatId !== 'default') {
+          activeCalls['default'] = newCall;
+        }
         console.log(`📞 [WS] Call initiated by ${caller} (${type}) in room [${chatId}]`);
         broadcastToRoom(chatId, 'call:incoming', { call: newCall }, ws);
         return;
       }
 
       if (event === 'call:signal') {
-        broadcastToRoom(chatId, 'call:signal', { signal: data.signal, from: sender }, ws);
+        const fromRole = data.from || data.sender || wsClients.get(ws)?.role || sender;
+        const call = resolveActiveCall(chatId);
+        if (call && data.signal) {
+          const seq = ++call.signalSeq;
+          call.signals.push({ seq, from: fromRole, signal: data.signal, timestamp: Date.now() });
+          if (call.signals.length > 50) call.signals.shift();
+        }
+        broadcastToRoom(chatId, 'call:signal', { signal: data.signal, from: fromRole }, ws);
         return;
       }
 
       if (event === 'call:accept') {
-        if (activeCalls[chatId]) {
-          activeCalls[chatId].status = 'connected';
-          activeCalls[chatId].connectedAt = Date.now();
+        const call = resolveActiveCall(chatId);
+        if (call) {
+          call.status = 'connected';
+          call.connectedAt = Date.now();
         }
         console.log(`✅ [WS] Call accepted in room [${chatId}]`);
         broadcastToRoom(chatId, 'call:accepted', { chatId }, ws);
@@ -505,9 +519,10 @@ wss.on('connection', (ws) => {
       }
 
       if (event === 'call:end') {
-        if (activeCalls[chatId]) {
-          activeCalls[chatId].status = 'ended';
-          activeCalls[chatId].endedAt = Date.now();
+        const call = resolveActiveCall(chatId);
+        if (call) {
+          call.status = 'ended';
+          call.endedAt = Date.now();
         }
         console.log(`🛑 [WS] Call ended in room [${chatId}]`);
         broadcastToRoom(chatId, 'call:ended', { chatId });
@@ -551,6 +566,27 @@ async function saveChatMessage(rawChatId, messageObj) {
   messageObj.chatId = chatId;
   const store = ensureMemoryStore();
   if (!store[chatId]) store[chatId] = [];
+
+  // Strict Deduplication Check:
+  // 1. By exact message ID
+  const existingById = store[chatId].find(m => m.id === messageObj.id);
+  if (existingById) {
+    return existingById;
+  }
+
+  // 2. Strict deduplication for duplicate rapid text messages (within 3000ms from same sender)
+  if (messageObj.type === 'text') {
+    const msgTime = new Date(messageObj.timestamp || Date.now()).getTime();
+    const recentDup = store[chatId].find(m =>
+      m.sender === messageObj.sender &&
+      m.text === messageObj.text &&
+      Math.abs(msgTime - new Date(m.timestamp).getTime()) < 3000
+    );
+    if (recentDup) {
+      return recentDup;
+    }
+  }
+
   store[chatId].push(messageObj);
 
   // Debounced write to disk for persistence
@@ -736,7 +772,7 @@ app.post('/api/chat/typing', (req, res) => {
 // Post Text Message
 app.post('/api/chat/send', async (req, res) => {
   try {
-    const { chatId: rawChatId = 'default', sender = 'Client', text = '', replyTo } = req.body;
+    const { chatId: rawChatId = 'default', sender = 'Client', text = '', replyTo, id: clientId } = req.body;
     const chatId = normalizeChatId(rawChatId);
     if (!text.trim()) {
       return res.status(400).json({ success: false, error: 'Empty message' });
@@ -762,7 +798,7 @@ app.post('/api/chat/send', async (req, res) => {
       : Boolean(presenceStatus[chatId]?.Client && (now - presenceStatus[chatId].Client < 10000));
 
     const newMsg = {
-      id: 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      id: clientId || ('msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6)),
       sender, // 'Client' or 'Raoprime'
       type: 'text',
       text: text.trim(),
@@ -778,9 +814,9 @@ app.post('/api/chat/send', async (req, res) => {
       };
     }
 
-    await saveChatMessage(chatId, newMsg);
+    const savedMsg = await saveChatMessage(chatId, newMsg);
 
-    res.json({ success: true, message: newMsg });
+    res.json({ success: true, message: savedMsg || newMsg });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -943,25 +979,6 @@ function getDynamicIceServers() {
     iceServers.push(
       { urls: customTurnUrl, username: customTurnUsername, credential: customTurnCredential },
       { urls: `${customTurnUrl}?transport=tcp`, username: customTurnUsername, credential: customTurnCredential }
-    );
-  } else {
-    // Metered Open Relay - Public Community Credentials
-    iceServers.push(
-      {
-        urls: 'turn:global.relay.metered.ca:80',
-        username: 'openrelayproject',
-        credential: 'openrelayproject'
-      },
-      {
-        urls: 'turn:global.relay.metered.ca:443',
-        username: 'openrelayproject',
-        credential: 'openrelayproject'
-      },
-      {
-        urls: 'turn:global.relay.metered.ca:443?transport=tcp',
-        username: 'openrelayproject',
-        credential: 'openrelayproject'
-      }
     );
   }
 
