@@ -225,19 +225,17 @@ async function handleAdminWsEvent(payload) {
       if (normChatId && (normChatId === normActiveChatId || !normActiveChatId)) {
         if (normChatId === normActiveChatId) {
           if (!window.currentAdminCachedMessages) window.currentAdminCachedMessages = [];
-          const existsIndex = window.currentAdminCachedMessages.findIndex(m => m.id === msg.id);
-          if (existsIndex >= 0) {
-            window.currentAdminCachedMessages[existsIndex] = msg;
-          } else {
+          const inDom = document.querySelector(`.admin-message-row[data-msg-id="${msg.id}"]`);
+          if (!inDom) {
             window.currentAdminCachedMessages.push(msg);
+            renderAdminMessages(window.currentAdminCachedMessages);
+            scrollAdminToBottom();
             if (msg.sender !== 'Raoprime' && msg.sender !== 'RP') {
               playConnectChime();
               showAdminDeviceNotification(msg, activeChatId);
               sendAdminWsEvent('chat:read', { chatId: activeChatId, reader: 'Raoprime' });
             }
           }
-          renderAdminMessages(window.currentAdminCachedMessages);
-          scrollAdminToBottom();
         }
       }
 
@@ -313,6 +311,16 @@ async function handleAdminWsEvent(payload) {
         window.currentAdminCachedMessages = window.currentAdminCachedMessages.filter(m => m.id !== payload.messageId);
         renderAdminMessages(window.currentAdminCachedMessages);
       }
+      break;
+    }
+
+    case 'chat:renamed': {
+      if (activeChatId && activeChatId.toLowerCase() === (payload.oldChatId || '').toLowerCase()) {
+        activeChatId = payload.newChatId;
+        const nameEl = document.getElementById('activeClientName');
+        if (nameEl) nameEl.textContent = payload.newChatId;
+      }
+      loadAdminChats();
       break;
     }
 
@@ -949,23 +957,7 @@ async function loadActiveMessages() {
   }
 }
 
-function renderAdminMessages(messages) {
-  const container = document.getElementById('adminMessagesList');
-  if (!container) return;
-
-  if (messages.length === 0) {
-    container.innerHTML = `
-      <div class="py-16 text-center text-slate-500 text-xs">
-        <p>No messages yet in this conversation.</p>
-        <p class="text-[11px] text-slate-600 mt-1">Send a message or document below to initiate.</p>
-      </div>`;
-    return;
-  }
-
-  let lastDateStr = '';
-
-  try {
-    container.innerHTML = messages.map((msg, index) => {
+function renderAdminSingleMessageHtml(msg, index, messages) {
     const isRaoprime = msg.sender === 'Raoprime' || msg.sender === 'RP';
     const prevMsg = index > 0 ? messages[index - 1] : null;
     const nextMsg = index < messages.length - 1 ? messages[index + 1] : null;
@@ -1212,16 +1204,38 @@ function renderAdminMessages(messages) {
         </div>
       </div>
     `;
-  }).join('');
-  } catch (renderErr) {
-    console.error('renderAdminMessages error:', renderErr);
+  return `${dateDividerHtml}<div class="admin-message-row flex flex-col ${isRaoprime ? 'items-end' : 'items-start'} ${topSpacing} ${reactionEntries.length ? 'mb-2' : ''} group relative" data-msg-id="${msg.id}" data-msg-sender="${msg.sender}">${senderHeaderHtml}<div class="relative flex items-center gap-1.5 ${isRaoprime ? 'flex-row-reverse' : 'flex-row'} max-w-full"><div class="${isRaoprime ? 'bubble-admin-out' : 'bubble-admin-in'} ${midClass} shadow-md cursor-pointer select-text relative group/bubble ${isEditingThis ? 'ring-2 ring-rose-400 shadow-rose-500/30' : ''}">${bubbleContent}${reactionBadgeHtml}<button type="button" onclick="openAdminMessageContextMenuById('${msg.id}', event)" class="message-action-btn absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/40 hover:bg-black/70 text-slate-300 hover:text-white opacity-0 sm:group-hover/bubble:opacity-100 flex items-center justify-center transition-all shadow-sm cursor-pointer z-10" title="Options"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button></div><div class="hidden sm:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity select-none z-10 px-1 py-0.5 rounded-full bg-[#121622]/95 border border-white/10 backdrop-blur-md shadow-lg shrink-0"><button type="button" onclick="quickAdminReactMessage('${msg.id}', '👍', event)" class="p-1 hover:scale-125 transition-transform text-xs" title="React 👍">👍</button><button type="button" onclick="quickAdminCopyMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-sky-300 hover:bg-white/10 rounded-full transition-colors cursor-pointer" title="Copy Text"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>${canEdit ? `<button type="button" onclick="quickAdminEditMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-rose-300 hover:bg-white/10 rounded-full transition-colors cursor-pointer" title="Edit Message"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></button>` : ''}<button type="button" onclick="quickAdminReplyMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-emerald-300 hover:bg-white/10 rounded-full transition-colors cursor-pointer" title="Reply"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"></polyline><path d="M20 18v-2a4 4 0 0 0-4-4H4"></path></svg></button><button type="button" onclick="quickAdminDeleteMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 rounded-full transition-colors cursor-pointer" title="Delete Message (Admin Freedom)"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button></div></div></div>`;
+}
+
+function renderAdminMessages(messages) {
+  const container = document.getElementById('adminMessagesList');
+  if (!container) return;
+
+  if (messages.length === 0) {
     container.innerHTML = `
       <div class="py-16 text-center text-slate-500 text-xs">
-        <p class="text-rose-400 font-semibold">Unable to display messages</p>
-        <p class="text-[11px] text-slate-600 mt-1">Please select another conversation or retry.</p>
+        <p>No messages yet in this conversation.</p>
+        <p class="text-[11px] text-slate-600 mt-1">Send a message or document below to initiate.</p>
       </div>`;
+    return;
   }
 
+  // Seamless Zero-Flash append: if container already has all previous messages, append only the last one!
+  const renderedRows = container.querySelectorAll('.admin-message-row');
+  if (renderedRows.length > 0 && renderedRows.length === messages.length - 1) {
+    const lastMsg = messages[messages.length - 1];
+    if (container.querySelector(`[data-msg-id="${lastMsg.id}"]`)) return; // Already rendered!
+    const singleHtml = renderAdminSingleMessageHtml(lastMsg, messages.length - 1, messages);
+    container.insertAdjacentHTML('beforeend', singleHtml);
+    if (window.lucide) window.lucide.createIcons();
+    return;
+  }
+
+  try {
+    container.innerHTML = messages.map((m, i) => renderAdminSingleMessageHtml(m, i, messages)).join('');
+  } catch (renderErr) {
+    console.error('renderAdminMessages error:', renderErr);
+  }
   if (window.lucide) window.lucide.createIcons();
 }
 
@@ -1229,7 +1243,9 @@ function renderAdminMessages(messages) {
 // Send Reply as Raoprime & Message Edit
 // ──────────────────────────────────────────────────────────────
 
+let isAdminSendingText = false;
 async function sendAdminTextMessage() {
+  if (isAdminSendingText) return;
   if (!activeChatId) {
     showToast('Please select a client conversation from the list first');
     return;
@@ -1238,6 +1254,14 @@ async function sendAdminTextMessage() {
   const input = document.getElementById('adminMessageInput');
   const text = input ? input.value.trim() : '';
   if (!text) return;
+
+  isAdminSendingText = true;
+  setTimeout(() => { isAdminSendingText = false; }, 600);
+
+  if (input) {
+    input.value = '';
+    input.style.height = 'auto';
+  }
 
   // If in edit mode, save edited message
   if (adminEditingMessageId) {
@@ -2954,4 +2978,81 @@ async function handleAdminContextDelete() {
   const msgId = adminContextTargetMessage.id;
   closeAdminMessageContextMenu();
   adminDeleteMessageById(msgId);
+}
+
+
+// ──────────────────────────────────────────────────────────────
+// Admin Client Rename Modal Functions
+// ──────────────────────────────────────────────────────────────
+
+function openRenameModal() {
+  if (!activeChatId) {
+    showToast('Please select a client chat first');
+    return;
+  }
+  const modal = document.getElementById('renameChatModal');
+  const input = document.getElementById('renameClientInput');
+  if (modal) modal.classList.remove('hidden');
+  if (input) {
+    input.value = activeChatId;
+    setTimeout(() => input.focus(), 100);
+  }
+}
+
+function closeRenameModal() {
+  const modal = document.getElementById('renameChatModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function submitRenameChat() {
+  if (!activeChatId) return;
+  const input = document.getElementById('renameClientInput');
+  const newName = input ? input.value.trim() : '';
+  if (!newName) {
+    showToast('Please enter a valid client name');
+    return;
+  }
+  if (newName === activeChatId) {
+    closeRenameModal();
+    return;
+  }
+
+  const btn = document.getElementById('saveRenameBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+  }
+
+  try {
+    const res = await fetch('/api/admin/chat/rename', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-admin-token': adminToken
+      },
+      body: JSON.stringify({
+        oldChatId: activeChatId,
+        newChatId: newName
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(`Client renamed to '${newName}'`);
+      activeChatId = newName;
+      const nameEl = document.getElementById('activeClientName');
+      if (nameEl) nameEl.textContent = newName;
+      closeRenameModal();
+      await loadAdminChats();
+      await loadActiveMessages();
+    } else {
+      showToast('Rename error: ' + (data.error || 'Failed'));
+    }
+  } catch (err) {
+    showToast('Rename error: ' + err.message);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Save Name';
+    }
+  }
 }

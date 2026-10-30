@@ -117,19 +117,17 @@ async function handleWsEvent(payload) {
       const msg = payload.message;
       if (!msg) return;
       if (!window.currentCachedMessages) window.currentCachedMessages = [];
-      const existsIndex = window.currentCachedMessages.findIndex(m => m.id === msg.id);
-      if (existsIndex >= 0) {
-        window.currentCachedMessages[existsIndex] = msg;
-      } else {
+      const inDom = document.querySelector(`.message-row[data-msg-id="${msg.id}"]`);
+      if (!inDom) {
         window.currentCachedMessages.push(msg);
+        renderMessages(window.currentCachedMessages);
+        scrollToBottom();
         if (msg.sender !== currentRole) {
           playMessageSound();
           showDeviceSystemNotification(msg);
           sendWsEvent('chat:read', { reader: currentRole });
         }
       }
-      renderMessages(window.currentCachedMessages);
-      scrollToBottom();
       break;
     }
 
@@ -186,6 +184,15 @@ async function handleWsEvent(payload) {
       if (window.currentCachedMessages && payload.messageId) {
         window.currentCachedMessages = window.currentCachedMessages.filter(m => m.id !== payload.messageId);
         renderMessages(window.currentCachedMessages);
+      }
+      break;
+    }
+
+    case 'chat:renamed': {
+      if (currentChatId && currentChatId.toLowerCase() === (payload.oldChatId || '').toLowerCase()) {
+        currentChatId = payload.newChatId;
+        localStorage.setItem('raoprime_client', currentChatId);
+        sendWsEvent('join', { chatId: currentChatId, role: currentRole, sender: currentRole });
       }
       break;
     }
@@ -751,13 +758,8 @@ function canEditMessage(msg) {
   }
 }
 
-function renderMessages(messages) {
-  const container = document.getElementById('messagesList');
-  if (!container) return;
-
+function renderSingleMessageHtml(msg, index, messages) {
   let lastDateStr = '';
-
-  container.innerHTML = messages.map((msg, index) => {
     const isOut = msg.sender === currentRole;
     const prevMsg = index > 0 ? messages[index - 1] : null;
     const nextMsg = index < messages.length - 1 ? messages[index + 1] : null;
@@ -1005,8 +1007,30 @@ function renderMessages(messages) {
         </div>
       </div>
     `;
-  }).join('');
+  return `${dateDividerHtml}<div class="message-row flex flex-col ${isOut ? 'items-end' : 'items-start'} ${topSpacing} ${reactionEntries.length ? 'mb-2' : ''} group relative" data-msg-id="${msg.id}" data-msg-sender="${msg.sender}"><div class="relative flex items-center gap-1.5 ${isOut ? 'flex-row-reverse' : 'flex-row'} max-w-full"><div class="${isOut ? 'bubble-out' : 'bubble-in'} ${midClass} shadow-md cursor-pointer select-text relative group/bubble ${isEditingThis ? 'ring-2 ring-rose-400 shadow-rose-500/30' : ''}">${bubbleContent}${reactionBadgeHtml}<button type="button" onclick="openMessageContextMenuById('${msg.id}', event)" class="message-action-btn absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/40 hover:bg-black/70 text-slate-300 hover:text-white opacity-0 sm:group-hover/bubble:opacity-100 flex items-center justify-center transition-all shadow-sm cursor-pointer z-10" title="Options"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button></div><div class="hidden sm:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity select-none z-10 px-1 py-0.5 rounded-full bg-[#121622]/95 border border-white/10 backdrop-blur-md shadow-lg shrink-0"><button type="button" onclick="quickReactMessage('${msg.id}', '👍', event)" class="p-1 hover:scale-125 transition-transform text-xs" title="React 👍">👍</button><button type="button" onclick="quickCopyMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-sky-300 hover:bg-white/10 rounded-full transition-colors cursor-pointer" title="Copy Text"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>${canEdit ? `<button type="button" onclick="quickEditMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-rose-300 hover:bg-white/10 rounded-full transition-colors cursor-pointer" title="Edit Message"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></button>` : ''}<button type="button" onclick="quickReplyMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-emerald-300 hover:bg-white/10 rounded-full transition-colors cursor-pointer" title="Reply"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"></polyline><path d="M20 18v-2a4 4 0 0 0-4-4H4"></path></svg></button>${(msg.sender === currentRole) ? `<button type="button" onclick="quickUnsendMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 rounded-full transition-colors cursor-pointer" title="Unsend Message"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>` : ''}</div></div></div>`;
+}
 
+function renderMessages(messages) {
+  const container = document.getElementById('messagesList');
+  if (!container) return;
+
+  if (messages.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  // Seamless Zero-Flash append
+  const renderedRows = container.querySelectorAll('.message-row');
+  if (renderedRows.length > 0 && renderedRows.length === messages.length - 1) {
+    const lastMsg = messages[messages.length - 1];
+    if (container.querySelector(`[data-msg-id="${lastMsg.id}"]`)) return; // Already in DOM!
+    const singleHtml = renderSingleMessageHtml(lastMsg, messages.length - 1, messages);
+    container.insertAdjacentHTML('beforeend', singleHtml);
+    if (window.lucide) window.lucide.createIcons();
+    return;
+  }
+
+  container.innerHTML = messages.map((m, i) => renderSingleMessageHtml(m, i, messages)).join('');
   if (window.lucide) window.lucide.createIcons();
 }
 

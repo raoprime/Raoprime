@@ -610,8 +610,12 @@ async function saveChatMessage(rawChatId, messageObj) {
     const recentDup = store[chatId].find(m =>
       m.sender === messageObj.sender &&
       m.text === messageObj.text &&
-      Math.abs(msgTime - new Date(m.timestamp).getTime()) < 3000
+      Math.abs(msgTime - new Date(m.timestamp).getTime()) < 5000
     );
+    if (recentDup) {
+      console.log(`[Deduplication Engine] Dropped duplicate message in [${chatId}] from ${messageObj.sender}: "${messageObj.text}"`);
+      return recentDup;
+    }
     if (recentDup) {
       return recentDup;
     }
@@ -1316,6 +1320,84 @@ app.get('/api/admin/verify', requireAdminAuth, (req, res) => {
 // ──────────────────────────────────────────────────────────────
 
 // List all active conversations for the Admin Portal (Ultra-Fast 0ms RAM Read)
+
+// Rename Client / Chat (Admin only)
+app.post('/api/admin/chat/rename', requireAdminAuth, async (req, res) => {
+  try {
+    const { oldChatId: rawOld, newChatId: rawNew } = req.body;
+    if (!rawOld || !rawNew) {
+      return res.status(400).json({ success: false, error: 'Both oldChatId and newChatId are required' });
+    }
+
+    const oldChatId = normalizeChatId(rawOld.trim());
+    const newChatId = rawNew.trim();
+
+    if (!newChatId) {
+      return res.status(400).json({ success: false, error: 'New chat name cannot be empty' });
+    }
+
+    if (oldChatId.toLowerCase() === newChatId.toLowerCase()) {
+      return res.json({ success: true, oldChatId, newChatId });
+    }
+
+    const store = ensureMemoryStore();
+    if (!store[oldChatId]) {
+      return res.status(404).json({ success: false, error: `Chat '${oldChatId}' not found` });
+    }
+
+    const oldMessages = store[oldChatId].map(m => ({ ...m, chatId: newChatId }));
+
+    if (store[newChatId]) {
+      // Merge into existing chat
+      const combined = [...store[newChatId], ...oldMessages];
+      const seen = new Set();
+      const deduped = [];
+      for (const m of combined) {
+        if (!seen.has(m.id)) {
+          seen.add(m.id);
+          deduped.push(m);
+        }
+      }
+      deduped.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      store[newChatId] = deduped;
+    } else {
+      store[newChatId] = oldMessages;
+    }
+
+    delete store[oldChatId];
+
+    // Persist
+    if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
+    saveDebounceTimer = setTimeout(() => saveAllLocalChats(store), 250);
+
+    // Sync Firestore
+    setImmediate(async () => {
+      initFirebase();
+      if (isFirebaseConnected && firebaseDb) {
+        try {
+          await firebaseDb.collection('raoprime_chats').doc(newChatId).set({
+            chatId: newChatId,
+            clientName: newChatId,
+            updatedAt: new Date().toISOString()
+          }, { merge: true });
+          await firebaseDb.collection('raoprime_chats').doc(oldChatId).delete();
+        } catch (e) {
+          console.warn('Firebase rename notice:', e.message);
+        }
+      }
+    });
+
+    // Broadcast rename event via WebSocket
+    broadcastToRoom(oldChatId, 'chat:renamed', { oldChatId, newChatId });
+    broadcastToRoom(newChatId, 'chat:renamed', { oldChatId, newChatId });
+
+    console.log(`✏️ [Admin] Renamed chat '${oldChatId}' -> '${newChatId}'`);
+    res.json({ success: true, oldChatId, newChatId });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 app.get('/api/admin/chats', requireAdminAuth, async (req, res) => {
   try {
     const chatList = [];

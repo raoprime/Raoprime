@@ -422,7 +422,7 @@
           </div>
 
           <!-- Dynamic Modern Upright Send Button -->
-          <button onclick="sendTextMessage()" id="sendBtn" class="w-11 h-11 rounded-2xl maroon-btn text-white flex items-center justify-center transition-all shrink-0 cursor-pointer active:scale-95 shadow-lg shadow-rose-950/40 group mb-0.5" aria-label="Send Message">
+          <button type="button" onclick="sendTextMessage(event)" id="sendBtn" class="w-11 h-11 rounded-2xl maroon-btn text-white flex items-center justify-center transition-all shrink-0 cursor-pointer active:scale-95 shadow-lg shadow-rose-950/40 group mb-0.5" aria-label="Send Message">
             <svg class="w-5 h-5 transition-transform group-hover:-translate-y-0.5 group-hover:scale-110" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="22" y1="2" x2="11" y2="13"></line>
               <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
@@ -752,6 +752,6 @@
     </div>
   </div>
 
-  <script src="/chat-app.js?v=5.4"></script>
+  <script src="/chat-app.js?v=5.5"></script>
 </body>
 </html>
