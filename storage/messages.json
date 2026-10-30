@@ -2827,9 +2827,10 @@
       "sender": "Client",
       "type": "text",
       "text": "Message in original chat",
-      "status": "sent",
+      "status": "seen",
       "timestamp": "2026-10-30T18:27:59.394Z",
-      "chatId": "RenamedVIP_1793384879389"
+      "chatId": "RenamedVIP_1793384879389",
+      "seenAt": "2026-10-30T21:50:00.110Z"
     },
     {
       "id": "msg_1793384879435_b6xj",
@@ -2851,7 +2852,7 @@
       "type": "text",
       "timestamp": "2026-10-30T18:27:59.394Z",
       "status": "seen",
-      "seenAt": "2026-10-30T21:25:39.845Z"
+      "seenAt": "2026-10-30T21:50:00.110Z"
     }
   ],
   "raoprime - khudd": [

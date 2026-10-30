@@ -267,31 +267,36 @@ async function handleAdminWsEvent(payload) {
     case 'chat:message': {
       const msg = payload.message;
       if (!msg) return;
+      const msgChatId = (payload.chatId || msg.chatId || '').toLowerCase().trim();
+      const curActiveChatId = (activeChatId || '').toLowerCase().trim();
 
       // 1. If currently viewing this chat, update active messages view in 0ms
-      if (normChatId && (normChatId === normActiveChatId || !normActiveChatId)) {
-        if (normChatId === normActiveChatId) {
-          if (!window.currentAdminCachedMessages) window.currentAdminCachedMessages = [];
-          const inDom = document.querySelector(`.admin-message-row[data-msg-id="${msg.id}"]`);
-          if (!inDom) {
-            window.currentAdminCachedMessages.push(msg);
-            renderAdminMessages(window.currentAdminCachedMessages);
-            scrollAdminToBottom();
-            if (msg.sender !== 'Raoprime' && msg.sender !== 'RP') {
-              playConnectChime();
-              showAdminDeviceNotification(msg, activeChatId);
-              sendAdminWsEvent('chat:read', { chatId: activeChatId, reader: 'Raoprime' });
-            }
+      if (msgChatId === curActiveChatId) {
+        if (!window.currentAdminCachedMessages) window.currentAdminCachedMessages = [];
+        const inDom = document.querySelector(`.admin-message-row[data-msg-id="${msg.id}"]`);
+        if (!inDom) {
+          window.currentAdminCachedMessages.push(msg);
+          renderAdminMessages(window.currentAdminCachedMessages);
+          scrollAdminToBottom();
+          if (msg.sender !== 'Raoprime' && msg.sender !== 'RP') {
+            playConnectChime();
+            sendAdminWsEvent('chat:read', { chatId: activeChatId, reader: 'Raoprime' });
           }
+        }
+      } else {
+        // Message from another client conversation!
+        if (msg.sender !== 'Raoprime' && msg.sender !== 'RP') {
+          playConnectChime();
+          showAdminDeviceNotification(msg, payload.chatId || msg.chatId);
         }
       }
 
       // 2. Update allChats list in sidebar in 0ms
-      let foundChat = allChats.find(c => c.chatId.toLowerCase() === normChatId);
+      let foundChat = allChats.find(c => c.chatId.toLowerCase().trim() === msgChatId);
       if (foundChat) {
         foundChat.lastMessage = msg;
         foundChat.lastActivity = msg.timestamp || new Date().toISOString();
-        if (normChatId !== normActiveChatId && msg.sender !== 'Raoprime' && msg.sender !== 'RP') {
+        if (msgChatId !== curActiveChatId && msg.sender !== 'Raoprime' && msg.sender !== 'RP') {
           foundChat.unseenCount = (foundChat.unseenCount || 0) + 1;
         }
         allChats = [foundChat, ...allChats.filter(c => c !== foundChat)];
@@ -306,12 +311,22 @@ async function handleAdminWsEvent(payload) {
       if (normChatId === normActiveChatId && payload.sender !== 'Raoprime') {
         updateAdminTypingUI(true, Boolean(payload.isTyping));
       }
+      const target = allChats.find(c => c.chatId.toLowerCase().trim() === normChatId);
+      if (target) {
+        target.isTyping = Boolean(payload.isTyping);
+        filterChats();
+      }
       break;
     }
 
     case 'chat:presence': {
       if (normChatId === normActiveChatId) {
         updateAdminTypingUI(Boolean(payload.isClientOnline), false);
+      }
+      const target = allChats.find(c => c.chatId.toLowerCase().trim() === normChatId);
+      if (target) {
+        target.isOnline = Boolean(payload.isClientOnline);
+        filterChats();
       }
       break;
     }
@@ -375,41 +390,6 @@ async function handleAdminWsEvent(payload) {
     case 'call:signal':
     case 'call:accepted':
     case 'call:ended': {
-      break;
-    }
-
-    case 'call:signal': {
-      const fromRole = payload.from || payload.sender;
-      if (fromRole === 'Raoprime' || fromRole === 'RP') break; // Ignore our own echo
-      if (payload.signal) {
-        if (isCallActive && peerConnection && peerConnection.signalingState !== 'closed') {
-          await handleIncomingSignal(payload.signal);
-        } else {
-          // Buffer signals that arrive during ringing or before acceptance
-          if (payload.signal.sdp && payload.signal.sdp.type === 'offer') {
-            pendingSdpOffer = payload.signal.sdp;
-          }
-          if (payload.signal.candidate) {
-            pendingCandidates.push(payload.signal.candidate);
-          }
-        }
-      }
-      break;
-    }
-
-    case 'call:accepted': {
-      if (isCallActive) {
-        showToast('Client connected in Ultra HD!');
-        if (peerConnection && peerConnection.localDescription) {
-          sendAdminCallSignal({ sdp: peerConnection.localDescription });
-        }
-      }
-      break;
-    }
-
-    case 'call:ended': {
-      cleanupCall();
-      showToast('Call ended by client');
       break;
     }
   }
@@ -700,7 +680,7 @@ async function triggerAdminChatsPoll() {
   } catch (e) {
   } finally {
     isPollingAdminChats = false;
-    const interval = isAdminWsConnected ? 30000 : (document.hidden ? 5000 : 2500);
+    const interval = document.hidden ? 10000 : 3500;
     if (adminChatsPollTimer) clearTimeout(adminChatsPollTimer);
     adminChatsPollTimer = setTimeout(triggerAdminChatsPoll, interval);
   }
@@ -989,6 +969,10 @@ async function loadActiveMessages() {
 
     if (!res.ok) {
       console.warn('loadActiveMessages HTTP error:', res.status);
+      if (res.status === 401) {
+        handleAdminLogout();
+        return;
+      }
       const container = document.getElementById('adminMessagesList');
       if (container && container.querySelector('.admin-chat-loading-placeholder')) {
         container.innerHTML = `

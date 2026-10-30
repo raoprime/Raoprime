@@ -6,3 +6,5 @@ storage/chunks/*
 !storage/vault/.gitkeep
 !storage/chunks/.gitkeep
 *.log
+
+scratch/

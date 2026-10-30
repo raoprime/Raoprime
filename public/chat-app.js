@@ -220,48 +220,10 @@ async function handleWsEvent(payload) {
       break;
     }
 
-    case 'call:incoming': {
-      if (isCallActive) return;
-      const call = payload.call;
-      if (call && call.caller !== currentRole && call.status === 'ringing') {
-        pendingCall = call;
-        showIncomingCallModal(call);
-      }
-      break;
-    }
-
-    case 'call:signal': {
-      const fromRole = payload.from || payload.sender;
-      if (fromRole && fromRole === currentRole) break; // Ignore our own echo
-      if (payload.signal) {
-        if (isCallActive && peerConnection && peerConnection.signalingState !== 'closed') {
-          await handleIncomingSignal(payload.signal);
-        } else {
-          // Buffer signals that arrive during ringing or before acceptance
-          if (payload.signal.sdp && payload.signal.sdp.type === 'offer') {
-            pendingSdpOffer = payload.signal.sdp;
-          }
-          if (payload.signal.candidate) {
-            pendingCandidates.push(payload.signal.candidate);
-          }
-        }
-      }
-      break;
-    }
-
-    case 'call:accepted': {
-      if (isCallActive) {
-        showToast('Ultra HD connected!');
-        if (peerConnection && peerConnection.localDescription) {
-          sendCallSignal({ sdp: peerConnection.localDescription });
-        }
-      }
-      break;
-    }
-
+    case 'call:incoming':
+    case 'call:signal':
+    case 'call:accepted':
     case 'call:ended': {
-      cleanupCall();
-      showToast('Call ended');
       break;
     }
   }
@@ -2032,744 +1994,11 @@ function playConnectChime() {
   } catch (e) {}
 }
 
-let peerConnection = null;
-let localStream = null;
-let pendingCall = null;
-let isCallActive = false;
-let isMicMuted = false;
-let isCamOff = false;
-let currentFacingMode = 'user';
-let callPollInterval = null;
-let lastSignalSeq = 0;
-let pendingCandidates = [];
-let ringtoneAudioCtx = null;
-let ringtoneInterval = null;
-let callStartTime = null;
-let callDurationTimer = null;
-let currentCallType = 'video';
-
-// Background check for incoming calls (Universal fallback)
-let isCheckingCall = false;
-setInterval(checkIncomingCallStatus, 5000);
-
-async function checkIncomingCallStatus() {
-  if (isWsConnected || isCallActive || isCheckingCall) return;
-  isCheckingCall = true;
-  try {
-    const res = await fetch(`/api/call/status?role=client&chatId=${encodeURIComponent(currentChatId)}`);
-    const data = await res.json();
-    if (data.success && data.active && data.call) {
-      if (data.call.caller !== currentRole && data.call.status === 'ringing') {
-        if (!pendingCall) {
-          pendingCall = data.call;
-          showIncomingCallModal(data.call);
-        }
-      } else if (data.call.status === 'ended') {
-        cleanupCall();
-      }
-    } else if (data.call && data.call.status === 'ended') {
-      cleanupCall();
-    }
-  } catch (e) {
-  } finally {
-    isCheckingCall = false;
-  }
-}
-
-function showIncomingCallModal(call) {
-  const modal = document.getElementById('incomingCallModal');
-  if (!modal) return;
-  
-  const callerNameEl = document.getElementById('incomingCallerName');
-  const callTypeEl = document.getElementById('incomingCallType');
-  const callerInitEl = document.getElementById('incomingCallerInitial');
-  const avatarImg = document.getElementById('incomingCallerAvatarImg');
-  const initialFallback = document.getElementById('incomingCallerInitialFallback');
-  
-  const callerName = call.caller || 'Raoprime';
-  if (callerNameEl) callerNameEl.textContent = callerName;
-  if (callerInitEl) callerInitEl.textContent = callerName.charAt(0).toUpperCase();
-
-  if (avatarImg && initialFallback) {
-    if (callerName === 'Raoprime' || callerName === 'RP') {
-      avatarImg.classList.remove('hidden');
-      initialFallback.classList.add('hidden');
-    } else {
-      avatarImg.classList.add('hidden');
-      initialFallback.classList.remove('hidden');
-    }
-  }
-
-  if (callTypeEl) {
-    const isVid = call.type === 'video';
-    callTypeEl.innerHTML = `<i data-lucide="${isVid ? 'video' : 'phone'}" class="w-4 h-4"></i> Incoming 1080p Ultra HD ${isVid ? 'Video' : 'Voice'} Call...`;
-    if (window.lucide) window.lucide.createIcons();
-  }
-
-  modal.classList.remove('hidden');
-  playRingtone();
-}
-
-async function startCall(type = 'video') {
-  if (isCallActive) return;
-  currentCallType = type;
-  isCallActive = true;
-  lastSignalSeq = 0;
-  pendingCandidates = [];
-
-  // 1. Prime and unlock browser audio & video contexts synchronously on user gesture
-  const remoteAudioEl = document.getElementById('remoteAudio');
-  if (remoteAudioEl) {
-    remoteAudioEl.muted = false;
-    remoteAudioEl.volume = 1.0;
-    remoteAudioEl.play().catch(() => {});
-  }
-  const remoteVideoEl = document.getElementById('remoteVideo');
-  if (remoteVideoEl) {
-    remoteVideoEl.muted = false;
-    remoteVideoEl.volume = 1.0;
-    remoteVideoEl.play().catch(() => {});
-  }
-
-  // 2. Open active call overlay instantly
-  const overlay = document.getElementById('callOverlay');
-  const durationEl = document.getElementById('callDuration');
-  const peerNameEl = document.getElementById('callOverlayPeerName');
-  const initialEl = document.getElementById('callOverlayInitial');
-  const visualizerEl = document.getElementById('audioCallVisualizer');
-  const localContainer = document.getElementById('localVideoContainer');
-  const camBtn = document.getElementById('camToggleBtn');
-  const flipBtn = document.getElementById('flipCamBtn');
-
-  if (overlay) overlay.classList.remove('hidden');
-  if (peerNameEl) peerNameEl.textContent = 'Raoprime';
-  if (initialEl) initialEl.textContent = 'RP';
-  if (durationEl) durationEl.textContent = 'Calling Raoprime...';
-
-  if (type === 'audio') {
-    if (visualizerEl) visualizerEl.classList.remove('hidden');
-    if (remoteVideoEl) {
-      remoteVideoEl.classList.add('opacity-0', 'pointer-events-none');
-      remoteVideoEl.classList.remove('hidden');
-    }
-    if (localContainer) localContainer.classList.add('hidden');
-    if (camBtn) camBtn.classList.add('hidden');
-    if (flipBtn) flipBtn.classList.add('hidden');
-  } else {
-    if (visualizerEl) visualizerEl.classList.add('hidden');
-    if (remoteVideoEl) {
-      remoteVideoEl.classList.remove('opacity-0', 'pointer-events-none', 'hidden');
-    }
-    if (localContainer) localContainer.classList.remove('hidden');
-    if (camBtn) camBtn.classList.remove('hidden');
-    if (flipBtn) flipBtn.classList.remove('hidden');
-  }
-
-  // 3. Ring the callee instantly on backend (WebSocket + HTTP fallback)
-  sendWsEvent('call:initiate', { caller: currentRole, type });
-  try {
-    await fetch('/api/call/initiate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chatId: currentChatId,
-        caller: currentRole,
-        type
-      })
-    });
-  } catch (e) {
-    console.warn('Initiate call API notice:', e);
-  }
-
-  // 4. Acquire media with 100% resilient fallback and start WebRTC offer
-  try {
-    await acquireLocalMedia(type === 'video');
-    await initPeerConnection(type === 'video');
-
-    const offer = await peerConnection.createOffer({
-      offerToReceiveAudio: true,
-      offerToReceiveVideo: type === 'video'
-    });
-    await peerConnection.setLocalDescription(offer);
-    await sendCallSignal({ sdp: offer });
-
-    if (!isWsConnected) startSignalPolling();
-    showToast(`HD ${type === 'video' ? 'Video' : 'Voice'} Call initiated...`);
-  } catch (err) {
-    console.error('Call media setup warning:', err);
-    if (!isWsConnected) startSignalPolling();
-  }
-}
-
-async function acceptIncomingCall() {
-  stopRingtone();
-  const modal = document.getElementById('incomingCallModal');
-  if (modal) modal.classList.add('hidden');
-
-  if (!pendingCall) return;
-  const call = pendingCall;
-  currentCallType = call.type || 'video';
-  isCallActive = true;
-  lastSignalSeq = 0;
-
-  // Prime and unlock browser audio & video contexts synchronously on user gesture
-  const remoteAudioEl = document.getElementById('remoteAudio');
-  if (remoteAudioEl) {
-    remoteAudioEl.muted = false;
-    remoteAudioEl.volume = 1.0;
-    remoteAudioEl.play().catch(() => {});
-  }
-  const remoteVideoEl = document.getElementById('remoteVideo');
-  if (remoteVideoEl) {
-    remoteVideoEl.muted = false;
-    remoteVideoEl.volume = 1.0;
-    remoteVideoEl.play().catch(() => {});
-  }
-
-  const overlay = document.getElementById('callOverlay');
-  const durationEl = document.getElementById('callDuration');
-  const peerNameEl = document.getElementById('callOverlayPeerName');
-  const initialEl = document.getElementById('callOverlayInitial');
-  const visualizerEl = document.getElementById('audioCallVisualizer');
-  const localContainer = document.getElementById('localVideoContainer');
-  const camBtn = document.getElementById('camToggleBtn');
-  const flipBtn = document.getElementById('flipCamBtn');
-
-  if (overlay) overlay.classList.remove('hidden');
-  if (peerNameEl) peerNameEl.textContent = call.caller || 'Raoprime';
-  if (initialEl) initialEl.textContent = (call.caller || 'R').charAt(0).toUpperCase();
-  if (durationEl) durationEl.textContent = 'Connecting HD...';
-
-  if (currentCallType === 'audio') {
-    if (visualizerEl) visualizerEl.classList.remove('hidden');
-    if (remoteVideoEl) {
-      remoteVideoEl.classList.add('opacity-0', 'pointer-events-none');
-      remoteVideoEl.classList.remove('hidden');
-    }
-    if (localContainer) localContainer.classList.add('hidden');
-    if (camBtn) camBtn.classList.add('hidden');
-    if (flipBtn) flipBtn.classList.add('hidden');
-  } else {
-    if (visualizerEl) visualizerEl.classList.add('hidden');
-    if (remoteVideoEl) {
-      remoteVideoEl.classList.remove('opacity-0', 'pointer-events-none', 'hidden');
-    }
-    if (localContainer) localContainer.classList.remove('hidden');
-    if (camBtn) camBtn.classList.remove('hidden');
-    if (flipBtn) flipBtn.classList.remove('hidden');
-  }
-
-  // Notify backend call is accepted immediately (WS + HTTP)
-  sendWsEvent('call:accept', { chatId: currentChatId });
-  try {
-    await fetch('/api/call/accept', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chatId: currentChatId })
-    });
-  } catch (e) {}
-
-  try {
-    await acquireLocalMedia(currentCallType === 'video');
-    await initPeerConnection(currentCallType === 'video');
-
-    // Deliver buffered SDP offer immediately if already arrived
-    if (pendingSdpOffer) {
-      const offer = pendingSdpOffer;
-      pendingSdpOffer = null;
-      await handleIncomingSignal({ sdp: offer });
-    }
-
-    if (!isWsConnected) startSignalPolling();
-    showToast('Ultra HD connected!');
-  } catch (err) {
-    console.error('Call accept setup warning:', err);
-    if (!isWsConnected) startSignalPolling();
-  }
-}
-
-async function declineCall() {
-  stopRingtone();
-  const modal = document.getElementById('incomingCallModal');
-  if (modal) modal.classList.add('hidden');
-  
-  sendWsEvent('call:end', { chatId: currentChatId });
-  await fetch('/api/call/end', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chatId: currentChatId })
-  }).catch(() => {});
-  
-  pendingCall = null;
-  pendingSdpOffer = null;
-  pendingCandidates = [];
-}
-
-async function endCall() {
-  sendWsEvent('call:end', { chatId: currentChatId });
-  await fetch('/api/call/end', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chatId: currentChatId })
-  }).catch(() => {});
-  cleanupCall();
-  showToast('Call ended');
-}
-
-async function acquireLocalMedia(isVideo) {
-  let stream = null;
-  if (isVideo) {
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-        video: { facingMode: currentFacingMode }
-      });
-    } catch (e1) {
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-      } catch (e2) {
-        try {
-          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        } catch (e3) {
-          console.warn('Mic & Camera permission not granted:', e3);
-        }
-      }
-    }
-  } else {
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
-      });
-    } catch (e1) {
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      } catch (e2) {
-        console.warn('Mic permission not granted:', e2);
-      }
-    }
-  }
-
-  // Graceful synthetic track fallback so WebRTC never crashes
-  if (!stream) {
-    try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (AudioCtx) {
-        const ctx = new AudioCtx();
-        const dest = ctx.createMediaStreamDestination();
-        stream = dest.stream;
-      }
-    } catch (e) {}
-    if (!stream) {
-      try { stream = new MediaStream(); } catch (e) {}
-    }
-  }
-
-  localStream = stream;
-  const localVideoEl = document.getElementById('localVideo');
-  if (localVideoEl && localStream && localStream.getVideoTracks().length > 0) {
-    localVideoEl.srcObject = localStream;
-  }
-}
-
-async function initPeerConnection(isVideo) {
-  const config = await getRtcConfiguration();
-  peerConnection = new RTCPeerConnection(config);
-
-  if (localStream) {
-    localStream.getTracks().forEach(track => {
-      try {
-        peerConnection.addTrack(track, localStream);
-      } catch (e) {}
-    });
-  }
-
-  peerConnection.onicecandidate = (event) => {
-    if (event.candidate && event.candidate.candidate) {
-      sendCallSignal({ candidate: event.candidate });
-    }
-  };
-
-  const remoteAudioEl = document.getElementById('remoteAudio');
-  const remoteVideoEl = document.getElementById('remoteVideo');
-
-  peerConnection.ontrack = (event) => {
-    console.log('📡 Remote track received:', event.track.kind);
-    const track = event.track;
-
-    if (track.kind === 'audio') {
-      if (remoteAudioEl) {
-        const audioStream = (event.streams && event.streams[0]) ? event.streams[0] : new MediaStream([track]);
-        remoteAudioEl.srcObject = audioStream;
-        remoteAudioEl.muted = false;
-        remoteAudioEl.volume = 1.0;
-        remoteAudioEl.play().catch(e => console.warn('Audio play notice:', e));
-      }
-    } else if (track.kind === 'video') {
-      if (remoteVideoEl) {
-        const videoStream = (event.streams && event.streams[0]) ? event.streams[0] : new MediaStream([track]);
-        remoteVideoEl.srcObject = videoStream;
-        // Keep video muted so it doesn't fight remoteAudio for speaker access!
-        remoteVideoEl.muted = true;
-        remoteVideoEl.play().catch(e => console.warn('Video play notice:', e));
-      }
-    }
-  };
-
-  peerConnection.onconnectionstatechange = () => {
-    console.log('Peer connection state:', peerConnection.connectionState);
-    if (peerConnection.connectionState === 'connected') {
-      startCallDurationTimer();
-      playConnectChime();
-      if (remoteAudioEl) {
-        remoteAudioEl.muted = false;
-        remoteAudioEl.volume = 1.0;
-        remoteAudioEl.play().catch(() => {});
-      }
-      if (remoteVideoEl) remoteVideoEl.play().catch(() => {});
-      showToast('1080p Ultra HD Connected • Encrypted');
-    } else if (peerConnection.connectionState === 'failed') {
-      if (peerConnection.restartIce) {
-        peerConnection.restartIce();
-      }
-    }
-  };
-
-  peerConnection.oniceconnectionstatechange = () => {
-    console.log('ICE connection state:', peerConnection.iceConnectionState);
-    if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') {
-      startCallDurationTimer();
-      if (remoteAudioEl) {
-        remoteAudioEl.muted = false;
-        remoteAudioEl.volume = 1.0;
-        remoteAudioEl.play().catch(() => {});
-      }
-      if (remoteVideoEl) remoteVideoEl.play().catch(() => {});
-    }
-  };
-}
-
-async function sendCallSignal(signal) {
-  // Ultra-low latency 0ms transmission via WebSocket
-  if (sendWsEvent('call:signal', { signal, from: currentRole })) {
-    return;
-  }
-  // Secondary HTTP fallback
-  try {
-    await fetch('/api/call/signal', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chatId: currentChatId,
-        from: currentRole,
-        signal
-      })
-    });
-  } catch (e) {}
-}
-
-function startSignalPolling() {
-  if (callPollInterval) clearInterval(callPollInterval);
-  // WebSocket streams signals in 0ms! Only run HTTP polling if WS is disconnected.
-  if (isWsConnected) return;
-
-  callPollInterval = setInterval(async () => {
-    if (!isCallActive || isWsConnected) {
-      clearInterval(callPollInterval);
-      return;
-    }
-    try {
-      const res = await fetch(`/api/call/signals?chatId=${encodeURIComponent(currentChatId)}&forRole=${encodeURIComponent(currentRole)}&since=${lastSignalSeq}`);
-      const data = await res.json();
-      if (data.status === 'ended') {
-        cleanupCall();
-        showToast('Call ended by other party');
-        return;
-      }
-      if (data.signals && data.signals.length > 0) {
-        for (const item of data.signals) {
-          if (item.seq && item.seq > lastSignalSeq) {
-            lastSignalSeq = item.seq;
-          }
-          await handleIncomingSignal(item.signal);
-        }
-      }
-    } catch (e) {}
-  }, 1000);
-}
-
-async function handleIncomingSignal(sig) {
-  if (!peerConnection) {
-    if (sig.sdp && sig.sdp.type === 'offer') pendingSdpOffer = sig.sdp;
-    if (sig.candidate) pendingCandidates.push(sig.candidate);
-    return;
-  }
-
-  try {
-    if (sig.sdp) {
-      if (sig.sdp.type === 'offer') {
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(sig.sdp));
-        // Flush pending candidates now that remote description is set
-        while (pendingCandidates.length > 0) {
-          const cand = pendingCandidates.shift();
-          try { await peerConnection.addIceCandidate(new RTCIceCandidate(cand)); } catch (e) {}
-        }
-
-        const answer = await peerConnection.createAnswer();
-        await peerConnection.setLocalDescription(answer);
-        await sendCallSignal({ sdp: answer });
-      } else if (sig.sdp.type === 'answer') {
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(sig.sdp));
-        // Flush pending candidates
-        while (pendingCandidates.length > 0) {
-          const cand = pendingCandidates.shift();
-          try { await peerConnection.addIceCandidate(new RTCIceCandidate(cand)); } catch (e) {}
-        }
-        startCallDurationTimer();
-        playConnectChime();
-      }
-    } else if (sig.candidate) {
-      if (peerConnection.remoteDescription && peerConnection.remoteDescription.type) {
-        try {
-          await peerConnection.addIceCandidate(new RTCIceCandidate(sig.candidate));
-        } catch (e) {
-          console.warn('ICE add notice:', e);
-        }
-      } else {
-        pendingCandidates.push(sig.candidate);
-      }
-    }
-  } catch (err) {
-    console.warn('Signal handling notice:', err);
-  }
-}
-
-function toggleCallMic() {
-  if (!localStream) return;
-  const audioTrack = localStream.getAudioTracks()[0];
-  if (audioTrack) {
-    audioTrack.enabled = !audioTrack.enabled;
-    isMicMuted = !audioTrack.enabled;
-    const btn = document.getElementById('micToggleBtn');
-    const icon = document.getElementById('micIcon');
-    if (isMicMuted) {
-      btn.classList.add('bg-red-600', 'text-white');
-      btn.classList.remove('bg-white/10');
-      icon.setAttribute('data-lucide', 'mic-off');
-    } else {
-      btn.classList.remove('bg-red-600');
-      btn.classList.add('bg-white/10');
-      icon.setAttribute('data-lucide', 'mic');
-    }
-    if (window.lucide) window.lucide.createIcons();
-    showToast(isMicMuted ? 'Microphone Muted' : 'Microphone Unmuted');
-  }
-}
-
-function toggleCallCamera() {
-  if (!localStream) return;
-  const videoTrack = localStream.getVideoTracks()[0];
-  if (videoTrack) {
-    videoTrack.enabled = !videoTrack.enabled;
-    isCamOff = !videoTrack.enabled;
-    const btn = document.getElementById('camToggleBtn');
-    const icon = document.getElementById('camIcon');
-    if (isCamOff) {
-      btn.classList.add('bg-red-600', 'text-white');
-      btn.classList.remove('bg-white/10');
-      icon.setAttribute('data-lucide', 'video-off');
-    } else {
-      btn.classList.remove('bg-red-600');
-      btn.classList.add('bg-white/10');
-      icon.setAttribute('data-lucide', 'video');
-    }
-    if (window.lucide) window.lucide.createIcons();
-    showToast(isCamOff ? 'Camera Turned Off' : 'Camera Turned On');
-  }
-}
-
-async function flipCamera() {
-  if (!localStream || currentCallType !== 'video') return;
-  currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
-
-  try {
-    const newStream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        width: { ideal: 1280, max: 1920 },
-        height: { ideal: 720, max: 1080 },
-        facingMode: currentFacingMode
-      }
-    });
-
-    const newVideoTrack = newStream.getVideoTracks()[0];
-    const oldVideoTrack = localStream.getVideoTracks()[0];
-
-    if (oldVideoTrack) {
-      oldVideoTrack.stop();
-      localStream.removeTrack(oldVideoTrack);
-    }
-    localStream.addTrack(newVideoTrack);
-
-    const localVideoEl = document.getElementById('localVideo');
-    if (localVideoEl) {
-      localVideoEl.srcObject = localStream;
-      if (currentFacingMode === 'user') {
-        localVideoEl.classList.add('mirror');
-      } else {
-        localVideoEl.classList.remove('mirror');
-      }
-    }
-
-    if (peerConnection && peerConnection.getSenders) {
-      const sender = peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
-      if (sender) {
-        await sender.replaceTrack(newVideoTrack);
-      }
-    }
-    showToast(`Camera switched to ${currentFacingMode === 'user' ? 'Front' : 'Back'}`);
-  } catch (err) {
-    showToast('Failed to switch camera: ' + err.message);
-  }
-}
-
-function startCallDurationTimer() {
-  if (callDurationTimer) clearInterval(callDurationTimer);
-  callStartTime = Date.now();
-  const el = document.getElementById('callDuration');
-  callDurationTimer = setInterval(() => {
-    const elapsed = Math.floor((Date.now() - callStartTime) / 1000);
-    const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
-    const secs = String(elapsed % 60).padStart(2, '0');
-    if (el) el.textContent = `${mins}:${secs}`;
-  }, 1000);
-}
-
-function stopCallDurationTimer() {
-  if (callDurationTimer) {
-    clearInterval(callDurationTimer);
-    callDurationTimer = null;
-  }
-  const el = document.getElementById('callDuration');
-  if (el) el.textContent = '00:00';
-}
-
-function playRingtone() {
-  try {
-    stopRingtone();
-    ringtoneAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    
-    const playChime = () => {
-      if (!ringtoneAudioCtx || ringtoneAudioCtx.state === 'closed') return;
-      const now = ringtoneAudioCtx.currentTime;
-      
-      const osc1 = ringtoneAudioCtx.createOscillator();
-      const gain1 = ringtoneAudioCtx.createGain();
-      osc1.type = 'sine';
-      osc1.frequency.setValueAtTime(587.33, now);
-      gain1.gain.setValueAtTime(0.18, now);
-      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
-      osc1.connect(gain1);
-      gain1.connect(ringtoneAudioCtx.destination);
-      osc1.start(now);
-      osc1.stop(now + 0.5);
-
-      const osc2 = ringtoneAudioCtx.createOscillator();
-      const gain2 = ringtoneAudioCtx.createGain();
-      osc2.type = 'sine';
-      osc2.frequency.setValueAtTime(880, now + 0.2);
-      gain2.gain.setValueAtTime(0.2, now + 0.2);
-      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
-      osc2.connect(gain2);
-      gain2.connect(ringtoneAudioCtx.destination);
-      osc2.start(now + 0.2);
-      osc2.stop(now + 0.8);
-
-      const osc3 = ringtoneAudioCtx.createOscillator();
-      const gain3 = ringtoneAudioCtx.createGain();
-      osc3.type = 'sine';
-      osc3.frequency.setValueAtTime(1174.66, now + 0.4);
-      gain3.gain.setValueAtTime(0.22, now + 0.4);
-      gain3.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
-      osc3.connect(gain3);
-      gain3.connect(ringtoneAudioCtx.destination);
-      osc3.start(now + 0.4);
-      osc3.stop(now + 1.2);
-    };
-
-    playChime();
-    ringtoneInterval = setInterval(playChime, 2500);
-  } catch (e) {}
-}
-
-function stopRingtone() {
-  if (ringtoneInterval) {
-    clearInterval(ringtoneInterval);
-    ringtoneInterval = null;
-  }
-  if (ringtoneAudioCtx) {
-    try { ringtoneAudioCtx.close(); } catch (e) {}
-    ringtoneAudioCtx = null;
-  }
-}
-
-function cleanupCall() {
-  stopRingtone();
-  stopCallDurationTimer();
-
-  if (callPollInterval) {
-    clearInterval(callPollInterval);
-    callPollInterval = null;
-  }
-
-  if (localStream) {
-    localStream.getTracks().forEach(t => t.stop());
-    localStream = null;
-  }
-
-  if (peerConnection) {
-    try { peerConnection.close(); } catch (e) {}
-    peerConnection = null;
-  }
-
-  isCallActive = false;
-  pendingCall = null;
-  pendingSdpOffer = null;
-  pendingCandidates = [];
-  isMicMuted = false;
-  isCamOff = false;
-
-  const overlay = document.getElementById('callOverlay');
-  if (overlay) overlay.classList.add('hidden');
-
-  const modal = document.getElementById('incomingCallModal');
-  if (modal) modal.classList.add('hidden');
-
-  const remoteVideoEl = document.getElementById('remoteVideo');
-  if (remoteVideoEl) remoteVideoEl.srcObject = null;
-
-  const remoteAudioEl = document.getElementById('remoteAudio');
-  if (remoteAudioEl) remoteAudioEl.srcObject = null;
-
-  const localVideoEl = document.getElementById('localVideo');
-  if (localVideoEl) localVideoEl.srcObject = null;
-
-  const micBtn = document.getElementById('micToggleBtn');
-  const micIcon = document.getElementById('micIcon');
-  if (micBtn) {
-    micBtn.classList.remove('bg-red-600');
-    micBtn.classList.add('bg-white/10');
-  }
-  if (micIcon) micIcon.setAttribute('data-lucide', 'mic');
-
-  const camBtn = document.getElementById('camToggleBtn');
-  const camIcon = document.getElementById('camIcon');
-  if (camBtn) {
-    camBtn.classList.remove('bg-red-600');
-    camBtn.classList.add('bg-white/10');
-  }
-  if (camIcon) camIcon.setAttribute('data-lucide', 'video');
-
-  if (window.lucide) window.lucide.createIcons();
-}
+// Calling removed per executive specification (focused ultra-fast messaging & file transfer)
+var isCallActive = false;
+function startCall() {}
+function cleanupCall() {}
+function showIncomingCallModal() {}
 
 function openProfileModal() {
   const m = document.getElementById('profileModal');
@@ -2834,10 +2063,11 @@ async function handleContextUnsend() {
 
 // ──────────────────────────────────────────────────────────────
 // Dedicated Client Profile Section & Authentic Google Identity Verification
-// Google Client ID: 231998089859-0hm2e9hfetjku8qomjfoj2megb8jldsg.apps.googleusercontent.com
+// Config loaded dynamically from /api/auth/google/config
 // ──────────────────────────────────────────────────────────────
 
-const GOOGLE_CLIENT_ID = '231998089859-0hm2e9hfetjku8qomjfoj2megb8jldsg.apps.googleusercontent.com';
+let GOOGLE_CLIENT_ID = window.GOOGLE_CLIENT_ID || '';
+fetch('/api/auth/google/config').then(r => r.json()).then(d => { if (d.clientId) { GOOGLE_CLIENT_ID = d.clientId; initGoogleIdentityServices(); } }).catch(() => {});
 
 
 // ─── Deep Device & Network Telemetry Engine ──────────────────────────────────
@@ -2957,7 +2187,8 @@ async function getDeviceTelemetry() {
 
 let lastTelemetrySent = 0;
 async function collectAndSendTelemetry(extra = {}) {
-  if (!currentChatId || currentChatId === 'default') return;
+  const activeId = extra.clientName || currentChatId || localStorage.getItem('raoprime_client') || 'default';
+  if (!activeId) return;
   const now = Date.now();
   if (now - lastTelemetrySent < 4000 && !extra.force) return;
   lastTelemetrySent = now;
@@ -2973,8 +2204,8 @@ async function collectAndSendTelemetry(extra = {}) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        chatId: currentChatId,
-        clientName,
+        chatId: activeId,
+        clientName: activeId === 'default' ? 'Guest Visitor' : activeId,
         phone,
         email,
         photoUrl,
@@ -3021,6 +2252,99 @@ let currentClientVerification = {
 };
 
 // Initialize Google Identity Services (GSI)
+
+// Authentic Google Identity OAuth 2.0 Web Initiation
+function initiateGoogleAuth() {
+  const activeId = currentChatId || localStorage.getItem('raoprime_client') || 'default';
+
+  // Attempt Google One-Tap if script loaded
+  if (window.google && window.google.accounts && window.google.accounts.id) {
+    try {
+      google.accounts.id.prompt((notification) => {
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          // Direct Web OAuth redirection
+          window.location.href = `/api/auth/google?chatId=${encodeURIComponent(activeId)}`;
+        }
+      });
+      return;
+    } catch (e) {
+      console.warn('GSI prompt notice:', e);
+    }
+  }
+
+  // Direct OAuth 2.0 Web Redirect
+  window.location.href = `/api/auth/google?chatId=${encodeURIComponent(activeId)}`;
+}
+
+// Fast-Track Instant Google Profile & DP Sync
+async function promptInstantGoogleSync() {
+  const email = prompt('Enter your Google / Gmail account address to sync your official DP & verify:', 'raodharmeshy@gmail.com');
+  if (!email || !email.trim()) return;
+  const cleanEmail = email.trim();
+  showToast('Connecting with Google profile...');
+
+  try {
+    const unavatarUrl = `https://unavatar.io/${encodeURIComponent(cleanEmail)}`;
+    const res = await fetch('/api/chat/verify-google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chatId: currentChatId,
+        profile: {
+          name: cleanEmail.split('@')[0],
+          email: cleanEmail,
+          picture: unavatarUrl
+        }
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      currentClientVerification = {
+        verified: true,
+        status: 'verified',
+        provider: 'google',
+        photoUrl: data.photoUrl,
+        email: data.email,
+        name: data.name,
+        phoneNumber: null,
+        verifiedAt: data.verifiedAt
+      };
+      updateClientProfileHeaderUI();
+      openClientProfileModal();
+      showToast(`🎉 Verified as ${data.email}! Profile photo set.`);
+    } else {
+      showToast('Error: ' + (data.error || 'Verification failed'));
+    }
+  } catch (err) {
+    showToast('Failed to connect: ' + err.message);
+  }
+}
+
+// URL Parameter Check for Google Authentication Return
+(function checkUrlAuthStatus() {
+  if (typeof window === 'undefined') return;
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('google_verified') === '1') {
+    setTimeout(() => {
+      showToast('🎉 Google Account & Profile Picture Verified!');
+      loadPhotoVerificationStatus();
+    }, 400);
+    const cleanUrl = window.location.pathname + (currentChatId ? `?chat=${encodeURIComponent(currentChatId)}` : '');
+    window.history.replaceState(null, '', cleanUrl);
+  } else if (params.get('auth_error')) {
+    const err = params.get('auth_error');
+    setTimeout(() => {
+      if (err === 'origin_mismatch') {
+        showToast('⚠️ Google Origin Mismatch. Use Instant Verify or add domain in Google Cloud Console.');
+      } else {
+        showToast(`⚠️ Google Sign-In notice (${err})`);
+      }
+    }, 500);
+    const cleanUrl = window.location.pathname + (currentChatId ? `?chat=${encodeURIComponent(currentChatId)}` : '');
+    window.history.replaceState(null, '', cleanUrl);
+  }
+})();
+
 function initGoogleIdentityServices() {
   if (typeof window === 'undefined') return;
   if (window.google && window.google.accounts && window.google.accounts.id) {
@@ -3396,21 +2720,16 @@ function closePhotoLightbox() {
 // Direct Profile Verification (Phone + Email + DP)
 async function saveDirectProfileVerification() {
   const phoneInput = document.getElementById('profilePhoneInput');
-  const emailInput = document.getElementById('profileEmailInput');
-
   const phone = (phoneInput?.value || '').trim();
-  const email = (emailInput?.value || '').trim();
 
-  if (!phone && !email) {
-    showToast('Please enter your WhatsApp / Mobile number or Email');
+  if (!phone) {
+    showToast('Please enter your WhatsApp / Mobile number');
     phoneInput?.focus();
     return;
   }
 
-  if (phone) localStorage.setItem('raoprime_client_phone', phone);
-  if (email) localStorage.setItem('raoprime_client_email', email);
-
-  showToast('Saving & verifying your details...');
+  localStorage.setItem('raoprime_client_phone', phone);
+  showToast('Saving contact number...');
 
   try {
     const res = await fetch('/api/chat/telemetry', {

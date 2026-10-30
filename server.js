@@ -459,6 +459,39 @@ function getChatMessages(rawChatId) {
 const activeCalls = {};
 const wsClients = new Map(); // ws -> { chatId, role, isAlive }
 
+// In-memory Real-time Presence & Typing Tracker
+const typingStatus = {};
+const presenceStatus = {};
+let globalAdminPresence = 0;
+
+function isClientMeta(meta) {
+  if (!meta) return false;
+  const role = String(meta.role || meta.sender || '').trim().toLowerCase();
+  return role !== 'raoprime' && role !== 'rp' && role !== 'admin';
+}
+
+function getClientOnlineStatus(chatId) {
+  const normChatId = normalizeChatId(chatId);
+  const now = Date.now();
+
+  // 1. Check live active WebSocket connections for non-admin client
+  for (const [ws, meta] of wsClients.entries()) {
+    if (ws.readyState === WebSocket.OPEN && isClientMeta(meta)) {
+      if (normalizeChatId(meta.chatId) === normChatId) {
+        return true;
+      }
+    }
+  }
+
+  // 2. Check recent HTTP activity / heartbeat within 12 seconds
+  const clientPresenceTime = presenceStatus[normChatId]?.Client || presenceStatus[chatId]?.Client;
+  if (clientPresenceTime && (now - clientPresenceTime < 12000)) {
+    return true;
+  }
+
+  return false;
+}
+
 function broadcastToRoom(chatId, event, data, excludeWs = null) {
   const normChatId = normalizeChatId(chatId);
   const payload = JSON.stringify({ event, chatId: normChatId, ...data });
@@ -467,8 +500,8 @@ function broadcastToRoom(chatId, event, data, excludeWs = null) {
     if (clientWs === excludeWs) continue;
     if (clientWs.readyState !== WebSocket.OPEN) continue;
 
-    // Send if client is in this room OR client is an Admin (Admin monitors all rooms)
-    if (meta.role === 'Raoprime' || meta.chatId === normChatId) {
+    // Send if client is in this room, OR client is an Admin (Admin monitors all rooms)
+    if (!isClientMeta(meta) || normalizeChatId(meta.chatId) === normChatId || meta.chatId === 'all') {
       try {
         clientWs.send(payload);
       } catch (e) {
@@ -483,7 +516,7 @@ function broadcastToAdmins(event, data, excludeWs = null) {
   for (const [clientWs, meta] of wsClients.entries()) {
     if (clientWs === excludeWs) continue;
     if (clientWs.readyState !== WebSocket.OPEN) continue;
-    if (meta.role === 'Raoprime') {
+    if (!isClientMeta(meta)) {
       try {
         clientWs.send(payload);
       } catch (e) {}
@@ -492,14 +525,7 @@ function broadcastToAdmins(event, data, excludeWs = null) {
 }
 
 function getRoomPresence(chatId) {
-  const normChatId = normalizeChatId(chatId);
-  let isClientOnline = false;
-
-  for (const [, meta] of wsClients.entries()) {
-    if (meta.chatId === normChatId) {
-      isClientOnline = true;
-    }
-  }
+  const isClientOnline = getClientOnlineStatus(chatId);
   // Admin is ALWAYS active (Instagram style always-online)
   return { isClientOnline, isAdminOnline: true };
 }
@@ -690,6 +716,7 @@ wss.on('connection', (ws) => {
       wsClients.delete(ws);
       const presence = getRoomPresence(chatId);
       broadcastToRoom(chatId, 'chat:presence', presence);
+      broadcastToAdmins('chat:presence', { chatId: normalizeChatId(chatId), ...presence });
     }
   });
 });
@@ -747,6 +774,7 @@ async function saveChatMessage(rawChatId, messageObj) {
 
   // Real-time broadcast to room & admin in 0ms!
   broadcastToRoom(chatId, 'chat:message', { message: messageObj });
+  broadcastToAdmins('chat:message', { chatId, message: messageObj });
 
   // Non-blocking asynchronous Firestore background write
   setImmediate(async () => {
@@ -771,10 +799,7 @@ async function saveChatMessage(rawChatId, messageObj) {
   });
 }
 
-// In-memory Real-time Presence & Typing Tracker
-const typingStatus = {}; // { [chatId]: { Client: timestamp, Raoprime: timestamp } }
-const presenceStatus = {}; // { [chatId]: { Client: timestamp, Raoprime: timestamp } }
-let globalAdminPresence = 0; // Tracks if Raoprime Admin is live on portal anywhere
+// Trackers declared at global scope
 
 // Instant RAM seen update + non-blocking background Firestore sync
 async function markChatMessagesSeen(rawChatId, readerRole) {
@@ -882,7 +907,7 @@ app.get('/api/chat/messages', async (req, res) => {
       }
     }
 
-    const isClientOnline = Boolean(chatPresence.Client && (now - chatPresence.Client < 10000));
+    const isClientOnline = getClientOnlineStatus(chatId);
     // Admin is ALWAYS active (Instagram style always-online)
     const isRaoprimeOnline = true;
 
@@ -1074,6 +1099,122 @@ app.get('/api/admin/client-intel/:chatId', requireAdminAuth, (req, res) => {
   }
 });
 
+// Public Google Client ID Config
+app.get('/api/auth/google/config', (req, res) => {
+  res.json({ clientId: process.env.GOOGLE_CLIENT_ID || '' });
+});
+
+// Google OAuth 2.0 Web Redirection Endpoint
+app.get('/api/auth/google', (req, res) => {
+  const host = req.get('host');
+  const protocol = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
+  const callbackUrl = `${protocol}://${host}/api/auth/google/callback`;
+  const chatId = req.query.chatId || 'default';
+  
+  if (!process.env.GOOGLE_CLIENT_ID) {
+    return res.redirect(`/?chat=${encodeURIComponent(chatId)}&auth_error=config_missing`);
+  }
+  const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+    `client_id=${encodeURIComponent(process.env.GOOGLE_CLIENT_ID)}` +
+    `&redirect_uri=${encodeURIComponent(callbackUrl)}` +
+    `&response_type=code` +
+    `&scope=${encodeURIComponent('openid email profile')}` +
+    `&state=${encodeURIComponent(chatId)}` +
+    `&prompt=select_account`;
+  
+  res.redirect(googleAuthUrl);
+});
+
+// Google OAuth 2.0 Callback (Exchanges Code for Token, Extracts Name, Email & Picture DP)
+app.get('/api/auth/google/callback', async (req, res) => {
+  const { code, state: rawChatId = 'default' } = req.query;
+  if (!code) {
+    return res.redirect(`/?chat=${encodeURIComponent(rawChatId)}&auth_error=no_code`);
+  }
+
+  try {
+    const host = req.get('host');
+    const protocol = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
+    const callbackUrl = `${protocol}://${host}/api/auth/google/callback`;
+
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code: String(code),
+        client_id: process.env.GOOGLE_CLIENT_ID || '',
+        client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
+        redirect_uri: callbackUrl,
+        grant_type: 'authorization_code'
+      })
+    });
+
+    const tokenData = await tokenRes.json();
+    if (!tokenData.id_token) {
+      console.warn('Google token exchange error:', tokenData);
+      return res.redirect(`/?chat=${encodeURIComponent(rawChatId)}&auth_error=token_failed`);
+    }
+
+    const parts = tokenData.id_token.split('.');
+    const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
+
+    const normChatId = normalizeChatId(rawChatId === 'default' ? (payload.name || 'Client') : rawChatId);
+    const photoUrl = payload.picture || null;
+    const email = payload.email;
+    const name = payload.name || normChatId;
+    const now = new Date().toISOString();
+
+    verificationsStore[normChatId] = {
+      verified: true,
+      status: 'verified',
+      provider: 'google',
+      photoUrl,
+      email,
+      name,
+      phoneNumber: verificationsStore[normChatId]?.phoneNumber || null,
+      verifiedAt: now,
+      updatedAt: now,
+      isRequested: false
+    };
+    saveVerifications(verificationsStore);
+
+    if (!clientIntelStore[normChatId]) clientIntelStore[normChatId] = { chatId: normChatId, clientName: name };
+    clientIntelStore[normChatId].email = email;
+    clientIntelStore[normChatId].photoUrl = photoUrl;
+    clientIntelStore[normChatId].isVerified = true;
+    clientIntelStore[normChatId].verificationStatus = 'verified';
+    saveClientIntel(clientIntelStore);
+
+    broadcastToRoom(normChatId, 'chat:verification-updated', {
+      chatId: normChatId,
+      verified: true,
+      status: 'verified',
+      provider: 'google',
+      photoUrl,
+      email,
+      name,
+      verifiedAt: now
+    });
+    broadcastToAdmins('chat:verification-updated', {
+      chatId: normChatId,
+      verified: true,
+      status: 'verified',
+      provider: 'google',
+      photoUrl,
+      email,
+      name,
+      verifiedAt: now
+    });
+
+    console.log(`✅ [Google OAuth 2.0] User ${name} (${email}) authenticated. Default DP set: ${photoUrl}`);
+
+    res.redirect(`/?chat=${encodeURIComponent(normChatId)}&google_verified=1`);
+  } catch (err) {
+    console.error('Google callback error:', err);
+    res.redirect(`/?chat=${encodeURIComponent(rawChatId)}&auth_error=exception`);
+  }
+});
+
 app.post('/api/chat/verify-google', (req, res) => {
   try {
     const { chatId: rawChatId = 'default', profile } = req.body;
@@ -1101,6 +1242,13 @@ app.post('/api/chat/verify-google', (req, res) => {
     };
     saveVerifications(verificationsStore);
 
+    if (!clientIntelStore[chatId]) clientIntelStore[chatId] = { chatId, clientName: name };
+    clientIntelStore[chatId].email = email;
+    clientIntelStore[chatId].photoUrl = photoUrl;
+    clientIntelStore[chatId].isVerified = true;
+    clientIntelStore[chatId].verificationStatus = 'verified';
+    saveClientIntel(clientIntelStore);
+
     broadcastToRoom(chatId, 'chat:verification-updated', {
       chatId,
       verified: true,
@@ -1111,8 +1259,18 @@ app.post('/api/chat/verify-google', (req, res) => {
       name,
       verifiedAt: now
     });
+    broadcastToAdmins('chat:verification-updated', {
+      chatId,
+      verified: true,
+      status: 'verified',
+      provider: 'google',
+      photoUrl,
+      email,
+      name,
+      verifiedAt: now
+    });
 
-    console.log(`[Google Auth] Client ${chatId} verified with Google (${email})`);
+    console.log(`[Google Auth] Client ${chatId} verified with Google (${email}). Default DP set: ${photoUrl}`);
 
     res.json({
       success: true,
@@ -1278,6 +1436,7 @@ app.post('/api/chat/typing', (req, res) => {
 
   presenceStatus[chatId][sender] = now; // Typing immediately confirms active presence
   typingStatus[chatId][sender] = isTyping ? now : 0;
+  broadcastToRoom(chatId, 'chat:typing', { sender, isTyping: Boolean(isTyping) });
   res.json({ success: true });
 });
 
@@ -1889,9 +2048,8 @@ app.get('/api/admin/chats', requireAdminAuth, async (req, res) => {
       const files = messages.filter((m) => m.type === 'file' && m.file);
       const clientName = chatId === 'default' ? 'General Desk' : decodeURIComponent(chatId);
 
-      const chatPresence = presenceStatus[chatId] || {};
       const chatTyping = typingStatus[chatId] || {};
-      const isClientOnline = Boolean(chatPresence.Client && (now - chatPresence.Client < 10000));
+      const isClientOnline = getClientOnlineStatus(chatId);
       const isClientTyping = Boolean(chatTyping.Client && (now - chatTyping.Client < 3500));
       const unseenCount = messages.filter(m => (m.sender !== 'Raoprime' && m.sender !== 'RP') && m.status !== 'seen').length;
 

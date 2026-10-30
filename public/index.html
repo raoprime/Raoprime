@@ -526,13 +526,8 @@
           <label class="text-[10.5px] font-semibold text-slate-300 block mb-1">WhatsApp / Mobile Number <span class="text-rose-400">*</span></label>
           <div class="relative">
             <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-xs font-semibold">🇮🇳 +91</span>
-            <input type="tel" id="clientPhoneInput" placeholder="98765 43210" class="w-full pl-16 pr-3.5 py-2.5 bg-slate-900/90 border border-slate-700/80 rounded-xl text-sm text-white placeholder:text-slate-500 focus:border-rose-500 font-medium transition-colors" onkeydown="if(event.key==='Enter') document.getElementById('clientEmailInput').focus()">
+            <input type="tel" id="clientPhoneInput" placeholder="98765 43210" class="w-full pl-16 pr-3.5 py-2.5 bg-slate-900/90 border border-slate-700/80 rounded-xl text-sm text-white placeholder:text-slate-500 focus:border-rose-500 font-medium transition-colors" onkeydown="if(event.key==='Enter') saveClientName()">
           </div>
-        </div>
-
-        <div>
-          <label class="text-[10.5px] font-semibold text-slate-300 block mb-1">Email Address <span class="text-slate-500 text-[9.5px]">(Optional for updates)</span></label>
-          <input type="email" id="clientEmailInput" placeholder="name@example.com" class="w-full px-3.5 py-2.5 bg-slate-900/90 border border-slate-700/80 rounded-xl text-sm text-white placeholder:text-slate-500 focus:border-rose-500 font-medium transition-colors" onkeydown="if(event.key==='Enter') saveClientName()">
         </div>
       </div>
 
@@ -592,141 +587,121 @@
         </div>
 
         <!-- Quick Actions Grid -->
-        <div class="grid grid-cols-3 gap-2 pt-2 border-t border-white/5">
-          <button onclick="closeProfileModal(); startCall('audio')" class="p-2.5 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white flex flex-col items-center gap-1 transition-all cursor-pointer">
-            <svg class="w-5 h-5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-            <span class="text-[11px] font-medium">Voice</span>
-          </button>
-          <button onclick="closeProfileModal(); startCall('video')" class="p-2.5 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white flex flex-col items-center gap-1 transition-all cursor-pointer">
-            <svg class="w-5 h-5 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
-            <span class="text-[11px] font-medium">Video</span>
+        <div class="grid grid-cols-2 gap-2 pt-2 border-t border-white/5">
+          <button onclick="closeProfileModal(); openClientProfileModal()" class="p-2.5 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white flex flex-col items-center gap-1 transition-all cursor-pointer">
+            <svg class="w-5 h-5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            <span class="text-[11px] font-medium">My Profile</span>
           </button>
           <button onclick="closeProfileModal(); copyClientChatLink()" class="p-2.5 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white flex flex-col items-center gap-1 transition-all cursor-pointer">
             <svg class="w-5 h-5 text-sky-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-            <span class="text-[11px] font-medium">Share</span>
+            <span class="text-[11px] font-medium">Share Link</span>
           </button>
         </div>
       </div>
     </div>
   </div>
 
-  <script src="/chat-app.js?v=7.3"></script>
+  <script src="/chat-app.js?v=7.4"></script>
 
   <!-- Ultra-Luxury Dedicated Client Profile Modal (Real Google Verification + DP) -->
-  <div id="clientProfileModal" class="fixed inset-0 bg-black/85 backdrop-blur-2xl z-50 hidden flex items-center justify-center p-4">
-    <div class="w-full max-w-sm p-6 sm:p-7 rounded-3xl bg-[#0c0e17] border border-white/10 shadow-2xl text-center space-y-5 relative animate-in fade-in zoom-in-95 duration-200">
+  <div id="clientProfileModal" class="fixed inset-0 bg-black/90 backdrop-blur-2xl z-50 hidden flex items-center justify-center p-4">
+    <div class="w-full max-w-sm p-6 sm:p-7 rounded-3xl bg-[#0c0e14] border border-white/[0.08] shadow-2xl text-center space-y-5 relative animate-in fade-in zoom-in-95 duration-200">
       
       <!-- Close Button -->
-      <button type="button" onclick="closeClientProfileModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors">
+      <button type="button" onclick="closeClientProfileModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors cursor-pointer" aria-label="Close">
         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
 
       <!-- Modal Title -->
       <div class="text-center">
-        <h3 class="font-extrabold text-lg text-white">Your Profile</h3>
-        <p class="text-xs text-slate-400">Manage identity, Google verification & avatar</p>
+        <span class="text-[10px] uppercase font-bold tracking-[0.18em] text-[#d4af37] block mb-1">Institutional Identity</span>
+        <h3 class="font-black text-xl text-white tracking-tight">Client Account</h3>
       </div>
 
       <!-- Large Circular Avatar with Camera / Upload Trigger -->
       <div class="relative w-24 h-24 mx-auto">
-        <div id="modalProfileRing" class="w-full h-full rounded-full bg-gradient-to-tr from-[#161a27] to-[#252f48] border-2 border-slate-700 flex items-center justify-center overflow-hidden shadow-xl">
+        <div id="modalProfileRing" class="w-full h-full rounded-full bg-gradient-to-tr from-[#161a27] to-[#252f48] border-2 border-white/20 flex items-center justify-center overflow-hidden shadow-2xl">
           <span id="modalProfileInitial" class="text-3xl font-black text-white uppercase">C</span>
           <img id="modalProfileImg" src="" alt="Profile DP" class="w-full h-full object-cover hidden">
         </div>
         <!-- Google Verified Badge on Avatar -->
-        <span id="modalProfileVerifiedCheck" class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#00D26A] border-2 border-[#0c0e17] text-white flex items-center justify-center text-xs font-black hidden shadow-md">✓</span>
+        <span id="modalProfileVerifiedCheck" class="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#00D26A] border-2 border-[#0c0e14] text-white flex items-center justify-center text-xs font-black hidden shadow-md" title="Google Verified Identity">✓</span>
         <!-- Upload Custom Photo Overlay Button -->
-        <label for="customPhotoUploadInput" class="absolute -bottom-1 -left-1 w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 border border-white/20 text-slate-200 flex items-center justify-center shadow-md cursor-pointer transition-all active:scale-95" title="Upload custom photo">
+        <label for="customPhotoUploadInput" class="absolute -bottom-1 -left-1 w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 border border-white/20 text-slate-200 flex items-center justify-center shadow-md cursor-pointer transition-all active:scale-95" title="Upload custom photo / avatar">
           <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
           <input type="file" id="customPhotoUploadInput" accept="image/*" class="hidden" onchange="handleCustomPhotoUpload(event)">
         </label>
       </div>
 
       <!-- Username Display & Quick Edit -->
-      <div class="p-3 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-between text-xs">
+      <div class="p-3.5 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-between text-xs">
         <div class="text-left">
           <span class="text-[10px] text-slate-400 block font-medium">Username</span>
           <span id="modalUsernameText" class="font-bold text-white text-sm">@client</span>
         </div>
-        <button type="button" onclick="promptEditUsername()" class="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 text-slate-200 text-[11px] font-semibold transition-all cursor-pointer">
-          Edit
+        <button type="button" onclick="promptEditUsername()" class="px-3 py-1 rounded-xl bg-white/10 hover:bg-white/15 text-slate-200 text-[11px] font-semibold transition-all cursor-pointer">
+          Change
         </button>
       </div>
 
-      <!-- Contact & Verification Details -->
-      <div class="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.06] text-left space-y-2.5">
-        <div class="flex items-center justify-between">
-          <span class="text-[11px] font-bold text-slate-200 flex items-center gap-1.5">
-            <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-            <span>Verified Contact Info</span>
-          </span>
-          <span id="profileVerificationPill" class="text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-white/10">Unverified</span>
-        </div>
-
-        <div>
-          <label class="text-[10px] text-slate-400 block mb-0.5 font-medium">WhatsApp / Mobile Number</label>
-          <input type="tel" id="profilePhoneInput" placeholder="+91 98765 43210" class="w-full px-3 py-1.5 bg-black/40 border border-slate-700/70 rounded-xl text-xs text-white placeholder:text-slate-500 font-medium focus:border-rose-500">
-        </div>
-
-        <div>
-          <label class="text-[10px] text-slate-400 block mb-0.5 font-medium">Email Address</label>
-          <input type="email" id="profileEmailInput" placeholder="name@example.com" class="w-full px-3 py-1.5 bg-black/40 border border-slate-700/70 rounded-xl text-xs text-white placeholder:text-slate-500 font-medium focus:border-rose-500">
-        </div>
-
-        <button type="button" onclick="saveDirectProfileVerification()" class="w-full py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 cursor-pointer transition-all">
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          <span>Save & Verify Contact Details</span>
-        </button>
-      </div>
-
-      <!-- Original Google Verification Suite -->
+      <!-- Verifect-Grade Google Verification Suite -->
       <!-- A. When Verified with Google -->
       <div id="modalGoogleVerifiedCard" class="hidden p-4 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-[#0d1e15] to-emerald-950/40 border border-[#00D26A]/40 text-left space-y-1.5 shadow-lg">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <svg class="w-4 h-4" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.15z"/>
-              <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.24v3.15C3.26 21.36 7.33 24 12 24z"/>
-              <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.24C.45 8.15 0 9.99 0 12s.45 3.85 1.24 5.42l4.04-3.15z"/>
-              <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.24 6.58l4.04 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+            <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
             </svg>
             <span class="text-xs font-bold text-emerald-400">Google Verified Account ✓</span>
           </div>
-          <span class="text-[9.5px] font-bold text-emerald-300 bg-emerald-950/80 px-2 py-0.5 rounded-full border border-emerald-500/30">Active</span>
+          <span class="text-[9.5px] font-bold text-emerald-300 bg-emerald-950/80 px-2.5 py-0.5 rounded-full border border-emerald-500/30">Active</span>
         </div>
-        <p id="modalGoogleEmailText" class="text-xs text-slate-200 font-mono select-all font-semibold">user@gmail.com</p>
-        <p class="text-[10px] text-emerald-300/80">Identity & profile photo authenticated via Google Identity Services.</p>
+        <p id="modalGoogleEmailText" class="text-xs text-white font-mono select-all font-semibold">user@gmail.com</p>
+        <p class="text-[10px] text-emerald-300/80">Default DP & verified email authenticated from Google.</p>
       </div>
 
-      <!-- B. When NOT Verified with Google (Official Google Sign-In) -->
-      <div id="modalGoogleUnverifiedCard" class="p-3.5 rounded-2xl bg-white/[0.04] border border-white/10 text-left space-y-2 shadow-lg">
-        <div class="flex items-center gap-2">
-          <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-            <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.15z"/>
-            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.24v3.15C3.26 21.36 7.33 24 12 24z"/>
-            <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.24C.45 8.15 0 9.99 0 12s.45 3.85 1.24 5.42l4.04-3.15z"/>
-            <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.24 6.58l4.04 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+      <!-- B. When NOT Verified with Google (Verifect Ultra-Luxury Button) -->
+      <div id="modalGoogleUnverifiedCard" class="space-y-3">
+        <button
+          type="button"
+          id="googleAuthTriggerBtn"
+          onclick="initiateGoogleAuth()"
+          class="w-full bg-gradient-to-r from-white/[0.08] via-white/[0.05] to-white/[0.02] hover:from-white/[0.14] hover:via-white/[0.08] hover:to-white/[0.04] text-white border border-white/[0.12] hover:border-emerald-500/50 shadow-xl backdrop-blur-xl p-3.5 sm:p-4 rounded-2xl flex items-center justify-center gap-3 transition-all cursor-pointer active:scale-95 group font-bold text-sm"
+        >
+          <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
           </svg>
-          <span class="text-xs font-bold text-white">Google 1-Tap Sign-In</span>
-        </div>
-        <p class="text-[10.5px] text-slate-400 leading-snug">
-          Sync your official Google profile & photo with 1-click.
-        </p>
+          <span>Continue with Google</span>
+        </button>
+        <!-- Fast-Track Instant Verification Fallback -->
+        <button
+          type="button"
+          onclick="promptInstantGoogleSync()"
+          class="w-full py-2.5 px-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white border border-white/[0.06] text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95"
+        >
+          <svg class="w-3.5 h-3.5 text-[#00D26A]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Fast-Track Instant Verify (Gmail DP)</span>
+        </button>
 
-        <!-- Official Google Sign-In Button Container (rendered via GSI) -->
-        <div id="googleGsiButtonContainer" class="flex justify-center pt-0.5 min-h-[44px]"></div>
+        <!-- Background GSI container -->
+        <div id="googleGsiButtonContainer" class="hidden"></div>
       </div>
 
-      <!-- Device & Security Telemetry Pill -->
-      <div id="profileDeviceBadge" class="p-2.5 rounded-2xl bg-black/40 border border-white/5 text-left text-[10px] text-slate-400 space-y-1">
-        <div class="flex items-center justify-between text-slate-300 font-semibold">
-          <span class="flex items-center gap-1">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-            <span id="profileDeviceModelText">Device Active</span>
-          </span>
-          <span id="profileDeviceLocationText">Network Protected</span>
+      <!-- Optional WhatsApp Contact Input (Zero Email asked!) -->
+      <div class="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.06] text-left space-y-2">
+        <label class="text-[10px] text-slate-400 block font-medium">WhatsApp / Mobile Number (Optional)</label>
+        <div class="flex gap-2">
+          <input type="tel" id="profilePhoneInput" placeholder="+91 98765 43210" class="flex-1 px-3 py-2 bg-black/40 border border-slate-700/70 rounded-xl text-xs text-white placeholder:text-slate-500 font-medium focus:border-emerald-500">
+          <button type="button" onclick="saveDirectProfileVerification()" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs transition-all active:scale-95 cursor-pointer">
+            Save
+          </button>
         </div>
-        <div id="profileDeviceSubText" class="text-slate-500 truncate">Telemetry automatically secured</div>
       </div>
 
       <!-- Device Notifications Preference Switch -->
@@ -742,10 +717,9 @@
       </div>
 
       <!-- Done Button -->
-      <button type="button" onclick="closeClientProfileModal()" class="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs transition-all active:scale-95 cursor-pointer">
+      <button type="button" onclick="closeClientProfileModal()" class="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs transition-all cursor-pointer">
         Done
       </button>
-
     </div>
   </div>
 
