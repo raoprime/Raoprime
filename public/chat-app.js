@@ -834,7 +834,6 @@ async function loadMessages() {
       // Check if other party (Raoprime Admin) is typing or online
       const otherSender = currentRole === 'Client' ? 'Raoprime' : 'Client';
       const isOtherTyping = Boolean(data.typing && data.typing[otherSender]);
-      const isOtherTyping = Boolean(data.typing && data.typing[otherSender]);
       const currentTypingSig = `online:${isOtherTyping}`;
       if (currentTypingSig !== lastTypingSig) {
         lastTypingSig = currentTypingSig;
@@ -857,18 +856,17 @@ function canEditMessage(msg) {
 }
 
 function renderSingleMessageHtml(msg, index, messages) {
-  let lastDateStr = '';
-    const isOut = msg.sender === currentRole;
+  const isOut = msg.sender === currentRole;
     const prevMsg = index > 0 ? messages[index - 1] : null;
     const nextMsg = index < messages.length - 1 ? messages[index + 1] : null;
 
     const msgDate = new Date(msg.timestamp);
     const dateFormatted = msgDate.toDateString();
+    const prevDate = prevMsg ? (new Date(prevMsg.timestamp)).toDateString() : null;
+    const isNewDay = !prevDate || dateFormatted !== prevDate;
     let dateDividerHtml = '';
 
-    const isNewDay = dateFormatted !== lastDateStr;
     if (isNewDay) {
-      lastDateStr = dateFormatted;
       const now = new Date();
       let label = msgDate.toLocaleDateString([], { month: 'short', day: 'numeric', year: msgDate.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
       if (dateFormatted === now.toDateString()) label = 'Today';
