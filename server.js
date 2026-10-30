@@ -898,6 +898,9 @@ app.get('/api/chat/verification', (req, res) => {
       verified: Boolean(ver.verified),
       status: ver.status || (ver.verified ? 'verified' : (ver.photoUrl ? 'pending' : 'none')),
       photoUrl: ver.photoUrl || null,
+      email: ver.email || null,
+      provider: ver.provider || 'custom',
+      name: ver.name || null,
       phoneNumber: ver.phoneNumber || null,
       submittedAt: ver.submittedAt || null,
       remainingMs,
@@ -907,6 +910,64 @@ app.get('/api/chat/verification', (req, res) => {
     });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+
+// Original Google Identity Verification (Auto-fetches Profile Picture & Verified Email)
+app.post('/api/chat/verify-google', (req, res) => {
+  try {
+    const { chatId: rawChatId = 'default', profile } = req.body;
+    if (!profile || !profile.email) {
+      return res.status(400).json({ success: false, error: 'Valid Google profile is required' });
+    }
+
+    const chatId = normalizeChatId(rawChatId);
+    const photoUrl = profile.picture || null;
+    const email = profile.email;
+    const name = profile.name || chatId;
+    const now = new Date().toISOString();
+
+    verificationsStore[chatId] = {
+      verified: true,
+      status: 'verified',
+      provider: 'google',
+      photoUrl,
+      email,
+      name,
+      phoneNumber: profile.phoneNumber || verificationsStore[chatId]?.phoneNumber || null,
+      verifiedAt: now,
+      updatedAt: now,
+      isRequested: false
+    };
+    saveVerifications(verificationsStore);
+
+    broadcastToRoom(chatId, 'chat:verification-updated', {
+      chatId,
+      verified: true,
+      status: 'verified',
+      provider: 'google',
+      photoUrl,
+      email,
+      name,
+      verifiedAt: now
+    });
+
+    console.log(`[Google Auth] Client ${chatId} verified with Google (${email})`);
+
+    res.json({
+      success: true,
+      verified: true,
+      status: 'verified',
+      provider: 'google',
+      photoUrl,
+      email,
+      name,
+      verifiedAt: now
+    });
+  } catch (err) {
+    console.error('verify-google error:', err);
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
@@ -1688,6 +1749,8 @@ app.get('/api/admin/chats', requireAdminAuth, async (req, res) => {
         isVerified: Boolean(ver.verified),
         verificationStatus: ver.status || (ver.verified ? 'verified' : (ver.photoUrl ? 'pending' : 'none')),
         verifiedPhoto: ver.photoUrl || null,
+        verifiedEmail: ver.email || null,
+        provider: ver.provider || 'custom',
         phoneNumber: ver.phoneNumber || null,
         verifiedAt: ver.verifiedAt || null,
         submittedAt: ver.submittedAt || null,

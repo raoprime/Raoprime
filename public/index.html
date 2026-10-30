@@ -229,6 +229,7 @@
       animation: auraBreathe 3s ease-in-out infinite;
     }
   </style>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body class="h-[100dvh] w-full max-w-full flex flex-col bg-[#050608] text-slate-100 overflow-hidden select-none">
 
@@ -244,10 +245,10 @@
     <p class="text-sm text-slate-400 mt-1 text-center">Transmit documents, master audio, 4K videos or archives of any size</p>
   </div>
 
-  <!-- Instagram / Apple DM Top Header -->
-  <header class="h-16 px-3.5 sm:px-6 bg-[#0a0c12]/95 border-b border-slate-800/80 backdrop-blur-xl flex items-center justify-between z-20 shrink-0 safe-top">
+  <!-- Instagram / Apple DM Top Header (Ultra-Luxury Minimalist) -->
+  <header class="h-16 px-4 sm:px-6 bg-[#0a0c12]/95 border-b border-slate-800/80 backdrop-blur-xl flex items-center justify-between z-20 shrink-0 safe-top">
     
-    <!-- User Info & Circular RP Logo (Click to View Profile) -->
+    <!-- User Info & Circular RP Logo (Click to View Raoprime Profile) -->
     <div class="flex items-center gap-3 sm:gap-3.5 min-w-0">
       <div onclick="openProfileModal()" class="relative shrink-0 cursor-pointer group" title="View Raoprime Profile">
         <img src="/assets/rp-logo.jpg" alt="Raoprime Logo" class="w-10 h-10 sm:w-11 sm:h-11 rounded-full object-cover border-2 border-[#7a182a] shadow-md shadow-rose-950/60 ring-2 ring-black group-hover:scale-105 transition-transform">
@@ -256,7 +257,7 @@
       </div>
       <div onclick="openProfileModal()" class="min-w-0 cursor-pointer">
         <div class="flex items-center gap-1.5">
-          <h2 id="chatHeading" class="font-extrabold text-sm sm:text-base text-white tracking-tight truncate max-w-[100px] xs:max-w-[160px] sm:max-w-none group-hover:text-rose-200 transition-colors">Raoprime</h2>
+          <h2 id="chatHeading" class="font-extrabold text-sm sm:text-base text-white tracking-tight truncate max-w-[120px] xs:max-w-[160px] sm:max-w-none group-hover:text-rose-200 transition-colors">Raoprime</h2>
           <svg class="w-4 h-4 text-rose-500 fill-current shrink-0" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
         </div>
         <!-- Status / Real-time Typing Text (Instagram DM Style) -->
@@ -267,42 +268,22 @@
       </div>
     </div>
 
-    <!-- Header Actions (WhatsApp / iOS FaceTime Grade Minimalist Glass Icons) -->
-    <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
-      <!-- Device Notifications Bell Button -->
-      <button type="button" id="notifBellBtn" onclick="toggleOrRequestNotification()" class="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/[0.06] hover:bg-white/[0.12] active:bg-white/[0.18] text-slate-200 hover:text-white border border-white/[0.08] backdrop-blur-md transition-all active:scale-90 flex items-center justify-center cursor-pointer shadow-sm group" title="Device Notifications" aria-label="Device Notifications">
-        <svg id="notifBellIcon" class="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:rotate-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-        </svg>
-        <span id="notifBellDot" class="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-amber-400 ring-2 ring-[#0a0c12] hidden"></span>
-        <span id="notifBellBadge" class="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping hidden"></span>
-      </button>
-
-      <!-- Voice Call Button -->
-      <button onclick="startCall('audio')" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/[0.06] hover:bg-white/[0.12] active:bg-white/[0.18] text-slate-200 hover:text-white border border-white/[0.08] backdrop-blur-md transition-all active:scale-90 flex items-center justify-center cursor-pointer shadow-sm" title="Voice Call" aria-label="Voice Call">
-        <svg class="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-        </svg>
-      </button>
-
-      <!-- Video Call Button -->
-      <button onclick="startCall('video')" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/[0.06] hover:bg-white/[0.12] active:bg-white/[0.18] text-slate-200 hover:text-white border border-white/[0.08] backdrop-blur-md transition-all active:scale-90 flex items-center justify-center cursor-pointer shadow-sm" title="Video Call" aria-label="Video Call">
-        <svg class="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="23 7 16 12 23 17 23 7"/>
-          <rect x="1" y="5" width="15" height="14" rx="3" ry="3"/>
-        </svg>
-      </button>
-
-      <!-- Client Profile / DP Badge (Instant DP & Google Verification) -->
-      <div id="headerClientProfileBtn" onclick="openPhotoVerifyModal()" class="relative shrink-0 cursor-pointer group" title="Your Profile & Google Verification">
-        <div id="headerClientAvatarRing" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-800 border-2 border-slate-700/80 group-hover:border-rose-500/60 flex items-center justify-center overflow-hidden transition-all group-hover:scale-105 shadow-sm">
-          <span id="headerClientInitials" class="text-xs font-bold text-slate-300 uppercase">U</span>
-          <img id="headerClientAvatarImg" src="" alt="Client DP" class="w-full h-full object-cover hidden">
+    <!-- Right Header Actions: Client Profile Button & Share Link -->
+    <div class="flex items-center gap-2 sm:gap-2.5 shrink-0">
+      
+      <!-- Client Profile Trigger (DP + Username + Google Verified Checkmark) -->
+      <button type="button" onclick="openClientProfileModal()" id="headerProfileBtn" class="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] active:bg-white/[0.18] border border-white/[0.1] backdrop-blur-md transition-all active:scale-95 cursor-pointer shadow-sm group select-none" title="Your Account & Google Verification">
+        <div class="relative w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-tr from-[#1a2030] to-[#252f48] border border-white/20 flex items-center justify-center overflow-hidden shrink-0 group-hover:border-rose-500/60 transition-colors">
+          <span id="headerProfileInitial" class="text-xs font-bold text-white uppercase">C</span>
+          <img id="headerProfileImg" src="" alt="DP" class="w-full h-full object-cover hidden">
+          <!-- Google Verified Badge Dot -->
+          <span id="headerProfileVerifiedBadge" class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-[#00D26A] border-2 border-[#0a0c12] text-white flex items-center justify-center text-[7px] font-black hidden shadow-sm">✓</span>
         </div>
-        <span id="headerClientVerifiedBadge" class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[#00D26A] border-2 border-[#0a0c12] text-white flex items-center justify-center text-[7px] font-extrabold hidden shadow-sm">✓</span>
-        <span id="headerClientPendingBadge" class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-amber-500 border-2 border-[#0a0c12] text-black flex items-center justify-center text-[7px] font-extrabold hidden shadow-sm">⏳</span>
-      </div>
+        <div class="hidden xs:flex flex-col text-left leading-tight pr-0.5">
+          <span id="headerProfileName" class="text-xs font-semibold text-slate-200 group-hover:text-white max-w-[90px] sm:max-w-[130px] truncate">@User</span>
+          <span id="headerProfileStatusText" class="text-[9.5px] text-slate-400 group-hover:text-slate-300 font-medium truncate">Profile</span>
+        </div>
+      </button>
 
       <!-- Share / Invite Link Button -->
       <button onclick="copyClientChatLink()" id="shareLinkBtn" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/[0.06] hover:bg-white/[0.12] active:bg-white/[0.18] text-slate-200 hover:text-white border border-white/[0.08] backdrop-blur-md transition-all active:scale-90 flex items-center justify-center cursor-pointer shadow-sm" title="Copy Chat Link" aria-label="Copy Chat Link">
@@ -314,86 +295,10 @@
           <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
         </svg>
       </button>
+
     </div>
 
   </header>
-
-  <!-- Device Notification Enable Banner (Pinned directly under header, WhatsApp Web style) -->
-  <div id="notifPermissionBanner" class="hidden w-full bg-gradient-to-r from-amber-950/80 via-[#181310]/95 to-amber-950/80 border-b border-amber-500/30 px-3.5 sm:px-6 py-2.5 flex items-center justify-between gap-3 text-xs text-amber-200 z-10 backdrop-blur-md shadow-lg transition-all select-none">
-    <div class="flex items-center gap-2.5 min-w-0">
-      <div class="w-7 h-7 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shrink-0">
-        <svg class="w-4 h-4 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-        </svg>
-      </div>
-      <div class="min-w-0">
-        <p class="font-bold text-white text-[12px] truncate">Turn on device alerts for new messages</p>
-        <p class="text-[11px] text-amber-200/80 truncate">Get instant alerts on your phone or PC when Raoprime replies</p>
-      </div>
-    </div>
-    <div class="flex items-center gap-2 shrink-0">
-      <button type="button" onclick="requestNotificationPermission()" class="px-3.5 py-1.5 rounded-full bg-amber-500 hover:bg-amber-400 active:scale-95 text-black font-extrabold text-[11.5px] transition-all shadow-md cursor-pointer flex items-center gap-1.5">
-        <span>Turn On</span>
-        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
-      </button>
-      <button type="button" onclick="dismissNotificationBanner()" class="p-1.5 text-slate-400 hover:text-white rounded-full hover:bg-white/10 transition-colors cursor-pointer" aria-label="Dismiss" title="Dismiss">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-      </button>
-    </div>
-  </div>
-
-
-  <!-- Client Identity Photo Verification Strip with Interactive Toggle Switch -->
-  <div id="photoVerifyStrip" class="w-full bg-[#0b0e17]/95 border-b border-white/[0.08] px-3.5 sm:px-6 py-2.5 flex items-center justify-between gap-3 text-xs z-15 backdrop-blur-xl shadow-md transition-all select-none">
-    <div class="flex items-center gap-3 min-w-0">
-      <!-- Avatar Preview / DP with Google Badge -->
-      <div onclick="openPhotoVerifyModal()" class="relative shrink-0 cursor-pointer group" title="Click to view or verify identity">
-        <div id="verifyAvatarRing" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-tr from-[#161a27] to-[#202738] border-2 border-slate-600/80 flex items-center justify-center text-slate-300 overflow-hidden shadow-md group-hover:scale-105 transition-transform">
-          <svg id="verifyAvatarPlaceholderIcon" class="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 group-hover:text-rose-300 transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-            <circle cx="12" cy="13" r="4"/>
-          </svg>
-          <img id="verifyAvatarImg" src="" alt="Verified DP" class="w-full h-full object-cover hidden">
-        </div>
-        <!-- Emerald Verified Checkmark Badge -->
-        <span id="verifyBadgeCheck" class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#00D26A] border-2 border-[#0a0c12] text-white flex items-center justify-center hidden shadow-sm">
-          <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-        </span>
-        <!-- Amber Pending Clock Badge -->
-        <span id="verifyBadgePending" class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-amber-500 border-2 border-[#0a0c12] text-black flex items-center justify-center text-[8px] font-black hidden shadow-sm">⏳</span>
-      </div>
-
-      <!-- Text / Google Verification Status -->
-      <div class="min-w-0">
-        <div class="flex items-center gap-2">
-          <!-- Google 'G' mini icon -->
-          <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24">
-            <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.15z"/>
-            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.24v3.15C3.26 21.36 7.33 24 12 24z"/>
-            <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.24C.45 8.15 0 9.99 0 12s.45 3.85 1.24 5.42l4.04-3.15z"/>
-            <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.24 6.58l4.04 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-          </svg>
-          <span id="verifyTitle" class="font-extrabold text-white text-[12.5px] truncate">Google Identity Verification</span>
-          <span id="verifyStatusBadge" class="hidden px-2 py-0.2 rounded-full text-[9.5px] font-bold"></span>
-        </div>
-        <p id="verifySubtitle" class="text-[11px] text-slate-400 truncate">Google Identity Verification • Add photo & mobile number</p>
-      </div>
-    </div>
-
-    <!-- Right: Change Photo button + Toggle Switch -->
-    <div class="flex items-center gap-2.5 sm:gap-3 shrink-0">
-      <button type="button" id="changePhotoBtn" onclick="openPhotoVerifyModal()" class="hidden px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 active:scale-95 text-slate-200 text-[11px] font-semibold transition-all cursor-pointer">
-        View
-      </button>
-
-      <!-- The Toggle Switch -->
-      <label class="inline-flex items-center cursor-pointer select-none" title="Toggle photo verification">
-        <input type="checkbox" id="photoVerifyToggle" onchange="onPhotoVerifyToggleChange(this.checked)" class="sr-only peer">
-        <div class="relative w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#00D26A] shadow-inner transition-colors"></div>
-      </label>
-    </div>
-  </div>
 
   <!-- Middle Chat Messages Stream (Scrollable with WhatsApp Wallpaper Texture) -->
   <main id="chatStream" class="flex-1 overflow-y-auto chat-scroll p-3.5 sm:p-6 space-y-4 relative flex flex-col justify-start chat-wallpaper">
@@ -407,6 +312,28 @@
           Welcome to Raoprime. You can chat directly and send documents, audio files, 4K videos, or archives of <strong class="text-slate-200">any file size</strong>.
         </p>
         <span class="text-[10px] text-slate-500 font-mono">🔒 End-to-end encrypted transfer</span>
+
+        <!-- Luxury Google Identity Verification Card (Auto-hides once verified) -->
+        <div id="welcomeGoogleVerifyCard" class="w-full mt-3 p-3.5 rounded-2xl bg-gradient-to-r from-white/[0.04] to-white/[0.02] border border-white/10 flex items-center justify-between gap-3 text-left shadow-lg">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0 shadow-inner">
+              <svg class="w-4 h-4" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.15z"/>
+                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.24v3.15C3.26 21.36 7.33 24 12 24z"/>
+                <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.24C.45 8.15 0 9.99 0 12s.45 3.85 1.24 5.42l4.04-3.15z"/>
+                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.24 6.58l4.04 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+              </svg>
+            </div>
+            <div class="min-w-0">
+              <h4 class="text-xs font-bold text-white truncate">Verify with Google</h4>
+              <p class="text-[10.5px] text-slate-400 truncate">1-Click official verification & profile photo sync</p>
+            </div>
+          </div>
+          <button type="button" onclick="openClientProfileModal()" class="px-3 py-1.5 rounded-full bg-white hover:bg-slate-100 text-slate-900 font-bold text-[11px] transition-all shadow-md active:scale-95 shrink-0 cursor-pointer">
+            Verify
+          </button>
+        </div>
+
       </div>
       <div class="text-[10px] sm:text-[11px] text-slate-600 font-semibold tracking-wider uppercase mt-3">Today</div>
     </div>
@@ -595,179 +522,6 @@
     </div>
   </div>
 
-  <!-- Ultra-Luxury VIP Incoming Call Screen (FaceTime / Telegram VIP Grade) -->
-  <div id="incomingCallModal" class="fixed inset-0 bg-[#050608]/95 backdrop-blur-2xl z-50 hidden flex flex-col justify-between items-center py-10 sm:py-16 px-6 safe-top safe-bottom overflow-hidden select-none">
-    
-    <!-- Background Ambient Glow -->
-    <div class="absolute -top-32 left-1/2 -translate-x-1/2 w-96 h-96 bg-rose-900/30 rounded-full blur-[100px] pointer-events-none"></div>
-    <div class="absolute -bottom-32 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-950/30 rounded-full blur-[100px] pointer-events-none"></div>
-
-    <!-- Top Call Info -->
-    <div class="text-center space-y-3 z-10 pt-4">
-      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 text-[11px] font-mono font-bold tracking-wide text-slate-300 shadow-inner">
-        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span id="incomingCallSecurityBadge">End-to-End P2P Encrypted</span>
-      </div>
-
-      <h2 id="incomingCallerName" class="text-3xl sm:text-4xl font-black text-white tracking-tight drop-shadow-md">Raoprime</h2>
-      
-      <p id="incomingCallType" class="text-xs sm:text-sm font-semibold text-rose-400 tracking-wide uppercase flex items-center justify-center gap-2">
-        <i data-lucide="video" class="w-4 h-4"></i> Incoming 1080p Ultra HD Call...
-      </p>
-    </div>
-
-    <!-- Center Avatar with Dynamic Expanding Radar Rings -->
-    <div class="relative w-44 h-44 sm:w-56 sm:h-56 flex items-center justify-center z-10 my-auto">
-      <span class="absolute inset-0 rounded-full border-2 border-rose-500/30 pulse-ring-1 pointer-events-none"></span>
-      <span class="absolute inset-0 rounded-full border-2 border-rose-500/20 pulse-ring-2 pointer-events-none"></span>
-      <span class="absolute inset-0 rounded-full border-2 border-rose-500/10 pulse-ring-3 pointer-events-none"></span>
-      
-      <div class="absolute w-36 h-36 sm:w-44 sm:h-44 rounded-full bg-gradient-to-tr from-rose-900/80 to-red-600/40 blur-xl aura-breathe pointer-events-none"></div>
-
-      <div class="relative w-28 h-28 sm:w-36 sm:h-36 rounded-full overflow-hidden border-4 border-rose-500/60 shadow-2xl ring-8 ring-black/60 bg-[#0e1118] flex items-center justify-center">
-        <img id="incomingCallerAvatarImg" src="/assets/rp-logo.jpg" alt="Caller" class="w-full h-full object-cover">
-        <div id="incomingCallerInitialFallback" class="hidden w-full h-full bg-gradient-to-tr from-rose-900 to-red-700 flex items-center justify-center text-white font-black text-3xl sm:text-4xl">
-          <span id="incomingCallerInitial">R</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Bottom Action Controls: Glowing Decline & Accept -->
-    <div class="w-full max-w-sm flex items-center justify-around z-10 pb-4">
-      <div class="flex flex-col items-center space-y-2">
-        <button onclick="declineCall()" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-b from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white flex items-center justify-center transition-all shadow-2xl shadow-red-950/90 active:scale-90 cursor-pointer border border-red-500/40" title="Decline" aria-label="Decline Call">
-          <i data-lucide="phone-off" class="w-7 h-7 sm:w-8 sm:h-8"></i>
-        </button>
-        <span class="text-xs font-semibold text-slate-400">Decline</span>
-      </div>
-
-      <div class="flex flex-col items-center space-y-2">
-        <button onclick="acceptIncomingCall()" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-b from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white flex items-center justify-center transition-all shadow-2xl shadow-emerald-950/90 active:scale-90 cursor-pointer animate-phone-shake border border-emerald-400/50" title="Accept" aria-label="Accept Call">
-          <i data-lucide="phone-call" class="w-7 h-7 sm:w-8 sm:h-8"></i>
-        </button>
-        <span class="text-xs font-semibold text-emerald-400">Accept</span>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- Ultra-Luxury VIP Active Call Screen (1080p Video + Dynamic Audio Waveform) -->
-  <div id="callOverlay" class="fixed inset-0 bg-[#040508] z-50 hidden flex flex-col justify-between overflow-hidden select-none">
-    
-    <!-- Top Floating Capsule Header Bar -->
-    <div class="w-full p-4 sm:p-6 flex items-center justify-between z-30 shrink-0 safe-top">
-      <div class="inline-flex items-center gap-3 px-3.5 py-1.5 rounded-full bg-black/60 border border-white/10 backdrop-blur-xl shadow-2xl">
-        <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-rose-900 to-red-700 flex items-center justify-center text-white font-extrabold text-[11px] shadow-sm">
-          <span id="callOverlayInitial">RP</span>
-        </div>
-        <div>
-          <h4 id="callOverlayPeerName" class="font-extrabold text-xs sm:text-sm text-white leading-none">Raoprime</h4>
-          <p class="text-[10px] text-emerald-400 font-mono flex items-center gap-1.5 mt-0.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span id="callDuration">00:00</span>
-          </p>
-        </div>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <div class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 border border-white/10 backdrop-blur-xl text-[10px] font-mono text-slate-300">
-          <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i>
-          <span>P2P Direct • 1080p HD</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Center Stage: Video Canvas OR Animated Soundwave Suite -->
-    <div class="flex-1 relative flex items-center justify-center overflow-hidden bg-black">
-      
-      <!-- Fullscreen High-Definition Remote Video -->
-      <video id="remoteVideo" autoplay playsinline webkit-playsinline class="w-full h-full object-cover"></video>
-
-      <!-- Dedicated Remote Audio Output (Never hidden with display:none to guarantee loud crystal-clear audio on iOS & Android) -->
-      <audio id="remoteAudio" autoplay playsinline class="sr-only"></audio>
-
-      <!-- Audio Call Screen with Dynamic Bouncing Soundwave Suite -->
-      <div id="audioCallVisualizer" class="hidden absolute inset-0 flex flex-col items-center justify-center space-y-8 text-center p-6 bg-gradient-to-b from-[#090b12] via-[#05060a] to-[#090b12]">
-        
-        <div class="relative w-36 h-36 sm:w-44 sm:h-44 flex items-center justify-center">
-          <div class="absolute inset-0 rounded-full bg-rose-700/20 blur-2xl aura-breathe pointer-events-none"></div>
-          <span class="absolute inset-0 rounded-full border border-rose-500/20 pulse-ring-1 pointer-events-none"></span>
-          
-          <div class="w-32 h-32 sm:w-40 sm:h-40 rounded-full overflow-hidden border-4 border-rose-600/50 shadow-2xl ring-8 ring-black/70 bg-[#0e1118] flex items-center justify-center">
-            <img id="audioCallAvatarImg" src="/assets/rp-logo.jpg" alt="Raoprime" class="w-full h-full object-cover">
-            <div id="audioCallInitialFallback" class="hidden w-full h-full bg-gradient-to-tr from-rose-900 to-red-700 flex items-center justify-center text-white font-black text-4xl">
-              <span id="audioCallInitial">R</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="space-y-1">
-          <h3 id="audioCallPeerName" class="font-black text-2xl sm:text-3xl text-white tracking-tight">Raoprime</h3>
-          <p class="text-xs text-emerald-400 font-mono flex items-center justify-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span>Studio Voice Active • 48,000 Hz Stereo</span>
-          </p>
-        </div>
-
-        <!-- Real-Time Audio Frequency Soundwave Bars (16 Dynamic Bars) -->
-        <div id="soundwaveContainer" class="flex items-center justify-center gap-1.5 h-12 px-6 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl">
-          <span class="w-1.5 h-3 bg-gradient-to-t from-rose-600 to-red-400 rounded-full wave-bar-1"></span>
-          <span class="w-1.5 h-5 bg-gradient-to-t from-rose-600 to-red-400 rounded-full wave-bar-2"></span>
-          <span class="w-1.5 h-8 bg-gradient-to-t from-rose-600 to-red-400 rounded-full wave-bar-3"></span>
-          <span class="w-1.5 h-6 bg-gradient-to-t from-rose-600 to-red-400 rounded-full wave-bar-4"></span>
-          <span class="w-1.5 h-9 bg-gradient-to-t from-rose-600 to-red-400 rounded-full wave-bar-5"></span>
-          <span class="w-1.5 h-4 bg-gradient-to-t from-rose-600 to-red-400 rounded-full wave-bar-6"></span>
-          <span class="w-1.5 h-7 bg-gradient-to-t from-rose-600 to-red-400 rounded-full wave-bar-7"></span>
-          <span class="w-1.5 h-10 bg-gradient-to-t from-rose-600 to-red-400 rounded-full wave-bar-8"></span>
-          <span class="w-1.5 h-6 bg-gradient-to-t from-rose-600 to-red-400 rounded-full wave-bar-1"></span>
-          <span class="w-1.5 h-9 bg-gradient-to-t from-rose-600 to-red-400 rounded-full wave-bar-3"></span>
-          <span class="w-1.5 h-7 bg-gradient-to-t from-rose-600 to-red-400 rounded-full wave-bar-5"></span>
-          <span class="w-1.5 h-4 bg-gradient-to-t from-rose-600 to-red-400 rounded-full wave-bar-2"></span>
-          <span class="w-1.5 h-8 bg-gradient-to-t from-rose-600 to-red-400 rounded-full wave-bar-7"></span>
-          <span class="w-1.5 h-5 bg-gradient-to-t from-rose-600 to-red-400 rounded-full wave-bar-4"></span>
-          <span class="w-1.5 h-3 bg-gradient-to-t from-rose-600 to-red-400 rounded-full wave-bar-6"></span>
-        </div>
-
-      </div>
-
-      <!-- Floating Picture-in-Picture Local Camera (Draggable Corner Tile) -->
-      <div id="localVideoContainer" class="absolute bottom-24 sm:bottom-28 right-4 sm:right-8 w-28 h-40 sm:w-36 sm:h-52 rounded-2xl overflow-hidden border-2 border-rose-500/60 shadow-2xl bg-black/90 z-30 transition-all">
-        <video id="localVideo" autoplay playsinline webkit-playsinline muted class="w-full h-full object-cover mirror"></video>
-        <span class="absolute bottom-2 left-2 text-[9px] font-bold text-white bg-black/70 px-2 py-0.5 rounded-full backdrop-blur">You</span>
-      </div>
-
-    </div>
-
-    <!-- Bottom Luxury Floating Capsule Controls Dock -->
-    <div class="p-4 sm:p-8 flex items-center justify-center z-30 shrink-0 safe-bottom">
-      <div class="inline-flex items-center gap-3 sm:gap-4 px-5 py-3 rounded-full bg-black/70 border border-white/15 backdrop-blur-2xl shadow-2xl">
-        
-        <!-- Mute / Unmute Mic -->
-        <button onclick="toggleCallMic()" id="micToggleBtn" class="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white flex items-center justify-center transition-all border border-white/15 cursor-pointer" title="Mute Microphone">
-          <i data-lucide="mic" id="micIcon" class="w-5 h-5"></i>
-        </button>
-
-        <!-- Toggle Camera (Video Call only) -->
-        <button onclick="toggleCallCamera()" id="camToggleBtn" class="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white flex items-center justify-center transition-all border border-white/15 cursor-pointer" title="Camera On/Off">
-          <i data-lucide="video" id="camIcon" class="w-5 h-5"></i>
-        </button>
-
-        <!-- Flip Camera (Mobile Front/Back switch) -->
-        <button onclick="flipCamera()" id="flipCamBtn" class="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white flex items-center justify-center transition-all border border-white/15 sm:hidden cursor-pointer" title="Flip Camera">
-          <i data-lucide="switch-camera" class="w-5 h-5"></i>
-        </button>
-
-        <!-- End Call Button (Executive Red Pill) -->
-        <button onclick="endCall()" class="h-12 px-6 rounded-full bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 active:scale-95 text-white font-bold text-xs flex items-center gap-2 transition-all shadow-xl shadow-red-950/80 cursor-pointer border border-red-500/40" title="End Call">
-          <i data-lucide="phone-off" class="w-4 h-4"></i>
-          <span>End Call</span>
-        </button>
-
-      </div>
-    </div>
-
-  </div>
-
   <!-- WhatsApp-Grade Profile Photo / Info Modal (DP Managed) -->
   <div id="profileModal" class="fixed inset-0 bg-black/85 backdrop-blur-xl z-50 hidden flex items-center justify-center p-4 transition-all">
     <div class="bg-[#0e1118] border border-white/10 rounded-3xl max-w-sm w-full overflow-hidden shadow-2xl relative text-center">
@@ -828,123 +582,103 @@
     </div>
   </div>
 
-  <script src="/chat-app.js?v=6.4"></script>
+  <script src="/chat-app.js?v=7.0"></script>
 
-  <!-- Google Identity Verification Modal (Photo DP + Mobile Number + 20-Min Review) -->
-  <div id="photoVerifyModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-    <div class="w-full max-w-sm p-6 rounded-3xl bg-[#0c0e16] border border-white/10 shadow-2xl text-center space-y-4 relative animate-in fade-in zoom-in-95 duration-200 max-h-[92vh] overflow-y-auto">
+  <!-- Ultra-Luxury Dedicated Client Profile Modal (Real Google Verification + DP) -->
+  <div id="clientProfileModal" class="fixed inset-0 bg-black/85 backdrop-blur-2xl z-50 hidden flex items-center justify-center p-4">
+    <div class="w-full max-w-sm p-6 sm:p-7 rounded-3xl bg-[#0c0e17] border border-white/10 shadow-2xl text-center space-y-5 relative animate-in fade-in zoom-in-95 duration-200">
       
       <!-- Close Button -->
-      <button type="button" onclick="closePhotoVerifyModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-1.5 rounded-full hover:bg-white/10 transition-colors">
+      <button type="button" onclick="closeClientProfileModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors">
         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
 
-      <!-- Google Official Branding Icon -->
-      <div class="w-12 h-12 rounded-2xl bg-white/[0.06] border border-white/10 flex items-center justify-center mx-auto shadow-inner">
-        <svg class="w-7 h-7" viewBox="0 0 24 24">
-          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.15z"/>
-          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.24v3.15C3.26 21.36 7.33 24 12 24z"/>
-          <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.24C.45 8.15 0 9.99 0 12s.45 3.85 1.24 5.42l4.04-3.15z"/>
-          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.24 6.58l4.04 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-        </svg>
+      <!-- Modal Title -->
+      <div class="text-center">
+        <h3 class="font-extrabold text-lg text-white">Your Profile</h3>
+        <p class="text-xs text-slate-400">Manage identity, Google verification & avatar</p>
       </div>
 
-      <div class="space-y-1">
-        <h3 id="modalHeadingTitle" class="font-extrabold text-base sm:text-lg text-white">Google Identity Verification</h3>
-        <p id="modalHeadingDesc" class="text-xs text-slate-400 leading-relaxed">Add your profile photo & mobile number. Security review completes automatically in ~20 minutes.</p>
-      </div>
-
-      <!-- Current Username Display -->
-      <div class="flex items-center justify-between px-3.5 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] text-xs">
-        <span class="text-slate-400">Username:</span>
-        <span id="modalUsernameDisplay" class="font-bold text-white font-mono">@client</span>
-      </div>
-
-      <!-- Mobile Number Input Field -->
-      <div id="modalPhoneGroup" class="space-y-1 text-left">
-        <label class="text-[11px] font-semibold text-slate-300 flex items-center justify-between">
-          <span>Mobile Number</span>
-          <span class="text-[10px] text-amber-400 font-medium">*Required</span>
-        </label>
-        <div class="relative flex items-center">
-          <div class="absolute left-3 flex items-center gap-1 text-xs text-slate-300 font-semibold select-none pointer-events-none">
-            <span>🇮🇳</span>
-            <span>+91</span>
-          </div>
-          <input type="tel" id="verifyPhoneInput" maxlength="10" placeholder="10-digit mobile number" class="w-full pl-16 pr-4 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-rose-500 font-mono tracking-wider" oninput="validateVerificationForm()">
+      <!-- Large Circular Avatar with Camera / Upload Trigger -->
+      <div class="relative w-24 h-24 mx-auto">
+        <div id="modalProfileRing" class="w-full h-full rounded-full bg-gradient-to-tr from-[#161a27] to-[#252f48] border-2 border-slate-700 flex items-center justify-center overflow-hidden shadow-xl">
+          <span id="modalProfileInitial" class="text-3xl font-black text-white uppercase">C</span>
+          <img id="modalProfileImg" src="" alt="Profile DP" class="w-full h-full object-cover hidden">
         </div>
-      </div>
-
-      <!-- Photo Preview / Placeholder Area -->
-      <div class="relative w-28 h-28 mx-auto rounded-full bg-[#151926] border-2 border-dashed border-rose-500/40 overflow-hidden flex items-center justify-center group shadow-xl">
-        <img id="modalPhotoPreview" src="" alt="Photo Preview" class="w-full h-full object-cover hidden">
-        <div id="modalPhotoPlaceholder" class="flex flex-col items-center justify-center text-slate-400 text-xs p-2">
-          <svg class="w-7 h-7 text-slate-500 mb-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/></svg>
-          <span class="text-[10px] text-slate-400 font-medium">Add Photo / DP</span>
-        </div>
-        <!-- Live Camera Stream (if user opens selfie cam) -->
-        <video id="modalCameraStream" autoplay playsinline class="w-full h-full object-cover hidden"></video>
-      </div>
-
-      <!-- Action Buttons for Camera / File Pick -->
-      <div id="photoSelectActions" class="grid grid-cols-2 gap-2 pt-0.5">
-        <!-- Take Selfie with Camera -->
-        <button type="button" onclick="startModalCamera()" id="btnStartCam" class="py-2.5 px-3 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 border border-white/10 active:scale-95 cursor-pointer">
-          <svg class="w-4 h-4 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          <span>Take Selfie</span>
-        </button>
-
-        <!-- Choose from Gallery / Files -->
-        <label class="py-2.5 px-3 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 border border-white/10 active:scale-95 cursor-pointer">
-          <svg class="w-4 h-4 text-sky-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-          <span>Upload DP</span>
-          <input type="file" id="photoFileInput" accept="image/*" class="hidden" onchange="handlePhotoFileSelected(event)">
+        <!-- Google Verified Badge on Avatar -->
+        <span id="modalProfileVerifiedCheck" class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#00D26A] border-2 border-[#0c0e17] text-white flex items-center justify-center text-xs font-black hidden shadow-md">✓</span>
+        <!-- Upload Custom Photo Overlay Button -->
+        <label for="customPhotoUploadInput" class="absolute -bottom-1 -left-1 w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 border border-white/20 text-slate-200 flex items-center justify-center shadow-md cursor-pointer transition-all active:scale-95" title="Upload custom photo">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <input type="file" id="customPhotoUploadInput" accept="image/*" class="hidden" onchange="handleCustomPhotoUpload(event)">
         </label>
       </div>
 
-      <!-- Live Camera Capture & Switch Controls -->
-      <div id="cameraControls" class="hidden flex items-center justify-center gap-2 pt-1">
-        <button type="button" onclick="captureModalPhoto()" class="py-2 px-5 rounded-full bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-all shadow-lg active:scale-95 flex items-center gap-1.5 cursor-pointer">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
-          <span>Capture Photo</span>
-        </button>
-        <button type="button" onclick="stopModalCamera()" class="p-2 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 text-xs transition-all active:scale-95 cursor-pointer" title="Cancel Camera">
-          ✕
+      <!-- Username Display & Quick Edit -->
+      <div class="p-3 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-between text-xs">
+        <div class="text-left">
+          <span class="text-[10px] text-slate-400 block font-medium">Username</span>
+          <span id="modalUsernameText" class="font-bold text-white text-sm">@client</span>
+        </div>
+        <button type="button" onclick="promptEditUsername()" class="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 text-slate-200 text-[11px] font-semibold transition-all cursor-pointer">
+          Edit
         </button>
       </div>
 
-      <!-- Pending Status Card (Shows while 20-min review is ticking) -->
-      <div id="modalPendingStatusCard" class="hidden p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-left space-y-1.5">
+      <!-- Original Google Verification Suite -->
+      <!-- A. When Verified with Google -->
+      <div id="modalGoogleVerifiedCard" class="hidden p-4 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-[#0d1e15] to-emerald-950/40 border border-[#00D26A]/40 text-left space-y-1.5 shadow-lg">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
-            Review in Progress
-          </span>
-          <span id="modalCountdownBadge" class="text-[11px] font-mono font-bold text-amber-200 bg-amber-950/60 px-2 py-0.5 rounded-full">~20m left</span>
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.15z"/>
+              <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.24v3.15C3.26 21.36 7.33 24 12 24z"/>
+              <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.24C.45 8.15 0 9.99 0 12s.45 3.85 1.24 5.42l4.04-3.15z"/>
+              <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.24 6.58l4.04 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+            </svg>
+            <span class="text-xs font-bold text-emerald-400">Google Verified Account ✓</span>
+          </div>
+          <span class="text-[9.5px] font-bold text-emerald-300 bg-emerald-950/80 px-2 py-0.5 rounded-full border border-emerald-500/30">Active</span>
         </div>
-        <p class="text-[11px] text-amber-200/80 leading-relaxed">
-          Your photo has been set as your DP! Google Security is reviewing your credentials. Verified badge activates automatically in 20 minutes.
+        <p id="modalGoogleEmailText" class="text-xs text-slate-200 font-mono select-all font-semibold">user@gmail.com</p>
+        <p class="text-[10px] text-emerald-300/80">Identity & profile photo authenticated via Google Identity Services.</p>
+      </div>
+
+      <!-- B. When NOT Verified with Google (Official Google Sign-In) -->
+      <div id="modalGoogleUnverifiedCard" class="p-4 rounded-2xl bg-white/[0.04] border border-white/10 text-left space-y-2.5 shadow-lg">
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.15z"/>
+            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.24v3.15C3.26 21.36 7.33 24 12 24z"/>
+            <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.24C.45 8.15 0 9.99 0 12s.45 3.85 1.24 5.42l4.04-3.15z"/>
+            <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.24 6.58l4.04 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+          </svg>
+          <span class="text-xs font-bold text-white">Google Verification Service</span>
+        </div>
+        <p class="text-[11px] text-slate-400 leading-relaxed">
+          Verify your account using your official Google identity. Your profile photo and details will be fetched automatically.
         </p>
+
+        <!-- Official Google Sign-In Button Container (rendered via GSI) -->
+        <div id="googleGsiButtonContainer" class="flex justify-center pt-1 min-h-[44px]"></div>
       </div>
 
-      <!-- Verified Success Card (Shows once verified) -->
-      <div id="modalVerifiedSuccessCard" class="hidden p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-left space-y-1">
-        <div class="flex items-center gap-1.5 text-xs font-bold text-emerald-400">
-          <svg class="w-4 h-4 text-[#00D26A]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          <span>Google Verified Account</span>
+      <!-- Device Notifications Preference Switch -->
+      <div class="px-3.5 py-2.5 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-between text-xs">
+        <div class="text-left">
+          <span class="font-bold text-slate-200 block text-xs">Device Notifications</span>
+          <span class="text-[10px] text-slate-400">Receive alerts when Raoprime replies</span>
         </div>
-        <p id="modalVerifiedDetails" class="text-[11px] text-emerald-200/80 font-mono">Photo & Mobile Number Confirmed</p>
+        <label class="inline-flex items-center cursor-pointer select-none">
+          <input type="checkbox" id="profileNotifToggle" onchange="handleProfileNotifToggle(this.checked)" class="sr-only peer">
+          <div class="relative w-10 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#00D26A]"></div>
+        </label>
       </div>
 
-      <!-- Save & Confirm Button -->
-      <div class="pt-2 flex items-center gap-2">
-        <button type="button" onclick="closePhotoVerifyModal()" class="flex-1 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-slate-300 font-semibold text-xs transition-all active:scale-95 cursor-pointer">
-          Close
-        </button>
-        <button type="button" onclick="submitPhotoVerification()" id="saveVerifyPhotoBtn" class="flex-1 py-2.5 rounded-xl bg-[#00D26A] hover:bg-[#00ba5e] text-black font-extrabold text-xs transition-all active:scale-95 shadow-lg shadow-emerald-950/40 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed" disabled>
-          Verify with Google
-        </button>
-      </div>
+      <!-- Done Button -->
+      <button type="button" onclick="closeClientProfileModal()" class="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs transition-all active:scale-95 cursor-pointer">
+        Done
+      </button>
 
     </div>
   </div>

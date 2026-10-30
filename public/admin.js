@@ -3161,35 +3161,32 @@ function updateAdminVerificationBadge(chat) {
   }
 
   const isVerified = Boolean(chat.isVerified);
-  const status = chat.verificationStatus || (isVerified ? 'verified' : (chat.verifiedPhoto ? 'pending' : 'none'));
+  const email = chat.verifiedEmail || chat.email || '';
+  const isGoogle = chat.provider === 'google' || Boolean(email);
   const hasPhoto = Boolean(chat.verifiedPhoto);
-  const phone = chat.phoneNumber || '';
 
-  if (isVerified && hasPhoto) {
+  if (isVerified) {
     area.innerHTML = `
-      <button type="button" onclick="viewClientVerifiedPhoto('${chat.verifiedPhoto}', '${escapeHtml(chat.clientName)}', '${phone}', 'verified', '${chat.chatId}')" class="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-bold flex items-center gap-1 hover:bg-emerald-500/30 transition-all cursor-pointer" title="Verified Photo & Phone: ${phone || 'Confirmed'}">
-        <svg class="w-3 h-3 text-[#00D26A]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-        <span>Verified ${phone ? `(+91 ${phone.slice(-4)})` : 'Photo'}</span>
+      <button type="button" onclick="viewClientVerifiedPhoto('${chat.verifiedPhoto || ''}', '${escapeHtml(chat.clientName)}', '${email}', '${isGoogle ? 'google' : 'custom'}')" class="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-[10.5px] font-bold flex items-center gap-1.5 hover:bg-emerald-500/25 transition-all cursor-pointer shadow-sm" title="${isGoogle ? `Google Verified: ${email}` : 'Verified Identity'}">
+        ${isGoogle ? `
+          <svg class="w-3.5 h-3.5 shrink-0 inline" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.15z"/>
+            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.24v3.15C3.26 21.36 7.33 24 12 24z"/>
+            <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.24C.45 8.15 0 9.99 0 12s.45 3.85 1.24 5.42l4.04-3.15z"/>
+            <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.24 6.58l4.04 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+          </svg>
+          <span>Google Verified</span>
+        ` : `
+          <svg class="w-3 h-3 text-[#00D26A]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Verified DP</span>
+        `}
       </button>
-    `;
-  } else if (status === 'pending' || hasPhoto) {
-    const mins = chat.remainingMinutes || 20;
-    area.innerHTML = `
-      <div class="flex items-center gap-1">
-        <button type="button" onclick="viewClientVerifiedPhoto('${chat.verifiedPhoto}', '${escapeHtml(chat.clientName)}', '${phone}', 'pending', '${chat.chatId}')" class="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-bold flex items-center gap-1 hover:bg-amber-500/30 transition-all cursor-pointer" title="Reviewing (~20 mins). Phone: ${phone || 'Entered'}">
-          <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
-          <span>Reviewing (~${mins}m)</span>
-        </button>
-        <button type="button" onclick="adminApproveCurrentClient('${chat.chatId}')" class="px-2 py-0.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-extrabold transition-all cursor-pointer shadow-sm active:scale-95" title="Approve now without waiting 20 minutes">
-          Approve
-        </button>
-      </div>
     `;
   } else {
     area.innerHTML = `
-      <button type="button" onclick="adminRequestPhotoVerification('${chat.chatId}', '${escapeHtml(chat.clientName)}')" class="px-2 py-0.5 rounded-full bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 text-[10.5px] font-semibold flex items-center gap-1 transition-all cursor-pointer active:scale-95" title="Ask client to add their photo & phone to verify identity">
+      <button type="button" onclick="adminRequestPhotoVerification('${chat.chatId}', '${escapeHtml(chat.clientName)}')" class="px-2 py-0.5 rounded-full bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 text-[10.5px] font-semibold flex items-center gap-1 transition-all cursor-pointer active:scale-95" title="Request identity verification">
         <svg class="w-3 h-3 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        <span>Request Photo</span>
+        <span>Request Verify</span>
       </button>
     `;
   }
@@ -3208,7 +3205,7 @@ async function adminRequestPhotoVerification(chatId, clientName) {
     });
     const data = await res.json();
     if (data.success) {
-      showToast(`📢 Photo verification requested from ${clientName}`);
+      showToast(`📢 Verification requested from ${clientName}`);
     } else {
       showToast('Error requesting verification: ' + (data.error || 'Server error'));
     }
@@ -3217,39 +3214,8 @@ async function adminRequestPhotoVerification(chatId, clientName) {
   }
 }
 
-async function adminApproveCurrentClient(chatId) {
-  if (!adminToken || !chatId) return;
-  try {
-    const res = await fetch('/api/admin/verify-client', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-admin-token': adminToken
-      },
-      body: JSON.stringify({ chatId, approve: true })
-    });
-    const data = await res.json();
-    if (data.success) {
-      showToast('✓ Client verification approved instantly!');
-      const target = allChats.find(c => c.chatId === chatId);
-      if (target) {
-        target.isVerified = true;
-        target.verificationStatus = 'verified';
-        updateAdminVerificationBadge(target);
-      }
-      closeAdminPhotoModal();
-      filterChats();
-    } else {
-      showToast('Error approving verification: ' + (data.error || 'Server error'));
-    }
-  } catch (err) {
-    showToast('Network error approving verification');
-  }
-}
-
-function viewClientVerifiedPhoto(url, name, phone, status, chatId) {
-  if (!url) return;
-  currentAdminViewingChatId = chatId || activeChatId;
+function viewClientVerifiedPhoto(url, name, email, provider) {
+  currentAdminViewingChatId = activeChatId;
 
   const modal = document.getElementById('adminPhotoModal');
   const img = document.getElementById('adminPhotoModalImg');
@@ -3258,39 +3224,32 @@ function viewClientVerifiedPhoto(url, name, phone, status, chatId) {
   const phoneEl = document.getElementById('adminPhotoModalPhone');
   const approveBtn = document.getElementById('adminPhotoModalApproveBtn');
 
-  if (modal && img) {
-    img.src = url;
+  if (modal) {
+    if (img) {
+      if (url) {
+        img.src = url;
+        img.classList.remove('hidden');
+      } else {
+        img.classList.add('hidden');
+      }
+    }
     if (nameEl) nameEl.textContent = name || 'Client';
 
-    const isVerified = status === 'verified';
+    const isGoogle = provider === 'google' || Boolean(email);
     if (statusEl) {
-      statusEl.innerHTML = isVerified
-        ? '<span class="w-1.5 h-1.5 rounded-full bg-[#00D26A]"></span> Verified Identity Photo'
-        : '<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span> Verification Under Review (~20m)';
-      statusEl.className = isVerified
-        ? 'text-[11px] text-emerald-400 font-semibold flex items-center gap-1'
-        : 'text-[11px] text-amber-300 font-semibold flex items-center gap-1';
+      statusEl.innerHTML = isGoogle
+        ? '<span class="w-1.5 h-1.5 rounded-full bg-[#00D26A]"></span> Google Verified Account ✓'
+        : '<span class="w-1.5 h-1.5 rounded-full bg-[#00D26A]"></span> Verified Identity Photo';
+      statusEl.className = 'text-[11px] text-emerald-400 font-semibold flex items-center gap-1';
     }
 
     if (phoneEl) {
-      phoneEl.textContent = phone ? `📞 +91 ${phone.replace(/\D/g, '').slice(-10)}` : 'No phone registered';
+      phoneEl.textContent = email ? `✉ ${email}` : 'Google Verified Identity';
     }
 
-    if (approveBtn) {
-      if (!isVerified) {
-        approveBtn.classList.remove('hidden');
-      } else {
-        approveBtn.classList.add('hidden');
-      }
-    }
+    if (approveBtn) approveBtn.classList.add('hidden');
 
     modal.classList.remove('hidden');
-  }
-}
-
-function adminApproveCurrentModalClient() {
-  if (currentAdminViewingChatId) {
-    adminApproveCurrentClient(currentAdminViewingChatId);
   }
 }
 
