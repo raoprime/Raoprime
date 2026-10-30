@@ -1163,11 +1163,26 @@ app.get('/api/auth/google/callback', async (req, res) => {
     const parts = tokenData.id_token.split('.');
     const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
 
-    const normChatId = normalizeChatId(rawChatId === 'default' ? (payload.name || 'Client') : rawChatId);
+    // Permanent Username is strictly whatever is before @gmail.com (cannot be changed)
+    const emailPrefix = (payload.email || '').split('@')[0].trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '');
+    const normChatId = normalizeChatId(emailPrefix || rawChatId);
     const photoUrl = payload.picture || null;
     const email = payload.email;
     const name = payload.name || normChatId;
     const now = new Date().toISOString();
+
+    // Seamlessly migrate guest session messages to the permanent Google account username
+    const memStore = ensureMemoryStore();
+    if (rawChatId !== 'default' && rawChatId !== normChatId && memStore[rawChatId] && memStore[rawChatId].length > 0) {
+      if (!memStore[normChatId]) memStore[normChatId] = [];
+      memStore[rawChatId].forEach(m => {
+        if (!memStore[normChatId].find(x => x.id === m.id)) {
+          memStore[normChatId].push({ ...m, chatId: normChatId });
+        }
+      });
+      delete memStore[rawChatId];
+      saveLocalChats();
+    }
 
     verificationsStore[normChatId] = {
       verified: true,
@@ -1176,6 +1191,7 @@ app.get('/api/auth/google/callback', async (req, res) => {
       photoUrl,
       email,
       name,
+      username: normChatId,
       phoneNumber: verificationsStore[normChatId]?.phoneNumber || null,
       verifiedAt: now,
       updatedAt: now,
@@ -1227,11 +1243,26 @@ app.post('/api/chat/verify-google', (req, res) => {
       return res.status(400).json({ success: false, error: 'Valid Google profile is required' });
     }
 
-    const chatId = normalizeChatId(rawChatId);
+    // Permanent Username is strictly whatever is before @gmail.com (cannot be changed)
+    const emailPrefix = (profile.email || '').split('@')[0].trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '');
+    const chatId = normalizeChatId(emailPrefix || rawChatId);
     const photoUrl = profile.picture || null;
     const email = profile.email;
     const name = profile.name || chatId;
     const now = new Date().toISOString();
+
+    // Seamlessly migrate guest session messages to the permanent Google account username
+    const memStore = ensureMemoryStore();
+    if (rawChatId !== 'default' && rawChatId !== chatId && memStore[rawChatId] && memStore[rawChatId].length > 0) {
+      if (!memStore[chatId]) memStore[chatId] = [];
+      memStore[rawChatId].forEach(m => {
+        if (!memStore[chatId].find(x => x.id === m.id)) {
+          memStore[chatId].push({ ...m, chatId: chatId });
+        }
+      });
+      delete memStore[rawChatId];
+      saveLocalChats();
+    }
 
     verificationsStore[chatId] = {
       verified: true,
@@ -1240,6 +1271,7 @@ app.post('/api/chat/verify-google', (req, res) => {
       photoUrl,
       email,
       name,
+      username: chatId,
       phoneNumber: profile.phoneNumber || verificationsStore[chatId]?.phoneNumber || null,
       verifiedAt: now,
       updatedAt: now,
@@ -1279,6 +1311,8 @@ app.post('/api/chat/verify-google', (req, res) => {
 
     res.json({
       success: true,
+      chatId,
+      username: chatId,
       verified: true,
       status: 'verified',
       provider: 'google',

@@ -2264,48 +2264,6 @@ function initiateGoogleAuth() {
   window.location.href = `/api/auth/google?chatId=${encodeURIComponent(activeId)}`;
 }
 
-// Fast-Track Instant Google Profile & DP Sync (Zero Prompts)
-async function promptInstantGoogleSync(optionalEmail) {
-  const cleanEmail = (optionalEmail || 'raoprime.music@gmail.com').trim();
-  showToast('Connecting with Google profile...');
-
-  try {
-    const unavatarUrl = `https://unavatar.io/${encodeURIComponent(cleanEmail)}`;
-    const res = await fetch('/api/chat/verify-google', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chatId: currentChatId,
-        profile: {
-          name: cleanEmail.split('@')[0],
-          email: cleanEmail,
-          picture: unavatarUrl
-        }
-      })
-    });
-    const data = await res.json();
-    if (data.success) {
-      currentClientVerification = {
-        verified: true,
-        status: 'verified',
-        provider: 'google',
-        photoUrl: data.photoUrl,
-        email: data.email,
-        name: data.name,
-        phoneNumber: null,
-        verifiedAt: data.verifiedAt
-      };
-      updateClientProfileHeaderUI();
-      openClientProfileModal();
-      showToast(`🎉 Verified as ${data.email}! Profile photo set.`);
-    } else {
-      showToast('Error: ' + (data.error || 'Verification failed'));
-    }
-  } catch (err) {
-    showToast('Failed to connect: ' + err.message);
-  }
-}
-
 // URL Parameter Check for Google Authentication Return
 (function checkUrlAuthStatus() {
   if (typeof window === 'undefined') return;
@@ -2407,6 +2365,16 @@ async function handleGoogleCredentialResponse(response) {
     });
     const data = await res.json();
     if (data.success) {
+      if (data.chatId && data.chatId !== currentChatId) {
+        currentChatId = data.chatId;
+        localStorage.setItem('raoprime_client', data.chatId);
+        const newUrl = window.location.pathname + `?chat=${encodeURIComponent(data.chatId)}`;
+        window.history.replaceState(null, '', newUrl);
+        if (typeof socket !== 'undefined' && socket && socket.emit) {
+          socket.emit('join:room', currentChatId);
+        }
+      }
+
       currentClientVerification = {
         verified: true,
         status: 'verified',
@@ -2578,7 +2546,7 @@ function openClientProfileModal() {
   const viewEmail = document.getElementById('profileViewEmail');
 
   if (viewName) viewName.textContent = displayName;
-  if (viewChatId) viewChatId.textContent = currentChatId || 'client';
+  if (viewChatId) viewChatId.textContent = '@' + (currentChatId || 'client');
   if (viewPhone) viewPhone.textContent = phone;
   if (viewEmail) viewEmail.textContent = email;
 
