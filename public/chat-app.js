@@ -1488,21 +1488,28 @@ async function handleFilesUpload(fileList) {
   const barEl = document.getElementById('uploadingBar');
   const bytesEl = document.getElementById('uploadingBytes');
   const speedEl = document.getElementById('uploadingSpeed');
+  const etaEl = document.getElementById('uploadingEta');
 
-  activeCard.classList.remove('hidden');
+  if (activeCard) activeCard.classList.remove('hidden');
   scrollToBottom();
 
   for (let fIdx = 0; fIdx < fileList.length; fIdx++) {
     const file = fileList[fIdx];
-    fileNameEl.textContent = `(${fIdx + 1}/${fileList.length}) ${file.name}`;
+    if (file.size > 1024 * 1024 * 1024) {
+      showToast('File "' + file.name + '" exceeds 1GB limit (' + formatBytes(file.size) + '). Max allowed is 1GB.');
+      continue;
+    }
+
+    if (fileNameEl) fileNameEl.textContent = '(' + (fIdx + 1) + '/' + fileList.length + ') ' + file.name;
     
+    // 4MB chunks for files > 8MB; 2MB for smaller files
+    const activeChunkSize = file.size > 8 * 1024 * 1024 ? 4 * 1024 * 1024 : 2 * 1024 * 1024;
     const uploadId = 'upl_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
-    const activeChunkSize = file.size > 20 * 1024 * 1024 ? 4 * 1024 * 1024 : CHUNK_SIZE;
     const totalChunks = Math.max(1, Math.ceil(file.size / activeChunkSize));
 
     try {
       // 1. Init Upload Session
-      await fetch('/api/upload/init', {
+      const initRes = await fetch('/api/upload/init', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1511,11 +1518,15 @@ async function handleFilesUpload(fileList) {
           fileSize: file.size,
           totalChunks,
           chunkSize: activeChunkSize,
-          fileType: file.type,
+          fileType: file.type || 'application/octet-stream',
           chatId: currentChatId,
           sender: currentRole
         })
       });
+      const initData = await initRes.json();
+      if (!initRes.ok || !initData.success) {
+        throw new Error(initData.error || 'Failed to initialize server upload session');
+      }
 
       // 2. Stream individual chunks
       let lastUploaded = 0;
@@ -1528,10 +1539,11 @@ async function handleFilesUpload(fileList) {
 
         let sent = false;
         let retries = 0;
+        let lastError = null;
 
         while (!sent && retries < 10) {
           try {
-            const res = await fetch(`/api/upload/chunk?uploadId=${uploadId}&chunkIndex=${cIdx}&totalChunks=${totalChunks}`, {
+            const res = await fetch('/api/upload/chunk?uploadId=' + uploadId + '&chunkIndex=' + cIdx + '&totalChunks=' + totalChunks, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/octet-stream',
@@ -1541,47 +1553,86 @@ async function handleFilesUpload(fileList) {
               },
               body: chunkBlob
             });
-            if (res.ok) sent = true;
-            else throw new Error('Chunk error');
+            if (res.ok) {
+              const cJson = await res.json();
+              if (cJson.success) sent = true;
+              else throw new Error(cJson.error || 'Chunk rejected');
+            } else {
+              throw new Error('HTTP ' + res.status);
+            }
           } catch (e) {
             retries++;
-            await new Promise(r => setTimeout(r, Math.min(3000, 400 * (retries + 1))));
+            lastError = e;
+            await new Promise(r => setTimeout(r, Math.min(3000, 350 * (retries + 1))));
           }
         }
 
+        if (!sent) {
+          throw new Error('Failed to upload chunk ' + (cIdx + 1) + '/' + totalChunks + ': ' + (lastError ? lastError.message : 'Network error'));
+        }
+
         const uploadedNow = Math.min(file.size, (cIdx + 1) * activeChunkSize);
-        const percent = Math.round((uploadedNow / file.size) * 100);
-        barEl.style.width = percent + '%';
-        percentEl.textContent = percent + '%';
-        bytesEl.textContent = `${formatBytes(uploadedNow)} / ${formatBytes(file.size)}`;
+        const percent = Math.min(99, Math.round((uploadedNow / file.size) * 100));
+        if (barEl) barEl.style.width = percent + '%';
+        if (percentEl) percentEl.textContent = percent + '%';
+        if (bytesEl) bytesEl.textContent = formatBytes(uploadedNow) + ' / ' + formatBytes(file.size);
 
         const now = Date.now();
         const diff = (now - lastTime) / 1000;
         if (diff > 0.4) {
           const speed = (uploadedNow - lastUploaded) / diff;
-          speedEl.textContent = (speed > 1024 * 1024) ? (speed / (1024 * 1024)).toFixed(1) + ' MB/s' : Math.round(speed / 1024) + ' KB/s';
+          const formattedSpeed = (speed > 1024 * 1024) ? (speed / (1024 * 1024)).toFixed(1) + ' MB/s' : Math.round(speed / 1024) + ' KB/s';
+          if (speedEl) speedEl.textContent = formattedSpeed;
+
+          // Calculate ETA
+          const remainingBytes = file.size - uploadedNow;
+          if (speed > 0 && etaEl) {
+            const remainingSec = Math.round(remainingBytes / speed);
+            if (remainingSec < 60) {
+              etaEl.textContent = 'ETA: ' + remainingSec + 's';
+            } else {
+              const mins = Math.floor(remainingSec / 60);
+              const secs = remainingSec % 60;
+              etaEl.textContent = 'ETA: ' + mins + 'm ' + secs + 's';
+            }
+          }
           lastUploaded = uploadedNow;
           lastTime = now;
         }
       }
 
       // 3. Finalize and append to chat
-      await fetch('/api/upload/finalize', {
+      if (percentEl) percentEl.textContent = 'Finalizing...';
+      const finRes = await fetch('/api/upload/finalize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uploadId })
       });
+      const finData = await finRes.json();
+      if (!finRes.ok || !finData.success) {
+        throw new Error(finData.error || 'Server failed to assemble file');
+      }
+
+      if (barEl) barEl.style.width = '100%';
+      if (percentEl) percentEl.textContent = '100%';
+      showToast('✓ "' + file.name + '" sent successfully!');
 
       // Reload chat instantly to display the new document
       await loadMessages();
 
     } catch (err) {
-      showToast(`Upload error on ${file.name}: ` + err.message);
+      console.error('Upload error:', err);
+      showToast('Upload failed (' + file.name + '): ' + err.message);
     }
   }
 
   isCurrentlyUploading = false;
-  activeCard.classList.add('hidden');
+  setTimeout(() => {
+    if (activeCard) activeCard.classList.add('hidden');
+    if (barEl) barEl.style.width = '0%';
+    if (percentEl) percentEl.textContent = '0%';
+    if (etaEl) etaEl.textContent = '';
+  }, 1200);
 }
 
 // ──────────────────────────────────────────────────────────────

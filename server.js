@@ -6,6 +6,7 @@ const fs = require('fs');
 const os = require('os');
 const archiver = require('archiver');
 const crypto = require('crypto');
+const { pipeline } = require('stream/promises');
 const mongoose = require('mongoose');
 const http = require('http');
 const { WebSocketServer, WebSocket } = require('ws');
@@ -57,6 +58,16 @@ try {
 
 // Middleware
 app.use(cors());
+// Prevent stale browser script cache on updates
+app.use((req, res, next) => {
+  const url = req.url.toLowerCase();
+  if (url.endsWith('.js') || url.endsWith('.html') || url.endsWith('.css') || url.includes('.js?') || url.includes('.css?')) {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  }
+  next();
+});
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(path.join(ROOT_DIR, 'public')));
@@ -1469,33 +1480,31 @@ app.post('/api/upload/finalize', async (req, res) => {
     const finalStoredName = `${baseName}_${uploadId.slice(-6)}${fileExt}`;
     const finalFilePath = path.join(VAULT_DIR, finalStoredName);
 
-    // Assemble file with high-speed sequential streaming
-    const destStream = fs.createWriteStream(finalFilePath);
+    // 1GB+ Ultra-High Capacity Chunk Assembler
+    // Appends each chunk sequentially with backpressure (< 10MB RAM usage)
+    // Deletes each chunk immediately after append to preserve disk space
+    if (fs.existsSync(finalFilePath)) {
+      try { fs.unlinkSync(finalFilePath); } catch (e) {}
+    }
+
     for (let i = 0; i < totalChunks; i++) {
       const cPath = path.join(sessionDir, `chunk_${i}`);
-      await new Promise((resolve, reject) => {
-        const rs = fs.createReadStream(cPath);
-        rs.pipe(destStream, { end: false });
-        rs.on('end', resolve);
-        rs.on('error', reject);
-      });
+      if (!fs.existsSync(cPath)) {
+        return res.status(400).json({ success: false, error: `Missing chunk ${i}` });
+      }
+      await pipeline(
+        fs.createReadStream(cPath),
+        fs.createWriteStream(finalFilePath, { flags: 'a' })
+      );
+      try { fs.unlinkSync(cPath); } catch (e) {}
     }
-    destStream.end();
-
-    await new Promise((resolve, reject) => {
-      destStream.on('finish', resolve);
-      destStream.on('error', reject);
-    });
 
     let gridFsId = null;
 
-    // Cleanup temp chunks
+    // Cleanup session dir
     try {
-      for (let i = 0; i < totalChunks; i++) {
-        fs.unlinkSync(path.join(sessionDir, `chunk_${i}`));
-      }
-      fs.unlinkSync(metaPath);
-      fs.rmdirSync(sessionDir);
+      if (fs.existsSync(metaPath)) fs.unlinkSync(metaPath);
+      if (fs.existsSync(sessionDir)) fs.rmdirSync(sessionDir);
     } catch (e) {}
 
     // Add file message to chat thread

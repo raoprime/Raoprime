@@ -1732,14 +1732,20 @@ async function onAdminFilesChosen(e) {
 }
 
 async function uploadAdminFile(file) {
-  const uploadId = 'upl_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
-  const totalChunks = Math.max(1, Math.ceil(file.size / CHUNK_SIZE));
+  if (file.size > 1024 * 1024 * 1024) {
+    showToast('File "' + file.name + '" exceeds 1GB limit (' + formatBytes(file.size) + '). Max allowed is 1GB.');
+    return;
+  }
 
-  showToast(`Uploading ${file.name}...`);
+  const activeChunkSize = file.size > 8 * 1024 * 1024 ? 4 * 1024 * 1024 : 2 * 1024 * 1024;
+  const uploadId = 'upl_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+  const totalChunks = Math.max(1, Math.ceil(file.size / activeChunkSize));
+
+  showToast('Uploading ' + file.name + ' (' + formatBytes(file.size) + ')...');
 
   try {
-    // Init
-    await fetch('/api/upload/init', {
+    // 1. Init Upload Session
+    const initRes = await fetch('/api/upload/init', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1747,43 +1753,81 @@ async function uploadAdminFile(file) {
         fileName: file.name,
         fileSize: file.size,
         totalChunks,
-        chunkSize: CHUNK_SIZE,
-        fileType: file.type,
+        chunkSize: activeChunkSize,
+        fileType: file.type || 'application/octet-stream',
         chatId: activeChatId,
         sender: 'Raoprime'
       })
     });
-
-    // Chunks
-    for (let cIdx = 0; cIdx < totalChunks; cIdx++) {
-      const start = cIdx * CHUNK_SIZE;
-      const end = Math.min(file.size, start + CHUNK_SIZE);
-      const chunkBlob = file.slice(start, end);
-
-      await fetch(`/api/upload/chunk?uploadId=${uploadId}&chunkIndex=${cIdx}&totalChunks=${totalChunks}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/octet-stream',
-          'x-upload-id': uploadId,
-          'x-chunk-index': cIdx.toString(),
-          'x-total-chunks': totalChunks.toString()
-        },
-        body: chunkBlob
-      });
+    const initData = await initRes.json();
+    if (!initRes.ok || !initData.success) {
+      throw new Error(initData.error || 'Server init failed');
     }
 
-    // Finalize
-    await fetch('/api/upload/finalize', {
+    // 2. Stream Chunks with Retry
+    for (let cIdx = 0; cIdx < totalChunks; cIdx++) {
+      const start = cIdx * activeChunkSize;
+      const end = Math.min(file.size, start + activeChunkSize);
+      const chunkBlob = file.slice(start, end);
+
+      let sent = false;
+      let retries = 0;
+      let lastError = null;
+
+      while (!sent && retries < 10) {
+        try {
+          const res = await fetch('/api/upload/chunk?uploadId=' + uploadId + '&chunkIndex=' + cIdx + '&totalChunks=' + totalChunks, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/octet-stream',
+              'x-upload-id': uploadId,
+              'x-chunk-index': cIdx.toString(),
+              'x-total-chunks': totalChunks.toString()
+            },
+            body: chunkBlob
+          });
+          if (res.ok) {
+            const cJson = await res.json();
+            if (cJson.success) sent = true;
+            else throw new Error(cJson.error || 'Chunk rejected');
+          } else {
+            throw new Error('HTTP ' + res.status);
+          }
+        } catch (e) {
+          retries++;
+          lastError = e;
+          await new Promise(r => setTimeout(r, Math.min(3000, 350 * (retries + 1))));
+        }
+      }
+
+      if (!sent) {
+        throw new Error('Failed at chunk ' + (cIdx + 1) + '/' + totalChunks + ': ' + (lastError ? lastError.message : 'Network drop'));
+      }
+
+      // Progress toast every 25%
+      if (totalChunks > 4 && (cIdx % Math.ceil(totalChunks / 4) === 0 || cIdx === totalChunks - 1)) {
+        const pct = Math.round(((cIdx + 1) / totalChunks) * 100);
+        showToast('Uploading ' + file.name + ': ' + pct + '%');
+      }
+    }
+
+    // 3. Finalize
+    const finRes = await fetch('/api/upload/finalize', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ uploadId })
     });
+    const finData = await finRes.json();
+    if (!finRes.ok || !finData.success) {
+      throw new Error(finData.error || 'Server assembly error');
+    }
 
     triggerActiveMsgsPoll();
     triggerAdminChatsPoll();
-    showToast(`File "${file.name}" sent!`);
+    showToast('✓ File "' + file.name + '" sent successfully!');
   } catch (err) {
-    showToast(`Failed to upload ${file.name}: ` + err.message);
+    console.error('Admin upload error:', err);
+    showToast('Failed to upload ' + file.name + ': ' + err.message);
   }
 }
 
