@@ -1123,7 +1123,7 @@ function renderSingleMessageHtml(msg, index, messages) {
         </div>
       </div>
     `;
-  return `${dateDividerHtml}<div class="message-row flex flex-col ${isOut ? 'items-end' : 'items-start'} ${topSpacing} ${reactionEntries.length ? 'mb-2' : ''} group relative" data-msg-id="${msg.id}" data-msg-sender="${msg.sender}"><div class="relative flex items-center gap-1.5 ${isOut ? 'flex-row-reverse' : 'flex-row'} max-w-full"><div class="${isOut ? 'bubble-out' : 'bubble-in'} ${midClass} shadow-md cursor-pointer select-text relative group/bubble ${isEditingThis ? 'ring-2 ring-white/40 shadow-black/50' : ''}">${bubbleContent}${reactionBadgeHtml}<button type="button" onclick="openMessageContextMenuById('${msg.id}', event)" class="message-action-btn absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/40 hover:bg-black/70 text-slate-300 hover:text-white opacity-0 sm:group-hover/bubble:opacity-100 flex items-center justify-center transition-all shadow-sm cursor-pointer z-10" title="Options"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button></div><div class="hidden sm:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity select-none z-10 px-1 py-0.5 rounded-full bg-[#121622]/95 border border-white/10 backdrop-blur-md shadow-lg shrink-0"><button type="button" onclick="quickReactMessage('${msg.id}', '👍', event)" class="p-1 hover:scale-125 transition-transform text-xs" title="React 👍">👍</button><button type="button" onclick="quickCopyMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-sky-300 hover:bg-white/10 rounded-full transition-colors cursor-pointer" title="Copy Text"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>${canEdit ? `<button type="button" onclick="quickEditMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-[#d4af37] hover:bg-white/10 rounded-full transition-colors cursor-pointer" title="Edit Message"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></button>` : ''}<button type="button" onclick="quickReplyMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-emerald-300 hover:bg-white/10 rounded-full transition-colors cursor-pointer" title="Reply"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"></polyline><path d="M20 18v-2a4 4 0 0 0-4-4H4"></path></svg></button>${(msg.sender === currentRole) ? `<button type="button" onclick="quickUnsendMessage('${msg.id}', event)" class="p-1.5 text-slate-400 hover:text-zinc-300 hover:bg-white/[0.06] rounded-full transition-colors cursor-pointer" title="Unsend Message"><svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>` : ''}</div></div></div>`;
+
 }
 
 function renderMessages(messages) {
@@ -2256,23 +2256,8 @@ let currentClientVerification = {
 // Authentic Google Identity OAuth 2.0 Web Initiation
 function initiateGoogleAuth() {
   const activeId = currentChatId || localStorage.getItem('raoprime_client') || 'default';
-
-  // Attempt Google One-Tap if script loaded
-  if (window.google && window.google.accounts && window.google.accounts.id) {
-    try {
-      google.accounts.id.prompt((notification) => {
-        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-          // Direct Web OAuth redirection
-          window.location.href = `/api/auth/google?chatId=${encodeURIComponent(activeId)}`;
-        }
-      });
-      return;
-    } catch (e) {
-      console.warn('GSI prompt notice:', e);
-    }
-  }
-
-  // Direct OAuth 2.0 Web Redirect
+  showToast('Connecting to Google...');
+  // Direct Web OAuth redirection — always reliable, works on every mobile browser!
   window.location.href = `/api/auth/google?chatId=${encodeURIComponent(activeId)}`;
 }
 
