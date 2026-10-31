@@ -1142,18 +1142,44 @@ function renderAdminSingleMessageHtml(msg, index, messages) {
           </div>
         `;
       } else if (isAudio) {
+        const audioPlayerId = 'ap_adm_' + Math.random().toString(36).substring(2, 9);
+        const barsHtml = renderWaveformBarsHtml(f.originalName || f.downloadUrl);
         bubbleContent = `
-          <div class="p-3 sm:p-3.5 space-y-2 max-w-[280px] sm:max-w-sm min-w-[220px]">
+          <div class="p-3 sm:p-3.5 space-y-2.5 max-w-[300px] sm:max-w-sm min-w-[240px]">
             ${quotedReplyHtml}
-            <div class="flex items-center gap-2.5">
-              <div class="w-8 h-8 rounded-xl bg-rose-500/20 text-[#d4af37] flex items-center justify-center shrink-0">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+            <div class="flex items-center gap-2 min-w-0">
+              <div class="w-7 h-7 rounded-xl bg-[#741728]/30 border border-[#741728]/50 text-rose-300 flex items-center justify-center shrink-0">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
               </div>
-              <span class="text-[13px] font-semibold truncate text-white">${escapeHtml(f.originalName)}</span>
+              <span class="text-[12.5px] font-semibold truncate text-white">${escapeHtml(f.originalName)}</span>
             </div>
-            <audio src="${f.downloadUrl}" controls preload="metadata" class="w-full h-8 rounded-lg"></audio>
+
+            <!-- Luxury Velvet Waveform Player -->
+            <div id="${audioPlayerId}" class="raoprime-waveform-player bg-black/40 border border-white/10 rounded-2xl p-2.5 space-y-2 select-none" data-src="${f.downloadUrl}">
+              <div class="flex items-center gap-2.5">
+                <button type="button" onclick="toggleWaveformAudio('${audioPlayerId}')" class="audio-toggle-btn w-9 h-9 rounded-full bg-gradient-to-br from-[#741728] to-[#3e0a14] hover:brightness-110 active:scale-95 text-white flex items-center justify-center shrink-0 shadow-md shadow-[#741728]/30 transition-all cursor-pointer" aria-label="Play or Pause Voice Note">
+                  <svg class="audio-icon-play w-4 h-4 ml-0.5 fill-current" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+                  <svg class="audio-icon-pause w-4 h-4 fill-current hidden" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+                </button>
+                <div class="audio-bars-container flex-1 flex items-center gap-[2.5px] h-8 cursor-pointer py-1" onclick="seekWaveformAudio(event, '${audioPlayerId}')" title="Click to seek playback position">
+                  ${barsHtml}
+                </div>
+                <button type="button" onclick="cycleAudioPlaybackRate('${audioPlayerId}')" class="audio-speed-btn px-2 py-0.5 rounded-full bg-white/[0.08] hover:bg-white/[0.15] text-[10px] font-bold text-slate-300 hover:text-white transition-all cursor-pointer" title="Playback Speed">
+                  1x
+                </button>
+              </div>
+              <div class="flex items-center justify-between text-[10px] text-slate-400 font-mono px-0.5">
+                <span class="audio-timer">0:00</span>
+                <span class="text-slate-500 font-mono">${f.formattedSize}</span>
+              </div>
+              <audio preload="metadata" src="${f.downloadUrl}" class="hidden"></audio>
+            </div>
+
             <div class="flex items-center justify-between text-[10.5px] opacity-90 pt-0.5">
-              <span class="font-mono text-slate-300">${f.formattedSize}</span>
+              <button type="button" onclick="openDocumentPreview('${f.downloadUrl}', '${escapeHtml(f.originalName)}', '${f.formattedSize}')" class="text-xs text-rose-300 hover:text-white font-medium flex items-center gap-1 cursor-pointer">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <span>Inspect</span>
+              </button>
               <div class="flex items-center gap-2">
                 <a href="${f.downloadUrl}" download class="hover:underline font-semibold text-[#d4af37]">Download</a>
                 ${timeStatusHtml}
@@ -1183,24 +1209,34 @@ function renderAdminSingleMessageHtml(msg, index, messages) {
         `;
       } else {
         const tag = (ext || 'FILE').toUpperCase().slice(0, 4);
+        const isPdf = ext === 'pdf';
         bubbleContent = `
           <div class="p-3 sm:p-3.5 max-w-[280px] sm:max-w-sm min-w-[220px]">
             ${quotedReplyHtml}
             <div class="flex items-center justify-between gap-3">
-              <div class="flex items-center gap-3 min-w-0">
-                <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-[#d4af37] flex flex-col items-center justify-center shrink-0 border border-rose-500/20">
-                  <span class="text-[10px] font-black tracking-tighter uppercase">${tag}</span>
+              <div class="flex items-center gap-3 min-w-0 cursor-pointer" onclick="openDocumentPreview('${f.downloadUrl}', '${escapeHtml(f.originalName)}', '${f.formattedSize}')" title="Click to preview document">
+                <div class="w-10 h-10 rounded-xl bg-white/[0.06] text-[#d4af37] flex flex-col items-center justify-center shrink-0 border border-white/[0.1] hover:border-rose-500/50 transition-colors">
+                  <span class="text-[10px] font-black tracking-tighter uppercase ${isPdf ? 'text-rose-400 font-mono' : ''}">${tag}</span>
                 </div>
                 <div class="min-w-0">
-                  <p class="text-[13px] font-semibold truncate text-white leading-tight" title="${escapeHtml(f.originalName)}">${escapeHtml(f.originalName)}</p>
+                  <p class="text-[13px] font-semibold truncate text-white leading-tight hover:text-rose-300 transition-colors" title="${escapeHtml(f.originalName)}">${escapeHtml(f.originalName)}</p>
                   <p class="text-[10.5px] text-slate-300/80 font-mono mt-0.5">${f.formattedSize}</p>
                 </div>
               </div>
-              <a href="${f.downloadUrl}" download class="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white shrink-0 flex items-center justify-center transition-all shadow-sm" title="Download">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-              </a>
+              <div class="flex items-center gap-1.5 shrink-0">
+                <button type="button" onclick="openDocumentPreview('${f.downloadUrl}', '${escapeHtml(f.originalName)}', '${f.formattedSize}')" class="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white flex items-center justify-center transition-all shadow-sm cursor-pointer" title="Preview in App">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+                <a href="${f.downloadUrl}" download class="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white flex items-center justify-center transition-all shadow-sm" title="Download">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                </a>
+              </div>
             </div>
-            <div class="flex items-center justify-end mt-2 pt-1 border-t border-white/5">
+            <div class="flex items-center justify-between mt-2 pt-1.5 border-t border-white/5 text-[10.5px]">
+              <button type="button" onclick="openDocumentPreview('${f.downloadUrl}', '${escapeHtml(f.originalName)}', '${f.formattedSize}')" class="text-rose-400 hover:text-rose-300 font-semibold cursor-pointer text-[11px] flex items-center gap-1">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                <span>View Document</span>
+              </button>
               ${timeStatusHtml}
             </div>
           </div>
@@ -2674,4 +2710,225 @@ function renderClientIntelData(current, intel = {}) {
 function closeClientIntelModal() {
   const modal = document.getElementById('clientIntelModal');
   if (modal) modal.classList.add('hidden');
+}
+
+// Universal In-App Document & PDF Lightbox Previewer
+function openDocumentPreview(url, name, size) {
+  const modal = document.getElementById('documentPreviewModal');
+  if (!modal) return;
+
+  const titleEl = document.getElementById('docPreviewTitle');
+  const subEl = document.getElementById('docPreviewSub');
+  const extTag = document.getElementById('docPreviewExtTag');
+  const downloadBtn = document.getElementById('docPreviewDownloadBtn');
+  const fallbackBtn = document.getElementById('docPreviewFallbackBtn');
+  const frame = document.getElementById('docPreviewFrame');
+  const img = document.getElementById('docPreviewImg');
+  const unsupported = document.getElementById('docPreviewUnsupported');
+
+  const cleanName = name || 'document';
+  const cleanSize = size || '';
+  const ext = (cleanName.split('.').pop() || '').toLowerCase();
+
+  if (titleEl) titleEl.textContent = cleanName;
+  if (subEl) subEl.textContent = cleanSize;
+  if (extTag) extTag.textContent = (ext || 'DOC').toUpperCase().slice(0, 4);
+
+  if (downloadBtn) {
+    downloadBtn.href = url;
+    downloadBtn.setAttribute('download', cleanName);
+  }
+  if (fallbackBtn) {
+    fallbackBtn.href = url;
+    fallbackBtn.setAttribute('download', cleanName);
+  }
+
+  // Hide all viewers initially
+  if (frame) { frame.classList.add('hidden'); frame.src = ''; }
+  if (img) { img.classList.add('hidden'); img.src = ''; }
+  if (unsupported) unsupported.classList.add('hidden');
+
+  const imageExts = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'bmp', 'ico'];
+  const docExts = ['pdf', 'txt', 'csv', 'json', 'md', 'html', 'htm', 'xml'];
+
+  if (imageExts.includes(ext)) {
+    if (img) {
+      img.src = url;
+      img.classList.remove('hidden');
+    }
+  } else if (ext === 'pdf') {
+    if (frame) {
+      frame.src = `${url}#toolbar=1&navpanes=0`;
+      frame.classList.remove('hidden');
+    }
+  } else if (docExts.includes(ext)) {
+    if (frame) {
+      frame.src = url;
+      frame.classList.remove('hidden');
+    }
+  } else {
+    if (unsupported) {
+      unsupported.classList.remove('hidden');
+    }
+  }
+
+  modal.classList.remove('hidden');
+}
+
+function closeDocumentPreviewModal() {
+  const modal = document.getElementById('documentPreviewModal');
+  if (!modal) return;
+  modal.classList.add('hidden');
+  const frame = document.getElementById('docPreviewFrame');
+  const img = document.getElementById('docPreviewImg');
+  if (frame) frame.src = '';
+  if (img) img.src = '';
+}
+
+// Close document preview modal on Escape key press
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeDocumentPreviewModal();
+  }
+});
+
+// Luxury Velvet Maroon Audio Waveform Player
+function renderWaveformBarsHtml(seedStr) {
+  const barCount = 28;
+  let hash = 0;
+  const str = String(seedStr || 'raoprime-waveform-audio');
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  
+  let html = '';
+  for (let i = 0; i < barCount; i++) {
+    const pseudo = Math.abs(Math.sin((i + 1) * 997 + hash));
+    const heightPercent = Math.max(16, Math.round(pseudo * 100));
+    html += `<span class="waveform-bar inline-block w-[3px] rounded-full bg-slate-500/50 hover:bg-rose-400/80 transition-all duration-150" style="height: ${heightPercent}%;" data-idx="${i}"></span>`;
+  }
+  return html;
+}
+
+function toggleWaveformAudio(playerId) {
+  const container = document.getElementById(playerId);
+  if (!container) return;
+  const audio = container.querySelector('audio');
+  const playIcon = container.querySelector('.audio-icon-play');
+  const pauseIcon = container.querySelector('.audio-icon-pause');
+  const timer = container.querySelector('.audio-timer');
+  const bars = container.querySelectorAll('.waveform-bar');
+  if (!audio) return;
+
+  // Pause all other audio players on page
+  document.querySelectorAll('.raoprime-waveform-player audio').forEach(otherAudio => {
+    if (otherAudio !== audio && !otherAudio.paused) {
+      otherAudio.pause();
+    }
+  });
+
+  if (audio.paused) {
+    audio.play().then(() => {
+      if (playIcon) playIcon.classList.add('hidden');
+      if (pauseIcon) pauseIcon.classList.remove('hidden');
+    }).catch(e => {
+      console.warn('Audio playback error:', e);
+    });
+  } else {
+    audio.pause();
+    if (playIcon) playIcon.classList.remove('hidden');
+    if (pauseIcon) pauseIcon.classList.add('hidden');
+  }
+
+  if (!audio._waveformBound) {
+    audio._waveformBound = true;
+    
+    audio.addEventListener('timeupdate', () => {
+      if (!audio.duration || isNaN(audio.duration)) return;
+      const progress = audio.currentTime / audio.duration;
+      const totalBars = bars.length;
+      const activeCount = Math.floor(progress * totalBars);
+
+      bars.forEach((bar, idx) => {
+        if (idx <= activeCount) {
+          bar.classList.remove('bg-slate-500/50');
+          bar.classList.add('bg-rose-400');
+        } else {
+          bar.classList.remove('bg-rose-400');
+          bar.classList.add('bg-slate-500/50');
+        }
+      });
+
+      if (timer) {
+        const curMins = Math.floor(audio.currentTime / 60);
+        const curSecs = Math.floor(audio.currentTime % 60).toString().padStart(2, '0');
+        const durMins = Math.floor(audio.duration / 60);
+        const durSecs = Math.floor(audio.duration % 60).toString().padStart(2, '0');
+        timer.textContent = `${curMins}:${curSecs} / ${durMins}:${durSecs}`;
+      }
+    });
+
+    audio.addEventListener('pause', () => {
+      if (playIcon) playIcon.classList.remove('hidden');
+      if (pauseIcon) pauseIcon.classList.add('hidden');
+    });
+
+    audio.addEventListener('ended', () => {
+      if (playIcon) playIcon.classList.remove('hidden');
+      if (pauseIcon) pauseIcon.classList.add('hidden');
+      bars.forEach(bar => {
+        bar.classList.remove('bg-rose-400');
+        bar.classList.add('bg-slate-500/50');
+      });
+      if (timer && audio.duration) {
+        const durMins = Math.floor(audio.duration / 60);
+        const durSecs = Math.floor(audio.duration % 60).toString().padStart(2, '0');
+        timer.textContent = `0:00 / ${durMins}:${durSecs}`;
+      }
+    });
+
+    audio.addEventListener('loadedmetadata', () => {
+      if (timer && audio.duration && !isNaN(audio.duration)) {
+        const durMins = Math.floor(audio.duration / 60);
+        const durSecs = Math.floor(audio.duration % 60).toString().padStart(2, '0');
+        timer.textContent = `0:00 / ${durMins}:${durSecs}`;
+      }
+    });
+  }
+}
+
+function seekWaveformAudio(event, playerId) {
+  const container = document.getElementById(playerId);
+  if (!container) return;
+  const audio = container.querySelector('audio');
+  const barsContainer = container.querySelector('.audio-bars-container');
+  if (!audio || !barsContainer) return;
+
+  const rect = barsContainer.getBoundingClientRect();
+  const clickX = event.clientX - rect.left;
+  const ratio = Math.max(0, Math.min(1, clickX / rect.width));
+
+  if (audio.duration && !isNaN(audio.duration)) {
+    audio.currentTime = ratio * audio.duration;
+    if (audio.paused) {
+      toggleWaveformAudio(playerId);
+    }
+  }
+}
+
+function cycleAudioPlaybackRate(playerId) {
+  const container = document.getElementById(playerId);
+  if (!container) return;
+  const audio = container.querySelector('audio');
+  const btn = container.querySelector('.audio-speed-btn');
+  if (!audio || !btn) return;
+
+  const rates = [1, 1.5, 2];
+  const currentRate = audio.playbackRate || 1;
+  const nextIdx = (rates.indexOf(currentRate) + 1) % rates.length;
+  const nextRate = rates[nextIdx];
+
+  audio.playbackRate = nextRate;
+  btn.textContent = `${nextRate}x`;
 }

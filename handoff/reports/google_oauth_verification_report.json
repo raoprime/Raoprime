@@ -1,6 +1,6 @@
 {
   "suite": "Google Sign-In & OAuth Automated Verification",
-  "timestamp": "2026-10-30T23:44:13.307Z",
+  "timestamp": "2026-10-30T23:59:20.730Z",
   "expectedClientId": "1091556491172-qvg8ad21inph1u5f5i50dohnrp06uvri.apps.googleusercontent.com",
   "environments": {
     "local": {
@@ -12,7 +12,7 @@
       "clientFlow": {
         "success": true,
         "buttonText": "Verify & Sign in with Google",
-        "destinationUrl": "https://accounts.google.com/v3/signin/identifier?opparams=%253F&dsh=S-180577593%3A1793403857004914&client_id=1091556491172-qvg8ad21inph1u5f5i50dohnrp06uvri.apps.googleusercontent.com&o2v=2&prompt=select_account&redirect_uri=http%3A%2F%2Flocalhost%3A4000%2Fapi%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&service=lso&state=client&flowName=GeneralOAuthLite&continue=https%3A%2F%2Faccounts.google.com%2Fsignin%2Foauth%2Flegacy%2Fconsent%3Fauthuser%3Dunknown%26part%3DAJi8hANh2d6w61xqLhv18Xmldlx1JGGsGuoONTccfss-iggyBy9ivYW6zo1qmqs2Mwd1w_m_gneqBh1oLrjmFA4d-_G-wIJ2kzmAXDet4Nc1NoZhOFW7ktBPJ_QzNbCZ7st4d2q24ccqY_eJjnuWF4CEao88l9OEKybRvX6GtK1eQsCpeM4dNC7q2KcLzvB5Aew1qB6fkaq3nENOzi0hiWb4qaj96msztWpwZIZwwVc1iUrBayBbwv6EmPYxJT7DYQ4wwFKNyHbXShSv5kbW9MZL8wkgewiy8VhDeoQ57uoDRYVZppMkXkH7Wy1dIdHUxF2lXXKBPUZf1mzye1hfiKE5jrsXDWn2BgyXdvqpdDe3iX5Pvu0jcbavvaIN5EV2mlQ5kLX4yT_rIZZ7QzQeOBlIM1fasAK8uZJMyWg3xogQIXZ7R6ybzk4Mdr__flyxLHnGCc3kaLXteXPZMPOdxjpvJ7Niu1I3Vo4hZTv76UeKu23ln-epnIBa2J12UTExnKJsRhyO9w0hn3zh3411IY6nRRqYHkQgtERNuTP6YziMwmfIrXdqfz6W2qqZSXN4wI4_lqZetqGEXbkKWH8SVRRKi_P7bumkk1gt2m0ccWLBOM-VeD9mYFmoH8bSg4-rYS_FE6aVXWe8%26flowName%3DGeneralOAuthFlow%26as%3DS-180577593%253A1793403857004914%26client_id%3D1091556491172-qvg8ad21inph1u5f5i50dohnrp06uvri.apps.googleusercontent.com%23&app_domain=http%3A%2F%2Flocalhost%3A4000&rart=ANgoxcfmr6xzq9F2TQ4Mw_BAuVscZZexcK4rKzBGkTvQh4-apF469Kl6kJ2Pbk5yg2Q_dhDaRmNxg8fRGeBrG-wyLGqp8-xN0f5-1pUUH1SO5j6tIX9-ETA",
+        "destinationUrl": "https://accounts.google.com/v3/signin/identifier?opparams=%253F&dsh=S-535803273%3A1793404765482406&client_id=1091556491172-qvg8ad21inph1u5f5i50dohnrp06uvri.apps.googleusercontent.com&o2v=2&prompt=select_account&redirect_uri=http%3A%2F%2Flocalhost%3A4000%2Fapi%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&service=lso&state=client&flowName=GeneralOAuthLite&continue=https%3A%2F%2Faccounts.google.com%2Fsignin%2Foauth%2Flegacy%2Fconsent%3Fauthuser%3Dunknown%26part%3DAJi8hAPh9X7sckUy0yRiCs7Wey-XNPmODAmCp2OYvmpL6M2NMCaivsYhxMdlUfSB2NEOMtvzBhaHIX1I9_V1pDoa-kFHqy8Z8Yyl9CVXW92wHMP528pNWChhU2lkoAHntxa3lXTNN_ULh9fzqHM2gnr_Rwsf-tusqd8nkY9Tx3b-MN1ftsDYFIy0-lEzHaFAL5TQJ1goF-uXBfR_TxNKM_UOVyx4a6Ldf2pKF0koCvAdf5Y9-iamKmZEXoMKXUvDuMBLd79s5puhs8J1XkfK3mJj3UbhGEsEE0Va11eVKnzPpbD6MivQLpeVn9l8BxIE-iPQXgydP-19CjWPM3vv7-4bg4tsqIbkW5tJtgVopSrJgnLi78dx2bZYF3wqfPWYm-w7NUqjwVBwrTvE3ZAcg5XMwYi_J5aTegWsMmPt5_aa2X1G4P7NLuICQvAfb5fySec4RlkygThI2hjQqO3LCYvWUiPj_zJBkpCYP-vqnQPEN57RR5ylXdwCvnV3yMbjK3huHs6lSOC80N3BTXPN4KrYX6qHNF5Yyvv6Wq9yyp2ee1qTLFJudMKV9BIu32sG5Bt08DWSZzO8K-NBrtigpNbr2nbSEjVG97RWH62kDRvd0Zs63u7Uy5eZdokleDpxnaPlfMRvGPyk%26flowName%3DGeneralOAuthFlow%26as%3DS-535803273%253A1793404765482406%26client_id%3D1091556491172-qvg8ad21inph1u5f5i50dohnrp06uvri.apps.googleusercontent.com%23&app_domain=http%3A%2F%2Flocalhost%3A4000&rart=ANgoxcei85q0uZe81XzpDBW88fBJmBIwQmWwWZEPveWDcZJLxCdHZWHvc8uWRot6eDxNvgeEb6UFW4Sl0ynvBNjMNCSzLpxT4KmTVAjKeJjcXClL5kptW5c",
         "oauthUrlToVerify": "https://accounts.google.com/o/oauth2/v2/auth?client_id=1091556491172-qvg8ad21inph1u5f5i50dohnrp06uvri.apps.googleusercontent.com&redirect_uri=http%3A%2F%2Flocalhost%3A4000%2Fapi%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid%20email%20profile&state=client&prompt=select_account",
         "hostname": "accounts.google.com",
         "clientId": "1091556491172-qvg8ad21inph1u5f5i50dohnrp06uvri.apps.googleusercontent.com",
@@ -25,7 +25,7 @@
         "responseTypeValid": true,
         "scopeValid": true,
         "screenshotFile": "C:\\Users\\DELL\\.gemini\\antigravity\\scratch\\client-document-portal\\handoff\\reports\\oauth_consent_local.png",
-        "screenshotSize": 16011,
+        "screenshotSize": 16025,
         "interceptedHopsCount": 6
       },
       "adminFlow": {
@@ -53,7 +53,7 @@
       ],
       "httpFailures": [],
       "timing": {
-        "durationMs": 10693
+        "durationMs": 12094
       }
     },
     "live": {
@@ -65,7 +65,7 @@
       "clientFlow": {
         "success": true,
         "buttonText": "Verify & Sign in with Google",
-        "destinationUrl": "https://accounts.google.com/v3/signin/identifier?opparams=%253F&dsh=S-180577593%3A1793403871458237&client_id=1091556491172-qvg8ad21inph1u5f5i50dohnrp06uvri.apps.googleusercontent.com&o2v=2&prompt=select_account&redirect_uri=https%3A%2F%2Fraoprime.onrender.com%2Fapi%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&service=lso&state=client&flowName=GeneralOAuthLite&continue=https%3A%2F%2Faccounts.google.com%2Fsignin%2Foauth%2Flegacy%2Fconsent%3Fauthuser%3Dunknown%26part%3DAJi8hAOq05-ZlHqiYCDN8AJACQke_3qAE5BezWeaywmTxb5f1kOvlal7l--UDkZ0BSpXX7DIllioeNDMeHamzO2WVIvTIytAdSVnxeiUEuMfa6WeqQXQgXLLRDfuI8eATa35bMkYgp_WsKRaw80EvzKGgO6y5i0qpBrCEO2t_yN8AVvstZQkm7ev4CbmvFj7-NHo5YD7PQlaRaFmil1JdZ5dLuDiGCMSX08Ih_vZucHOq2Dcynt7okwI0YGkzKvwqls6CESyW1eczj2v9KSzF5cL2q6HUt8sSqQ0W_W-BxBskstDntP8OzCSgn3AVsFdzYPGcIxhWu_276FJIXK-sh3f1uHHTZ3hl1Y_8WNTvynpwO4_sZ9cdmMVblFvcXaL7LNUFFpKoL4bT9jOpnok1OFahJ4CnjSWdppWDExhEH4WjGg-FuyXuwTbE_QHnQa2ZLpkB6EPz8ViK3DQcWXJaqoniPBZRbJqSiNfs8w3r58QckV4H-q_pAgxkqTLViXg9A_UhrjfDY3Evg7nX4QMT-Gk6VRD4HfRs69veo4nvRfOPi2qFBmIjvCNCuhX17gNbJEliBFq3UnAZzIL7IUR-A7zz9EM6H6PXOvuFtBc8Yr6PC9tgKeFceOSm1NR7hLWiPS19-pmCo8PSlQ9k7VJfn4zjjJ_2nPN0Q%26flowName%3DGeneralOAuthFlow%26as%3DS-180577593%253A1793403871458237%26client_id%3D1091556491172-qvg8ad21inph1u5f5i50dohnrp06uvri.apps.googleusercontent.com%23&app_domain=https%3A%2F%2Fraoprime.onrender.com&rart=ANgoxcdNDSU5U3ePi1tlZF_gLnVStMyojQFNdzp8zuq6FUqnsCIhvbdkq3vEMtnjHJ4ifgVFSMlFZn0FJ-K59bmI6LmkRc1edY76kgLY3A-oDlulP2h7xoQ",
+        "destinationUrl": "https://accounts.google.com/v3/signin/identifier?opparams=%253F&dsh=S-264945696%3A1793404780048569&client_id=1091556491172-qvg8ad21inph1u5f5i50dohnrp06uvri.apps.googleusercontent.com&o2v=2&prompt=select_account&redirect_uri=https%3A%2F%2Fraoprime.onrender.com%2Fapi%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&service=lso&state=client&flowName=GeneralOAuthLite&continue=https%3A%2F%2Faccounts.google.com%2Fsignin%2Foauth%2Flegacy%2Fconsent%3Fauthuser%3Dunknown%26part%3DAJi8hAMv7aeZiv1YjqVKwNX9NM-NZQZea51WP8eYhSdVG1WDednaABRIq5HJ2EnpuTNQ5jHgmXfEBzO7xt12UYL7bs-xSy_UhDD5D-AkWf-YYqV7ZKNzuJSlYZeE9OnKyaCkfa5Pg7MPdzXUJ2dsv2knzKqNMTjYlhLXxBCqZSeIcGhUIdcejFIQgk8hDQGtFaCJ49imD6quQ5G_OMc2PQLT3WOu8O9D6PUtBtKou09tHE4-Vcdc6lkTpEGlJTwrMidBGIdd1GSErH9900PvhxUGdUHu9AEl5a1kYSqFpoTigElX4-atQ2pXzuuHsGEzx_iH7fr7CkIgwc0UiGJzOyLAYr-I0oEmdSo-1Z8G_o4wj8SEmoxmkgmICwc5F7WS8CIXlnkXoWlqyMdEnm2lkaGOHRygX72_OnEoVVteNV3BqajLUYTAYN2bDVptYMaGd05vR-9wBMxno0fliHYousFKErFoJ2-pmfYemfsDgLADagDgK-qcbME0TLtxBtT1WQu0sLKRWB4OSRfkE2uN4xgv6qRnsCUkb630Q1mYm41ZSKrvIUCi6i4YAP4zBzKDTGg-HlMXoS8WT0VX3jEBPngvrsoBZcc3bHcSZLdvTruFmQkfwpDFvPhnZdwPG_Pz0-l-4aezjITXe4TJhQjmhHNNriViGnXz4A%26flowName%3DGeneralOAuthFlow%26as%3DS-264945696%253A1793404780048569%26client_id%3D1091556491172-qvg8ad21inph1u5f5i50dohnrp06uvri.apps.googleusercontent.com%23&app_domain=https%3A%2F%2Fraoprime.onrender.com&rart=ANgoxcfwPkXvhnmFE9VTxZ7xmdj7Te_8Nvmi9gsDf9Ogz4Bd44hTtKVFBzkeC6dD6kx2CS8GPxL8RRwGDzyKXJznD0374w9x6TPWMBWUsA9CNXzDVZJvqWQ",
         "oauthUrlToVerify": "https://accounts.google.com/o/oauth2/v2/auth?client_id=1091556491172-qvg8ad21inph1u5f5i50dohnrp06uvri.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fraoprime.onrender.com%2Fapi%2Fauth%2Fgoogle%2Fcallback&response_type=code&scope=openid%20email%20profile&state=client&prompt=select_account",
         "hostname": "accounts.google.com",
         "clientId": "1091556491172-qvg8ad21inph1u5f5i50dohnrp06uvri.apps.googleusercontent.com",
@@ -104,7 +104,7 @@
       "consoleErrors": [],
       "httpFailures": [],
       "timing": {
-        "durationMs": 14306
+        "durationMs": 14185
       }
     }
   }

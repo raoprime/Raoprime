@@ -1,0 +1,99 @@
+{
+  "timestamp": "2026-10-31T08:47:48.429Z",
+  "tests": [
+    {
+      "name": "Local Server Health (/api/health)",
+      "passed": true,
+      "details": {
+        "statusCode": 200,
+        "body": "{\"status\":\"ok\",\"service\":\"raoprime\",\"uptime\":720.2451917}"
+      },
+      "timestamp": "2026-10-31T08:47:48.511Z"
+    },
+    {
+      "name": "Production Server Health (/api/health)",
+      "passed": true,
+      "details": {
+        "statusCode": 200,
+        "body": "{\"status\":\"ok\",\"service\":\"raoprime\",\"uptime\":42.401598203}"
+      },
+      "timestamp": "2026-10-31T08:47:50.207Z"
+    },
+    {
+      "name": "Local Google OAuth Init (/api/auth/google)",
+      "passed": true,
+      "details": {
+        "statusCode": 302,
+        "hasGoogleRedirect": true,
+        "hasClientId": true,
+        "locationPreview": "https://accounts.google.com/o/oauth2/v2/auth?client_id=1091556491172-qvg8ad21inph1u5f5i50dohnrp06uvri.apps.googleusercon..."
+      },
+      "timestamp": "2026-10-31T08:47:50.214Z"
+    },
+    {
+      "name": "Production Google OAuth Init (/api/auth/google)",
+      "passed": true,
+      "details": {
+        "statusCode": 302,
+        "hasGoogleRedirect": true,
+        "hasClientId": true,
+        "locationPreview": "https://accounts.google.com/o/oauth2/v2/auth?client_id=1091556491172-qvg8ad21inph1u5f5i50dohnrp06uvri.apps.googleusercon..."
+      },
+      "timestamp": "2026-10-31T08:47:50.958Z"
+    },
+    {
+      "name": "Browser Console Integrity (Zero Errors)",
+      "passed": true,
+      "details": {
+        "errors": []
+      },
+      "timestamp": "2026-10-31T08:47:55.930Z"
+    },
+    {
+      "name": "Universal Document Preview Modal in DOM",
+      "passed": true,
+      "details": {
+        "selector": "#documentPreviewModal"
+      },
+      "timestamp": "2026-10-31T08:47:56.014Z"
+    },
+    {
+      "name": "Brand Invariant: Signature Velvet Maroon CSS Token",
+      "passed": true,
+      "details": {
+        "tokenValue": "#741728"
+      },
+      "timestamp": "2026-10-31T08:47:56.019Z"
+    },
+    {
+      "name": "Profile Clutter Check: \"Instant Sync Google DP\" button eliminated",
+      "passed": true,
+      "details": {},
+      "timestamp": "2026-10-31T08:47:56.022Z"
+    },
+    {
+      "name": "Profile Clutter Check: Fake countdown timers eliminated",
+      "passed": true,
+      "details": {},
+      "timestamp": "2026-10-31T08:47:56.025Z"
+    },
+    {
+      "name": "Interactive Feature Track APIs Available on Window",
+      "passed": true,
+      "details": {
+        "openDocumentPreview": true,
+        "closeDocumentPreviewModal": true,
+        "renderWaveformBarsHtml": true,
+        "toggleWaveformAudio": true,
+        "seekWaveformAudio": true,
+        "cycleAudioPlaybackRate": true
+      },
+      "timestamp": "2026-10-31T08:47:56.028Z"
+    }
+  ],
+  "summary": {
+    "passed": 10,
+    "failed": 0,
+    "total": 10
+  }
+}
