@@ -70,40 +70,6 @@ function saveVerifications(data) {
 
 let verificationsStore = loadVerifications();
 
-const VERIFICATION_DELAY_MS = 20 * 60 * 1000; // Exactly 20 minutes delay
-
-function checkAutoVerifications() {
-  try {
-    const now = Date.now();
-    let modified = false;
-    for (const [chatId, ver] of Object.entries(verificationsStore)) {
-      if (ver && ver.status === 'pending' && ver.submittedAt) {
-        if (now - ver.submittedAt >= VERIFICATION_DELAY_MS) {
-          ver.verified = true;
-          ver.status = 'verified';
-          ver.verifiedAt = new Date().toISOString();
-          modified = true;
-          broadcastToRoom(chatId, 'chat:verification-updated', {
-            chatId,
-            verified: true,
-            status: 'verified',
-            photoUrl: ver.photoUrl,
-            phoneNumber: ver.phoneNumber || null,
-            verifiedAt: ver.verifiedAt
-          });
-          console.log(`[Auto-Verify] Client ${chatId} auto-verified after 20 minutes`);
-        }
-      }
-    }
-    if (modified) {
-      saveVerifications(verificationsStore);
-    }
-  } catch (e) {
-    console.warn('checkAutoVerifications error:', e.message);
-  }
-}
-setInterval(checkAutoVerifications, 10000); // Check every 10 seconds
-
 const INTEL_FILE = path.join(BASE_STORAGE, 'client_intel.json');
 
 function loadClientIntel() {
@@ -959,18 +925,9 @@ app.get('/api/chat/verification', (req, res) => {
   try {
     const rawChatId = req.query.chatId || 'default';
     const chatId = normalizeChatId(rawChatId);
-    let ver = verificationsStore[chatId] || { verified: false, status: 'none', photoUrl: null };
-
-    const now = Date.now();
-    if (ver.status === 'pending' && ver.submittedAt && (now - ver.submittedAt >= VERIFICATION_DELAY_MS)) {
-      ver.verified = true;
-      ver.status = 'verified';
-      ver.verifiedAt = new Date().toISOString();
-      saveVerifications(verificationsStore);
-    }
-
-    const remainingMs = ver.status === 'pending' && ver.submittedAt ? Math.max(0, VERIFICATION_DELAY_MS - (now - ver.submittedAt)) : 0;
-    const remainingMinutes = Math.ceil(remainingMs / 60000);
+    const store = loadVerifications();
+    const foundKey = Object.keys(store).find(k => k.toLowerCase() === chatId.toLowerCase() || k.toLowerCase() === rawChatId.toLowerCase());
+    const ver = foundKey ? store[foundKey] : (verificationsStore[chatId] || { verified: false, status: 'none', photoUrl: null });
 
     res.json({
       success: true,
@@ -983,8 +940,8 @@ app.get('/api/chat/verification', (req, res) => {
       name: ver.name || null,
       phoneNumber: ver.phoneNumber || null,
       submittedAt: ver.submittedAt || null,
-      remainingMs,
-      remainingMinutes,
+      remainingMs: 0,
+      remainingMinutes: 0,
       verifiedAt: ver.verifiedAt || null,
       isRequested: Boolean(ver.isRequested)
     });
@@ -2489,13 +2446,14 @@ app.get(['/api/download/:storedName', '/api/vault/download/:storedName'], async 
   try {
     const storedName = req.params.storedName;
     const filePath = path.join(VAULT_DIR, storedName);
-    const isPreview = req.query.preview === '1';
+    const forceDownload = req.query.download === '1' || req.query.dl === '1';
 
     // 1. Try local disk
     if (fs.existsSync(filePath)) {
-      if (!isPreview) {
+      if (forceDownload) {
         return res.download(filePath);
       } else {
+        // Send file inline with native mime-type for image thumbnails, audio players, videos and PDF previews
         return res.sendFile(filePath);
       }
     }

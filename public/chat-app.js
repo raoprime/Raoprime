@@ -5,8 +5,24 @@
 
 const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB chunks (Optimized for Vercel Serverless & Mobile)
 
-// State
-let currentChatId = 'default';
+// Immediately resolve active chat ID from URL or storage
+function getInitialChatId() {
+  if (typeof window === 'undefined') return 'default';
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const fromUrl = params.get('chatId') || params.get('chat') || params.get('client') || params.get('room') || params.get('id');
+    if (fromUrl && fromUrl.trim()) {
+      const clean = fromUrl.trim().toLowerCase();
+      try { localStorage.setItem('raoprime_client', clean); } catch (e) {}
+      return clean;
+    }
+    const saved = localStorage.getItem('raoprime_client');
+    if (saved && saved.trim()) return saved.trim().toLowerCase();
+  } catch (e) {}
+  return 'default';
+}
+
+let currentChatId = getInitialChatId();
 let currentRole = 'Client'; // 'Client' or 'Raoprime'
 
 // End Chat & Session Conclusion Logic
@@ -977,8 +993,12 @@ function renderSingleMessageHtml(msg, index, messages) {
         bubbleContent = `
           <div class="overflow-hidden rounded-2xl min-w-[200px]">
             ${quotedReplyHtml ? `<div class="p-2">${quotedReplyHtml}</div>` : ''}
-            <a href="${f.downloadUrl}" target="_blank" rel="noopener" class="block bg-black/40">
-              <img src="${f.downloadUrl}?preview=1" alt="${escapeHtml(f.originalName)}" loading="lazy" class="max-w-[280px] sm:max-w-sm max-h-72 w-full object-cover hover:scale-[1.01] transition-transform duration-300">
+            <a href="${f.downloadUrl}" target="_blank" rel="noopener" class="block bg-black/40 relative">
+              <img src="${f.downloadUrl}" alt="${escapeHtml(f.originalName)}" loading="lazy" class="max-w-[280px] sm:max-w-sm max-h-72 w-full object-cover hover:scale-[1.01] transition-transform duration-300" onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.classList.remove('hidden');">
+              <div class="hidden p-6 text-center text-xs text-slate-400 bg-white/[0.02] flex flex-col items-center justify-center gap-1.5">
+                <svg class="w-6 h-6 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <span>Photo preview unavailable</span>
+              </div>
             </a>
             <div class="p-2 sm:p-2.5 flex items-center justify-between text-xs border-t border-white/10 bg-black/30 backdrop-blur-md">
               <div class="min-w-0 pr-2">
@@ -1911,39 +1931,35 @@ function scrollToBottom() {
 function saveClientName() {
   const nameInput = document.getElementById('clientNameInput');
   const phoneInput = document.getElementById('clientPhoneInput');
-  const emailInput = document.getElementById('clientEmailInput');
 
   const name = (nameInput?.value || '').trim();
   const phone = (phoneInput?.value || '').trim();
-  const email = (emailInput?.value || '').trim();
 
   if (!name) {
-    showToast('Please enter your name / username to continue');
+    showToast('Please enter your name to continue');
     nameInput?.focus();
     return;
   }
 
-  currentChatId = name;
-  localStorage.setItem('raoprime_client', name);
+  const cleanHandle = name.toLowerCase().replace(/[^a-z0-9_.-]/g, '');
+  currentChatId = cleanHandle || ('guest_' + Date.now().toString().slice(-4));
+  localStorage.setItem('raoprime_client', currentChatId);
+  localStorage.setItem('raoprime_client_name', name);
   if (phone) localStorage.setItem('raoprime_client_phone', phone);
-  if (email) localStorage.setItem('raoprime_client_email', email);
 
   document.getElementById('chatHeading').textContent = 'Raoprime';
   document.getElementById('nameModal').classList.add('hidden');
   
-  // Set header initials
-  const headerInitials = document.getElementById('headerClientInitials');
-  if (headerInitials) headerInitials.textContent = name.charAt(0).toUpperCase();
-
   if ('Notification' in window && Notification.permission === 'default') {
     requestNotificationPermission().catch(() => {});
   }
   
   // Set in URL cleanly without reload
-  const newUrl = `${window.location.pathname}?chat=${encodeURIComponent(name)}`;
+  const newUrl = `${window.location.pathname}?chat=${encodeURIComponent(currentChatId)}`;
   window.history.replaceState(null, '', newUrl);
 
-  showToast(`Welcome, @${name}!`);
+  showToast(`Welcome, @${currentChatId}!`);
+  updateClientProfileHeaderUI();
   loadMessages();
   loadPhotoVerificationStatus();
 
@@ -2304,24 +2320,36 @@ function initiateGoogleAuth() {
 (function checkUrlAuthStatus() {
   if (typeof window === 'undefined') return;
   const params = new URLSearchParams(window.location.search);
+  const authChat = params.get('chatId') || params.get('chat') || params.get('client');
+  if (authChat && authChat.trim()) {
+    currentChatId = authChat.trim().toLowerCase();
+    try { localStorage.setItem('raoprime_client', currentChatId); } catch (e) {}
+  }
+
   if (params.get('google_verified') === '1' || params.get('google_auth') === 'success') {
     setTimeout(() => {
-      showToast('🎉 Google Account & Profile Picture Verified!');
+      showToast('✓ Google Account & Profile Verified!');
       loadPhotoVerificationStatus();
+      loadMessages();
     }, 400);
-    const cleanUrl = window.location.pathname + (currentChatId ? `?chat=${encodeURIComponent(currentChatId)}` : '');
-    window.history.replaceState(null, '', cleanUrl);
+
+    try {
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete('google_verified');
+      cleanUrl.searchParams.delete('google_auth');
+      cleanUrl.searchParams.set('chat', currentChatId);
+      window.history.replaceState(null, '', cleanUrl.pathname + cleanUrl.search);
+    } catch (e) {}
   } else if (params.get('auth_error')) {
     const err = params.get('auth_error');
     setTimeout(() => {
-      if (err === 'origin_mismatch') {
-        showToast('⚠️ Google Origin Mismatch. Use Instant Verify or add domain in Google Cloud Console.');
-      } else {
-        showToast(`⚠️ Google Sign-In notice (${err})`);
-      }
+      showToast(`Google Sign-In notice (${err})`);
     }, 400);
-    const cleanUrl = window.location.pathname + (currentChatId ? `?chat=${encodeURIComponent(currentChatId)}` : '');
-    window.history.replaceState(null, '', cleanUrl);
+    try {
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete('auth_error');
+      window.history.replaceState(null, '', cleanUrl.pathname + cleanUrl.search);
+    } catch (e) {}
   }
 })();
 
@@ -2491,22 +2519,36 @@ function updateClientProfileHeaderUI() {
     if (headerInitial) headerInitial.classList.remove('hidden');
   }
 
-  // Google Verified Badge
+  // Google Verified Badge & Center Banner State
+  const unverifiedRow = document.getElementById('welcomeUnverifiedRow');
+  const verifiedRow = document.getElementById('welcomeVerifiedRow');
+  const verifiedHandleText = document.getElementById('welcomeVerifiedHandleText');
+
   if (currentClientVerification.verified) {
     if (headerBadge) headerBadge.classList.remove('hidden');
     if (headerStatus) {
       headerStatus.textContent = 'Verified ✓';
       headerStatus.className = 'text-[9.5px] text-[#00D26A] font-bold truncate';
     }
-    if (welcomeCard) welcomeCard.classList.add('hidden');
+    if (unverifiedRow) unverifiedRow.classList.add('hidden');
+    if (verifiedRow) {
+      verifiedRow.classList.remove('hidden');
+      if (verifiedHandleText) verifiedHandleText.textContent = '@' + (currentChatId || 'user');
+    }
   } else {
     if (headerBadge) headerBadge.classList.add('hidden');
     if (headerStatus) {
-      headerStatus.textContent = 'Verify';
-      headerStatus.className = 'text-[9.5px] text-amber-400 font-medium truncate';
+      headerStatus.textContent = 'Sign In';
+      headerStatus.className = 'text-[9.5px] text-rose-300 font-semibold truncate';
     }
-    if (welcomeCard) welcomeCard.classList.remove('hidden');
+    if (unverifiedRow) unverifiedRow.classList.remove('hidden');
+    if (verifiedRow) verifiedRow.classList.add('hidden');
   }
+}
+
+function closeNameModal() {
+  const modal = document.getElementById('nameModal');
+  if (modal) modal.classList.add('hidden');
 }
 
 // Open Dedicated Client Profile Modal (Apple / Telegram Grade)

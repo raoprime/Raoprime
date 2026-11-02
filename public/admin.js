@@ -772,7 +772,7 @@ function filterChats() {
           <div class="w-11 h-11 rounded-full bg-gradient-to-tr from-[#161a26] to-[#252f48] flex items-center justify-center text-white font-extrabold text-sm shadow-md ring-1 ring-black overflow-hidden relative cursor-pointer" ${c.verifiedPhoto ? `onclick="event.stopPropagation(); viewClientVerifiedPhoto('${c.verifiedPhoto}', '${escapeHtml(c.clientName)}', '${c.phoneNumber || ''}', '${c.verificationStatus || (c.isVerified ? 'verified' : 'pending')}', '${c.chatId}')"` : ''}>
           ${c.verifiedPhoto ? `<img src="${c.verifiedPhoto}" class="w-full h-full object-cover">` : initial}
         </div>
-        ${c.isVerified ? `<span class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#00D26A] border-2 border-[#090b10] text-white flex items-center justify-center text-[8px] font-bold shadow-sm" title="Google Verified Identity">✓</span>` : (c.verificationStatus === 'pending' || c.verifiedPhoto ? `<span class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 border-2 border-[#090b10] text-black flex items-center justify-center text-[8px] font-bold shadow-sm" title="Verification Review in Progress (~20m)">⏳</span>` : '')}
+        ${c.isVerified ? `<span class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#00D26A] border-2 border-[#090b10] text-white flex items-center justify-center text-[8px] font-bold shadow-sm" title="Google Verified Identity">✓</span>` : ''}
           <span class="absolute bottom-0 right-0 w-2.5 h-2.5 ${isLiveOnline ? 'bg-emerald-500 radar-pulse' : 'bg-slate-500'} border-2 border-[#090b10] rounded-full"></span>
         </div>
         <div class="flex-1 min-w-0">
@@ -1123,8 +1123,12 @@ function renderAdminSingleMessageHtml(msg, index, messages) {
         bubbleContent = `
           <div class="overflow-hidden rounded-2xl min-w-[200px]">
             ${quotedReplyHtml ? `<div class="p-2">${quotedReplyHtml}</div>` : ''}
-            <a href="${f.downloadUrl}" target="_blank" rel="noopener" class="block bg-black/40">
-              <img src="${f.downloadUrl}?preview=1" alt="${escapeHtml(f.originalName)}" loading="lazy" class="max-w-[280px] sm:max-w-sm max-h-72 w-full object-cover hover:scale-[1.01] transition-transform duration-300">
+            <a href="${f.downloadUrl}" target="_blank" rel="noopener" class="block bg-black/40 relative">
+              <img src="${f.downloadUrl}" alt="${escapeHtml(f.originalName)}" loading="lazy" class="max-w-[280px] sm:max-w-sm max-h-72 w-full object-cover hover:scale-[1.01] transition-transform duration-300" onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.classList.remove('hidden');">
+              <div class="hidden p-6 text-center text-xs text-slate-400 bg-white/[0.02] flex flex-col items-center justify-center gap-1.5">
+                <svg class="w-6 h-6 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <span>Photo preview unavailable</span>
+              </div>
             </a>
             <div class="p-2 sm:p-2.5 flex items-center justify-between text-xs border-t border-white/10 bg-black/30 backdrop-blur-md">
               <div class="min-w-0 pr-2">

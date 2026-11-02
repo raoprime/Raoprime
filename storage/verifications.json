@@ -4,5 +4,26 @@
     "status": "none",
     "phoneNumber": "+91 98765 43210",
     "email": "dharmesh@example.com"
+  },
+  "testuser": {
+    "verified": false,
+    "status": "guest",
+    "provider": "direct",
+    "photoUrl": null,
+    "email": null,
+    "name": "Dharmesh Rao",
+    "phoneNumber": "+91 98765 43210",
+    "updatedAt": "2026-10-30T23:03:32.177Z"
+  },
+  "raoprime.music": {
+    "verified": true,
+    "status": "verified",
+    "provider": "google",
+    "email": "raoprime.music@gmail.com",
+    "name": "Raoprime Music",
+    "username": "raoprime.music",
+    "photoUrl": "/assets/rp-logo.jpg",
+    "phoneNumber": "+91 98765 43210",
+    "verifiedAt": "2026-10-31T09:15:42.486Z"
   }
 }

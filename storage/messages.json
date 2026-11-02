@@ -1579,23 +1579,23 @@
       "status": "seen"
     },
     {
-      "id": "msg_1793382709202_viv8",
-      "sender": "Client",
-      "type": "file",
-      "status": "seen",
       "file": {
-        "fileId": "upl_1793382694954_pkzt",
         "originalName": "VID20261030004522.mp4",
-        "storedName": "VID20261030004522_4_pkzt.mp4",
+        "gridFsId": null,
         "fileSize": 8274852,
-        "formattedSize": "7.9 MB",
-        "fileType": "video/mp4",
+        "storedName": "VID20261030004522_4_pkzt.mp4",
         "downloadUrl": "/api/download/VID20261030004522_4_pkzt.mp4",
-        "gridFsId": null
+        "fileType": "video/mp4",
+        "formattedSize": "7.9 MB",
+        "fileId": "upl_1793382694954_pkzt"
       },
-      "timestamp": "2026-10-30T17:51:49.202Z",
       "chatId": "Affaque Ahmed",
-      "seenAt": "2026-10-30T17:51:50.016Z"
+      "sender": "Client",
+      "id": "msg_1793382709202_viv8",
+      "type": "file",
+      "timestamp": "2026-10-30T17:51:49.202Z",
+      "seenAt": "2026-10-30T17:51:50.016Z",
+      "status": "seen"
     },
     {
       "id": "msg_1793382754281_c3uz",
@@ -2132,8 +2132,9 @@
       "id": "msg_1793392833055_elxf",
       "text": "automatically delete h",
       "type": "text",
-      "status": "sent",
-      "timestamp": "2026-10-30T20:40:33.088Z"
+      "status": "seen",
+      "timestamp": "2026-10-30T20:40:33.088Z",
+      "seenAt": "2026-10-31T09:11:05.068Z"
     },
     {
       "chatId": "Affaque Ahmed",
@@ -2147,6 +2148,33 @@
       "reactions": {
         "Raoprime": "👍"
       }
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Client",
+      "id": "msg_1793438314281_uhgy",
+      "text": "Bhai ap kisi ko is trha nhi Bata sakhte k",
+      "type": "text",
+      "status": "sent",
+      "timestamp": "2026-10-31T09:18:36.005Z"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Client",
+      "id": "msg_1793438351792_tnoq",
+      "text": "Ye condition isme body khud ba khud weight Kaam karte jate hai",
+      "type": "text",
+      "status": "sent",
+      "timestamp": "2026-10-31T09:19:13.461Z"
+    },
+    {
+      "chatId": "Affaque Ahmed",
+      "sender": "Client",
+      "id": "msg_1793552318037_ruf4",
+      "text": "Bhai online ho",
+      "type": "text",
+      "status": "sent",
+      "timestamp": "2026-11-01T16:58:38.584Z"
     }
   ],
   "Dharmesh": [
@@ -2431,25 +2459,6 @@
       "status": "seen"
     },
     {
-      "file": {
-        "originalName": "Video by i_amit_saini_rohtakiya [DfH6EgqpPvs].mp4",
-        "gridFsId": null,
-        "fileSize": 9870627,
-        "storedName": "Video_by_i_amit_saini_rohtakiya__DfH6EgqpPvs__0_yw6t.mp4",
-        "downloadUrl": "/api/download/Video_by_i_amit_saini_rohtakiya__DfH6EgqpPvs__0_yw6t.mp4",
-        "fileType": "video/mp4",
-        "formattedSize": "9.4 MB",
-        "fileId": "upl_1793380353710_yw6t"
-      },
-      "chatId": "Dharmesh",
-      "sender": "Client",
-      "id": "msg_1793380374387_wlcn",
-      "type": "file",
-      "timestamp": "2026-10-30T17:12:54.388Z",
-      "seenAt": "2026-10-30T17:12:56.807Z",
-      "status": "seen"
-    },
-    {
       "chatId": "Dharmesh",
       "sender": "Client",
       "id": "msg_1793384207898_s85n",
@@ -2608,6 +2617,66 @@
       "timestamp": "2026-10-30T21:13:57.296Z",
       "seenAt": "2026-10-30T21:13:57.712Z",
       "status": "seen"
+    },
+    {
+      "chatId": "Dharmesh",
+      "sender": "Client",
+      "id": "msg_1793400739598_xktw",
+      "text": "Hi",
+      "type": "text",
+      "timestamp": "2026-10-30T22:52:19.431Z",
+      "seenAt": "2026-10-30T22:52:19.922Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "Dharmesh",
+      "sender": "Client",
+      "id": "msg_1793401441581_pi02",
+      "text": "Hi",
+      "type": "text",
+      "timestamp": "2026-10-30T23:04:01.400Z",
+      "seenAt": "2026-10-30T23:04:12.463Z",
+      "status": "seen"
+    },
+    {
+      "id": "msg_1793402957048_jdz5",
+      "sender": "Raoprime",
+      "type": "text",
+      "text": "Your identity and cloud files have been verified. Welcome to Raoprime VIP.",
+      "status": "seen",
+      "timestamp": "2026-10-30T23:29:17.054Z",
+      "chatId": "Dharmesh",
+      "seenAt": "2026-10-30T23:29:19.495Z"
+    },
+    {
+      "id": "msg_1793402969641_p1h8",
+      "sender": "Client",
+      "type": "text",
+      "text": "Confirmed received! The Obsidian & Velvet Maroon luxury theme looks exceptional.",
+      "status": "seen",
+      "timestamp": "2026-10-30T23:29:29.650Z",
+      "chatId": "Dharmesh",
+      "seenAt": "2026-10-30T23:33:12.310Z"
+    },
+    {
+      "id": "msg_1793403161959_f1to",
+      "sender": "Raoprime",
+      "type": "text",
+      "text": "Your identity and cloud files have been verified. Welcome to Raoprime VIP.",
+      "status": "seen",
+      "timestamp": "2026-10-30T23:32:41.971Z",
+      "chatId": "Dharmesh",
+      "seenAt": "2026-10-30T23:32:44.418Z"
+    },
+    {
+      "id": "msg_1793403173684_9quk",
+      "sender": "Client",
+      "type": "text",
+      "text": "Confirmed received! The Obsidian & Velvet Maroon luxury theme looks exceptional.",
+      "status": "seen",
+      "timestamp": "2026-10-30T23:32:53.695Z",
+      "chatId": "Dharmesh",
+      "seenAt": "2026-10-30T23:44:23.626Z"
     }
   ],
   "Test_Large_Room": [
@@ -2784,6 +2853,75 @@
       "timestamp": "2026-10-29T14:59:21.799Z",
       "status": "seen",
       "chatId": "default"
+    },
+    {
+      "chatId": "default",
+      "sender": "Client",
+      "id": "msg_1793399972551_tz9j",
+      "text": "Hi",
+      "type": "text",
+      "timestamp": "2026-10-30T22:39:32.377Z",
+      "seenAt": "2026-10-30T22:42:39.087Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "default",
+      "sender": "Client",
+      "id": "msg_1793399977875_gnxg",
+      "text": "Hello",
+      "type": "text",
+      "timestamp": "2026-10-30T22:39:37.691Z",
+      "seenAt": "2026-10-30T22:42:39.087Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "default",
+      "sender": "Client",
+      "id": "msg_1793400137310_c6go",
+      "text": "Hi",
+      "type": "text",
+      "timestamp": "2026-10-30T22:42:17.123Z",
+      "seenAt": "2026-10-30T22:42:39.087Z",
+      "status": "seen"
+    },
+    {
+      "file": {
+        "originalName": "Screenshot_20261031-034216_Instagram.png",
+        "gridFsId": null,
+        "fileSize": 1231336,
+        "storedName": "Screenshot_20261031-034216_Instagram_9_dqoi.png",
+        "downloadUrl": "/api/download/Screenshot_20261031-034216_Instagram_9_dqoi.png",
+        "fileType": "image/png",
+        "formattedSize": "1.2 MB",
+        "fileId": "upl_1793400246519_dqoi"
+      },
+      "chatId": "default",
+      "sender": "Client",
+      "id": "msg_1793400248152_e04j",
+      "type": "file",
+      "timestamp": "2026-10-30T22:44:08.152Z",
+      "seenAt": "2026-10-30T22:49:10.634Z",
+      "status": "seen"
+    },
+    {
+      "chatId": "default",
+      "sender": "Client",
+      "id": "msg_1793434841878_dzeh",
+      "text": "Hi",
+      "type": "text",
+      "status": "seen",
+      "timestamp": "2026-10-31T08:20:41.687Z",
+      "seenAt": "2026-10-31T08:55:55.405Z"
+    },
+    {
+      "chatId": "default",
+      "sender": "Client",
+      "id": "msg_1793435359667_q066",
+      "text": "Hi",
+      "type": "text",
+      "status": "seen",
+      "timestamp": "2026-10-31T08:29:19.486Z",
+      "seenAt": "2026-10-31T08:55:55.405Z"
     }
   ],
   "AutoTest_1793383869362": [
@@ -2893,6 +3031,18 @@
       "type": "text",
       "timestamp": "2026-10-30T18:32:16.028Z",
       "seenAt": "2026-10-30T18:32:16.487Z",
+      "status": "seen"
+    }
+  ],
+  "rerrr": [
+    {
+      "chatId": "rerrr",
+      "sender": "Client",
+      "id": "msg_1793400435865_mzmv",
+      "text": "Hi",
+      "type": "text",
+      "timestamp": "2026-10-30T22:47:15.699Z",
+      "seenAt": "2026-10-30T22:49:04.303Z",
       "status": "seen"
     }
   ]
