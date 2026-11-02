@@ -1158,8 +1158,8 @@ function renderAdminSingleMessageHtml(msg, index, messages) {
               <span class="text-[12.5px] font-semibold truncate text-white">${escapeHtml(f.originalName)}</span>
             </div>
 
-            <!-- Luxury Velvet Waveform Player -->
-            <div id="${audioPlayerId}" class="raoprime-waveform-player bg-black/40 border border-white/10 rounded-2xl p-2.5 space-y-2 select-none" data-src="${f.downloadUrl}">
+            <!-- Luxury Velvet Waveform Player with YouTube Ambient Glow -->
+            <div id="${audioPlayerId}" class="raoprime-waveform-player bg-black/50 border border-white/10 rounded-2xl p-2.5 space-y-2 select-none yt-ambient-glow" data-src="${f.downloadUrl}">
               <div class="flex items-center gap-2.5">
                 <button type="button" onclick="toggleWaveformAudio('${audioPlayerId}')" class="audio-toggle-btn w-9 h-9 rounded-full bg-gradient-to-br from-[#741728] to-[#3e0a14] hover:brightness-110 active:scale-95 text-white flex items-center justify-center shrink-0 shadow-md shadow-[#741728]/30 transition-all cursor-pointer" aria-label="Play or Pause Voice Note">
                   <svg class="audio-icon-play w-4 h-4 ml-0.5 fill-current" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></svg>

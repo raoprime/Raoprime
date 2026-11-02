@@ -1032,8 +1032,8 @@ function renderSingleMessageHtml(msg, index, messages) {
               <span class="text-[12.5px] font-semibold truncate text-white">${escapeHtml(f.originalName)}</span>
             </div>
 
-            <!-- Luxury Velvet Waveform Player -->
-            <div id="${audioPlayerId}" class="raoprime-waveform-player bg-black/40 border border-white/10 rounded-2xl p-2.5 space-y-2 select-none" data-src="${f.downloadUrl}">
+            <!-- Luxury Velvet Waveform Player with YouTube Ambient Glow -->
+            <div id="${audioPlayerId}" class="raoprime-waveform-player bg-black/50 border border-white/10 rounded-2xl p-2.5 space-y-2 select-none yt-ambient-glow" data-src="${f.downloadUrl}">
               <div class="flex items-center gap-2.5">
                 <button type="button" onclick="toggleWaveformAudio('${audioPlayerId}')" class="audio-toggle-btn w-9 h-9 rounded-full bg-gradient-to-br from-[#741728] to-[#3e0a14] hover:brightness-110 active:scale-95 text-white flex items-center justify-center shrink-0 shadow-md shadow-[#741728]/30 transition-all cursor-pointer" aria-label="Play or Pause Voice Note">
                   <svg class="audio-icon-play w-4 h-4 ml-0.5 fill-current" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></svg>
@@ -1067,7 +1067,7 @@ function renderSingleMessageHtml(msg, index, messages) {
         `;
       } else if (isVideo) {
         bubbleContent = `
-          <div class="overflow-hidden rounded-2xl max-w-[280px] sm:max-w-sm min-w-[220px]">
+          <div class="overflow-hidden rounded-2xl max-w-[280px] sm:max-w-sm min-w-[220px] yt-ambient-glow border border-white/10 shadow-2xl">
             ${quotedReplyHtml ? `<div class="p-2">${quotedReplyHtml}</div>` : ''}
             <video src="${f.downloadUrl}" controls playsinline webkit-playsinline class="w-full max-h-72 object-cover bg-black"></video>
             <div class="p-2 sm:p-2.5 flex items-center justify-between text-xs border-t border-white/10 bg-black/30 backdrop-blur-md">
@@ -1138,8 +1138,8 @@ function renderSingleMessageHtml(msg, index, messages) {
         ${senderHeaderHtml}
         
         <div class="relative flex items-center gap-1.5 ${isOut ? 'flex-row-reverse' : 'flex-row'} max-w-full">
-          <!-- Main Bubble -->
-          <div class="${isOut ? 'bubble-out' : 'bubble-in'} ${midClass} shadow-md cursor-pointer select-text relative group/bubble ${isEditingThis ? 'ring-2 ring-white/40 shadow-black/50' : ''}">
+          <!-- Main Bubble (Instagram Double-Tap to Heart) -->
+          <div class="${isOut ? 'bubble-out' : 'bubble-in'} ${midClass} shadow-md cursor-pointer select-text relative group/bubble ${isEditingThis ? 'ring-2 ring-white/40 shadow-black/50' : ''}" ondblclick="handleMessageDoubleTap('${msg.id}', event)" ontouchstart="handleMessageTouchStart('${msg.id}', event)">
             ${bubbleContent}
             ${reactionBadgeHtml}
 
@@ -3111,4 +3111,199 @@ function cycleAudioPlaybackRate(playerId) {
 
   audio.playbackRate = nextRate;
   btn.textContent = `${nextRate}x`;
+}
+
+// ──────────────────────────────────────────────────────────────
+// Instagram Direct Message Double-Tap to React (❤️)
+// ──────────────────────────────────────────────────────────────
+let lastMessageTapTime = 0;
+let lastMessageTapId = null;
+
+function handleMessageTouchStart(msgId, event) {
+  const now = Date.now();
+  if (lastMessageTapId === msgId && (now - lastMessageTapTime) < 320) {
+    handleMessageDoubleTap(msgId, event);
+    lastMessageTapTime = 0;
+    lastMessageTapId = null;
+  } else {
+    lastMessageTapTime = now;
+    lastMessageTapId = msgId;
+  }
+}
+
+function handleMessageDoubleTap(msgId, event) {
+  if (event) {
+    if (event.preventDefault) event.preventDefault();
+    if (event.stopPropagation) event.stopPropagation();
+  }
+
+  // Find target bubble
+  const row = document.querySelector(`[data-msg-id="${msgId}"]`);
+  const bubble = row ? (row.querySelector('.group\\/bubble') || row) : (event && event.currentTarget);
+
+  if (bubble) {
+    const heart = document.createElement('div');
+    heart.className = 'ig-heart-pop text-rose-500 drop-shadow-[0_4px_20px_rgba(244,63,94,0.9)]';
+    heart.innerHTML = `
+      <svg class="w-16 h-16 fill-current text-rose-500" viewBox="0 0 24 24">
+        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+      </svg>
+    `;
+    heart.style.left = '50%';
+    heart.style.top = '50%';
+    bubble.appendChild(heart);
+    setTimeout(() => { if (heart.parentNode) heart.parentNode.removeChild(heart); }, 900);
+  }
+
+  // Sync ❤️ reaction
+  quickReactMessage(msgId, '❤️');
+  if (typeof playSound === 'function') {
+    try { playSound('like'); } catch(e) {}
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
+// Instagram Stories Highlights System
+// ──────────────────────────────────────────────────────────────
+const RAOPRIME_STORIES = {
+  official: {
+    title: 'Raoprime Official',
+    badge: '✓ Verified Channel',
+    avatar: '/assets/rp-logo.jpg',
+    heading: 'Welcome to Raoprime Portal',
+    desc: 'The official executive portal for secure file transfers, direct master audio review, and priority creative collaboration.',
+    iconSvg: `<svg class="w-10 h-10 text-rose-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>`,
+    actionText: 'Say Hello in Chat',
+    actionHandler: () => {
+      closeStoryViewerModal();
+      const input = document.getElementById('messageInput');
+      if (input) { input.focus(); input.value = 'Hi Raoprime! 👋 '; }
+    }
+  },
+  vault: {
+    title: 'Documents Vault',
+    badge: 'Storage & Assets',
+    avatar: '/assets/rp-logo.jpg',
+    heading: 'End-to-End Vault Storage',
+    desc: 'All your contracts, releases, stem audio packages, and camera deliverables are encrypted and accessible anytime in this portal.',
+    iconSvg: `<svg class="w-10 h-10 text-rose-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`,
+    actionText: 'Upload New File',
+    actionHandler: () => {
+      closeStoryViewerModal();
+      const picker = document.getElementById('filePicker');
+      if (picker) picker.click();
+    }
+  },
+  audio: {
+    title: 'Studio Voice Notes',
+    badge: 'High-Fidelity Audio',
+    avatar: '/assets/rp-logo.jpg',
+    heading: 'Lossless Audio & Notes',
+    desc: 'Listen to lossless voice messages with luxury waveforms and custom playback speed (1x / 1.5x / 2x).',
+    iconSvg: `<svg class="w-10 h-10 text-pink-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>`,
+    actionText: 'Ready for Audio',
+    actionHandler: () => {
+      closeStoryViewerModal();
+      showToast('🎙️ Ready for audio! Send voice notes in chat.');
+    }
+  },
+  security: {
+    title: 'Google Security',
+    badge: 'Encrypted & Verified',
+    avatar: '/assets/rp-logo.jpg',
+    heading: 'Google Verified Identity',
+    desc: 'Zero fake timers, zero unverified sessions. Your permanent username is permanently anchored to your authenticated Gmail prefix.',
+    iconSvg: `<svg class="w-10 h-10 text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>`,
+    actionText: 'View Your Profile',
+    actionHandler: () => {
+      closeStoryViewerModal();
+      openClientProfileModal();
+    }
+  }
+};
+
+const STORY_KEYS = ['official', 'vault', 'audio', 'security'];
+let activeStoryIndex = 0;
+let storyTimer = null;
+
+function openStoryViewerModal(storyKey = 'official') {
+  const modal = document.getElementById('storyViewerModal');
+  if (!modal) return;
+  modal.classList.remove('hidden');
+
+  const idx = STORY_KEYS.indexOf(storyKey);
+  activeStoryIndex = idx >= 0 ? idx : 0;
+  renderActiveStory();
+}
+
+function closeStoryViewerModal() {
+  const modal = document.getElementById('storyViewerModal');
+  if (modal) modal.classList.add('hidden');
+  if (storyTimer) {
+    clearTimeout(storyTimer);
+    storyTimer = null;
+  }
+}
+
+function renderActiveStory() {
+  const key = STORY_KEYS[activeStoryIndex] || 'official';
+  const story = RAOPRIME_STORIES[key];
+  if (!story) return;
+
+  const titleEl = document.getElementById('storyHeaderTitle');
+  const timeEl = document.getElementById('storyHeaderTime');
+  const headingEl = document.getElementById('storyCardHeading');
+  const descEl = document.getElementById('storyCardDesc');
+  const badgeEl = document.getElementById('storyCardBadge');
+  const actionText = document.getElementById('storyActionText');
+
+  if (titleEl) titleEl.textContent = story.title;
+  if (timeEl) timeEl.textContent = story.badge;
+  if (headingEl) headingEl.textContent = story.heading;
+  if (descEl) descEl.textContent = story.desc;
+  if (badgeEl) badgeEl.innerHTML = story.iconSvg;
+  if (actionText) actionText.textContent = story.actionText;
+
+  // Render progress segments
+  const segContainer = document.getElementById('storyProgressSegments');
+  if (segContainer) {
+    segContainer.innerHTML = STORY_KEYS.map((k, i) => {
+      const isPast = i < activeStoryIndex;
+      const isCurr = i === activeStoryIndex;
+      return `
+        <div class="flex-1 h-1 bg-white/20 rounded-full overflow-hidden">
+          <div class="h-full bg-white rounded-full ${isCurr ? 'story-progress-bar' : ''}" style="width: ${isPast ? '100%' : (isCurr ? '0%' : '0%')}"></div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Auto-advance after 5s
+  if (storyTimer) clearTimeout(storyTimer);
+  storyTimer = setTimeout(() => {
+    navigateStory(1);
+  }, 5000);
+}
+
+function navigateStory(direction) {
+  const nextIdx = activeStoryIndex + direction;
+  if (nextIdx >= STORY_KEYS.length) {
+    closeStoryViewerModal();
+  } else if (nextIdx < 0) {
+    activeStoryIndex = 0;
+    renderActiveStory();
+  } else {
+    activeStoryIndex = nextIdx;
+    renderActiveStory();
+  }
+}
+
+function handleStoryActionClick() {
+  const key = STORY_KEYS[activeStoryIndex] || 'official';
+  const story = RAOPRIME_STORIES[key];
+  if (story && typeof story.actionHandler === 'function') {
+    story.actionHandler();
+  } else {
+    closeStoryViewerModal();
+  }
 }
