@@ -891,18 +891,23 @@ app.get('/api/chat/messages', async (req, res) => {
       online: onlineStatus,
       isEnded: endedChatsSet.has(chatId),
       verification: (() => {
-        const ver = verificationsStore[chatId] || {};
+        const store = loadVerifications();
+        const foundKey = Object.keys(store).find(k => k.toLowerCase() === chatId.toLowerCase() || k.toLowerCase() === rawChatId.toLowerCase());
+        const ver = foundKey ? store[foundKey] : (verificationsStore[chatId] || {});
         if (ver.status === 'pending' && ver.submittedAt && (now - ver.submittedAt >= VERIFICATION_DELAY_MS)) {
           ver.verified = true;
           ver.status = 'verified';
           ver.verifiedAt = new Date().toISOString();
-          saveVerifications(verificationsStore);
+          saveVerifications(store);
         }
         const remainingMs = ver.status === 'pending' && ver.submittedAt ? Math.max(0, VERIFICATION_DELAY_MS - (now - ver.submittedAt)) : 0;
         return {
           verified: Boolean(ver.verified),
           status: ver.status || (ver.verified ? 'verified' : (ver.photoUrl ? 'pending' : 'none')),
           photoUrl: ver.photoUrl || null,
+          email: ver.email || null,
+          provider: ver.provider || 'custom',
+          name: ver.name || null,
           phoneNumber: ver.phoneNumber || null,
           submittedAt: ver.submittedAt || null,
           remainingMinutes: Math.ceil(remainingMs / 60000),

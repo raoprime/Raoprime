@@ -850,11 +850,14 @@ async function loadMessages() {
         currentClientVerification = {
           verified: newVerified,
           status: newStatus,
-          photoUrl: data.verification.photoUrl || null,
-          phoneNumber: data.verification.phoneNumber || null,
+          provider: data.verification.provider || currentClientVerification.provider || 'custom',
+          photoUrl: data.verification.photoUrl || currentClientVerification.photoUrl || null,
+          email: data.verification.email || currentClientVerification.email || null,
+          name: data.verification.name || currentClientVerification.name || null,
+          phoneNumber: data.verification.phoneNumber || currentClientVerification.phoneNumber || null,
           submittedAt: data.verification.submittedAt || null,
           remainingMinutes: data.verification.remainingMinutes || 0,
-          verifiedAt: data.verification.verifiedAt || null
+          verifiedAt: data.verification.verifiedAt || currentClientVerification.verifiedAt || null
         };
 
         updatePhotoVerifyUI(
@@ -864,6 +867,7 @@ async function loadMessages() {
           currentClientVerification.remainingMinutes,
           currentClientVerification.phoneNumber
         );
+        updateClientProfileHeaderUI();
 
         if (prevStatus === 'pending' && newStatus === 'verified') {
           showToast('✓ Google Identity Verified');
