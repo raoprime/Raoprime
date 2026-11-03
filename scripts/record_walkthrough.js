@@ -5,17 +5,17 @@ const { spawn } = require('child_process');
 
 const OUT_DIR = path.resolve('C:/Users/DELL/.gemini/antigravity/scratch/client-document-portal/handoff/video');
 const VIDEO_PATH = path.join(OUT_DIR, 'walkthrough.mp4');
+const ARTIFACT_VIDEO_PATH = path.resolve('C:/Users/DELL/.gemini/antigravity/brain/c38e69ac-5595-457b-aa92-0467d8bd2942/walkthrough.mp4');
 const FFMPEG_PATH = 'C:\\Users\\DELL\\AppData\\Local\\Microsoft\\WinGet\\Links\\ffmpeg.exe';
 
 if (!fs.existsSync(OUT_DIR)) {
   fs.mkdirSync(OUT_DIR, { recursive: true });
 }
 
-// Helper: sleep
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
 async function runWalkthrough() {
-  console.log('🎬 Initializing Exploratory Walkthrough Video Recording...');
+  console.log('🎬 Initializing Complete Exploratory Walkthrough Video Recording...');
   console.log(`Target Video: ${VIDEO_PATH}`);
 
   const browser = await puppeteer.launch({
@@ -47,10 +47,7 @@ async function runWalkthrough() {
     VIDEO_PATH
   ]);
 
-  ffmpeg.stderr.on('data', data => {
-    // console.log(`FFmpeg: ${data.toString().trim()}`);
-  });
-
+  ffmpeg.stderr.on('data', () => {});
   ffmpeg.on('error', err => {
     console.error('FFmpeg process error:', err);
   });
@@ -58,11 +55,9 @@ async function runWalkthrough() {
   let lastFrame = null;
   let isRecording = true;
 
-  // Initial capture to seed lastFrame
   await page.goto('about:blank');
   lastFrame = await page.screenshot({ type: 'jpeg', quality: 90 });
 
-  // Setup CDP screencast
   const client = await page.target().createCDPSession();
   client.on('Page.screencastFrame', async ({ data, sessionId }) => {
     if (isRecording) {
@@ -81,7 +76,6 @@ async function runWalkthrough() {
     everyNthFrame: 1
   });
 
-  // 25 fps pump timer
   const frameInterval = setInterval(() => {
     if (isRecording && lastFrame && ffmpeg.stdin.writable) {
       ffmpeg.stdin.write(lastFrame);
@@ -89,256 +83,177 @@ async function runWalkthrough() {
   }, 40);
 
   try {
-    console.log('\n======================================================');
-    console.log('ACT 1: LOCAL ADMIN CONSOLE EXPLORATION (http://localhost:4000/admin)');
-    console.log('======================================================');
-
-    // 1. Navigate to Local Admin Login
-    console.log('Step 1: Navigating to Local Admin Login Gateway...');
-    await page.goto('http://localhost:4000/admin', { waitUntil: 'networkidle2', timeout: 30000 });
-    await page.evaluate(() => {
-      sessionStorage.clear();
-      localStorage.clear();
-      const gateway = document.getElementById('loginGateway');
-      if (gateway) gateway.classList.remove('hidden');
-    });
-    await wait(1500);
-
-    // 2. Unlock Admin Console with 'rdmy'
-    console.log('Step 2: Entering admin password "rdmy" and unlocking...');
-    await page.focus('#adminPasswordInput');
-    await wait(400);
-    await page.type('#adminPasswordInput', 'rdmy', { delay: 180 });
-    await wait(600);
-    await page.click('#unlockBtn');
-    await wait(2200);
-
-    // 3. Search in inbox
-    console.log('Step 3: Filtering conversations in sidebar...');
-    await page.focus('#searchInput');
-    await page.type('#searchInput', 'Dharmesh', { delay: 120 });
-    await wait(1200);
-    // Clear search
-    await page.evaluate(() => {
-      const input = document.getElementById('searchInput');
-      if (input) {
-        input.value = '';
-        if (typeof filterChats === 'function') filterChats();
-      }
-    });
-    await wait(800);
-
-    // 4. Select Dharmesh conversation
-    console.log('Step 4: Opening Dharmesh active conversation...');
-    await page.evaluate(() => {
-      if (typeof selectChat === 'function') {
-        selectChat('Dharmesh', true);
-      } else {
-        const item = document.querySelector('.chat-item');
-        if (item) item.click();
-      }
-    });
+    // ══════════════════════════════════════════════════════════
+    // ACT 1: FIRST VISIT ONBOARDING & GOOGLE SIGN-IN EXPERIENCE
+    // ══════════════════════════════════════════════════════════
+    console.log('\n[ACT 1] Exploring First-Visit Onboarding Experience...');
+    await page.goto('http://localhost:4000/', { waitUntil: 'networkidle2', timeout: 30000 });
     await wait(2000);
 
-    // 5. Open Client Intelligence Modal
-    console.log('Step 5: Inspecting Client Device & Telemetry Intelligence modal...');
-    await page.evaluate(() => {
-      if (typeof openClientIntelModal === 'function') openClientIntelModal();
-      else {
-        const btn = document.getElementById('clientIntelBtn');
-        if (btn) btn.click();
-      }
-    });
+    // Onboarding modal is displayed with "Continue with Google"
+    console.log('→ Inspecting Onboarding Welcome Modal with Google button...');
     await wait(2500);
 
-    // Close Intel Modal
+    // Close onboarding modal to explore guest view
     await page.evaluate(() => {
-      if (typeof closeClientIntelModal === 'function') closeClientIntelModal();
-    });
-    await wait(800);
-
-    // 6. Inspect Rename Chat Modal
-    console.log('Step 6: Opening Rename Chat modal...');
-    await page.evaluate(() => {
-      if (typeof openRenameModal === 'function') openRenameModal();
+      if (typeof closeNameModal === 'function') closeNameModal();
     });
     await wait(1500);
-    await page.evaluate(() => {
-      if (typeof closeRenameModal === 'function') closeRenameModal();
-    });
-    await wait(800);
 
-    // 7. Inspect Photo Verification Modal
-    console.log('Step 7: Inspecting Photo Verification Approval modal...');
-    await page.evaluate(() => {
-      if (typeof viewClientVerifiedPhoto === 'function') {
-        viewClientVerifiedPhoto(
-          'https://lh3.googleusercontent.com/a/ACg8ocLM4e9iD7orOAZxXoGqqCeUXWxhFp_Gj-GJ0eW1rYzFlsfpUhE=s96-c',
-          'Dharmesh',
-          'xraoprime@gmail.com',
-          'google'
-        );
-      }
-    });
-    await wait(2000);
-    await page.evaluate(() => {
-      if (typeof closeAdminPhotoModal === 'function') closeAdminPhotoModal();
-    });
-    await wait(800);
+    // ══════════════════════════════════════════════════════════
+    // ACT 2: INSTAGRAM STORIES HIGHLIGHTS CAROUSEL & FULLSCREEN VIEWER
+    // ══════════════════════════════════════════════════════════
+    console.log('\n[ACT 2] Exploring Instagram Stories Carousel...');
+    await page.goto('http://localhost:4000/?chat=raoprime.music', { waitUntil: 'networkidle2', timeout: 30000 });
+    await wait(2500);
 
-    // 8. Admin sends an interactive reply message
-    console.log('Step 8: Admin sending real-time reply message in velvet maroon stream...');
-    const adminInput = await page.$('#adminMessageInput');
-    if (adminInput) {
-      await adminInput.focus();
-      await wait(400);
-      await adminInput.type('Your identity and cloud files have been verified. Welcome to Raoprime VIP.', { delay: 50 });
-      await wait(600);
-      const adminSend = await page.$('#adminSendBtn');
-      if (adminSend) await adminSend.click();
-      await wait(2000);
-    } else {
-      console.log('Note: Admin message composer not directly present in current layout, continuing...');
-    }
+    // Click Story 1: Raoprime Official
+    console.log('→ Opening Raoprime Official Story (Instagram gradient ring)...');
+    await page.click('#storyHighlightsBar button:first-child');
+    await wait(3000);
 
-    console.log('\n======================================================');
-    console.log('ACT 2: LOCAL CLIENT PORTAL EXPLORATION (http://localhost:4000/?chat=Dharmesh)');
-    console.log('======================================================');
+    // Navigate to next story
+    console.log('→ Navigating to Documents Vault Story...');
+    await page.evaluate(() => navigateStory(1));
+    await wait(2500);
 
-    // 9. Navigate to Client Portal
-    console.log('Step 9: Navigating to Client Portal with Signature Velvet Maroon styling...');
-    await page.goto('http://localhost:4000/?chat=Dharmesh', { waitUntil: 'networkidle2', timeout: 30000 });
-    await wait(2200);
+    // Navigate to Audio Story
+    console.log('→ Navigating to Studio Voice Notes Story...');
+    await page.evaluate(() => navigateStory(1));
+    await wait(2500);
 
-    // 10. Client sends an interactive message
-    console.log('Step 10: Client sending interactive message...');
+    // Close Story Viewer
+    console.log('→ Closing Story Viewer...');
+    await page.evaluate(() => closeStoryViewerModal());
+    await wait(1500);
+
+    // ══════════════════════════════════════════════════════════
+    // ACT 3: CHAT STREAM, DOUBLE-TAP HEART & AMBIENT MEDIA
+    // ══════════════════════════════════════════════════════════
+    console.log('\n[ACT 3] Exploring Interactive Chat & Double-Tap Heart...');
+    
+    // Send a live test message
     const clientInput = await page.$('#messageInput');
     if (clientInput) {
       await clientInput.focus();
       await wait(400);
-      await clientInput.type('Confirmed received! The Obsidian & Velvet Maroon luxury theme looks exceptional.', { delay: 50 });
+      await clientInput.type('Raoprime Executive Portal: Instagram & YouTube Vibe Active! 🚀', { delay: 40 });
       await wait(600);
-      const clientSend = await page.$('#sendBtn');
-      if (clientSend) await clientSend.click();
+      const sendBtn = await page.$('#sendBtn');
+      if (sendBtn) await sendBtn.click();
       await wait(2000);
     }
 
-    // 11. Open "My Profile" Modal (View Mode)
-    console.log('Step 11: Opening "My Profile" Modal (View Mode)...');
+    // Double-tap the message to trigger floating heart burst
+    console.log('→ Triggering Double-Tap to React (❤️) with floating burst...');
     await page.evaluate(() => {
-      if (typeof openClientProfileModal === 'function') openClientProfileModal();
-      else {
-        const btn = document.getElementById('headerProfileBtn');
-        if (btn) btn.click();
+      const rows = document.querySelectorAll('.message-row');
+      if (rows.length > 0) {
+        const last = rows[rows.length - 1];
+        handleMessageDoubleTap(last.dataset.msgId);
+      }
+    });
+    await wait(2000);
+
+    // Open universal document previewer
+    console.log('→ Opening Universal Document Lightbox Previewer...');
+    await page.evaluate(() => {
+      if (typeof openDocumentPreview === 'function') {
+        openDocumentPreview('/assets/rp-logo.jpg', 'Master_Contract_Raoprime_Signed.pdf', '2.4 MB');
       }
     });
     await wait(2500);
-
-    // 12. Toggle "My Profile" Modal to Edit Mode
-    console.log('Step 12: Toggling "My Profile" Modal into Inline Edit Mode...');
     await page.evaluate(() => {
-      if (typeof toggleProfileInlineEdit === 'function') toggleProfileInlineEdit();
+      if (typeof closeDocumentPreviewModal === 'function') closeDocumentPreviewModal();
     });
+    await wait(1200);
+
+    // ══════════════════════════════════════════════════════════
+    // ACT 4: CLIENT PROFILE MODAL (APPLE / TELEGRAM GRADE)
+    // ══════════════════════════════════════════════════════════
+    console.log('\n[ACT 4] Exploring Client Profile Modal & Locked Username...');
+    await page.click('#headerProfileBtn');
+    await wait(2500);
+
+    // Toggle inline edit mode
+    console.log('→ Toggling Inline Profile Edit Mode (Display Name & WhatsApp)...');
+    await page.evaluate(() => toggleProfileInlineEdit());
     await wait(2000);
 
-    // Cancel edit mode and close profile modal
+    // Cancel edit and close profile modal
+    console.log('→ Saving/Closing Profile Modal...');
     await page.evaluate(() => {
-      if (typeof cancelProfileInlineEdit === 'function') cancelProfileInlineEdit();
-      if (typeof closeClientProfileModal === 'function') closeClientProfileModal();
-    });
-    await wait(800);
-
-    // 13. Open Raoprime Organization Info Modal
-    console.log('Step 13: Opening Raoprime Organization Info modal...');
-    await page.evaluate(() => {
-      if (typeof openProfileModal === 'function') openProfileModal();
-    });
-    await wait(2000);
-    await page.evaluate(() => {
-      if (typeof closeProfileModal === 'function') closeProfileModal();
-    });
-    await wait(800);
-
-    // 14. Open Photo Lightbox
-    console.log('Step 14: Inspecting Photo Lightbox modal...');
-    await page.evaluate(() => {
-      if (typeof openPhotoLightbox === 'function') openPhotoLightbox('/assets/rp-logo.jpg');
-    });
-    await wait(1800);
-    await page.evaluate(() => {
-      if (typeof closePhotoLightbox === 'function') closePhotoLightbox();
-    });
-    await wait(800);
-
-    console.log('\n======================================================');
-    console.log('ACT 3: LIVE RENDER DEPLOYMENT EXPLORATION (https://raoprime.onrender.com)');
-    console.log('======================================================');
-
-    // 15. Navigate to Live Admin
-    console.log('Step 15: Navigating to Live Admin Console on Render...');
-    await page.goto('https://raoprime.onrender.com/admin', { waitUntil: 'networkidle2', timeout: 35000 });
-    await page.evaluate(() => {
-      sessionStorage.clear();
-      localStorage.clear();
-      const gateway = document.getElementById('loginGateway');
-      if (gateway) gateway.classList.remove('hidden');
+      cancelProfileInlineEdit();
+      closeClientProfileModal();
     });
     await wait(1500);
 
-    // 16. Unlock Live Admin Console
-    console.log('Step 16: Entering password "rdmy" on Live Admin Console...');
-    await page.focus('#adminPasswordInput');
-    await wait(400);
-    await page.type('#adminPasswordInput', 'rdmy', { delay: 180 });
-    await wait(600);
-    await page.click('#unlockBtn');
-    await wait(2500);
+    // ══════════════════════════════════════════════════════════
+    // ACT 5: ADMIN PORTAL EXPLORATION (http://localhost:4000/admin)
+    // ══════════════════════════════════════════════════════════
+    console.log('\n[ACT 5] Exploring Admin Portal & Real-Time Inbox...');
+    await page.goto('http://localhost:4000/admin', { waitUntil: 'networkidle2', timeout: 30000 });
+    await wait(1500);
 
-    // 17. Select Dharmesh conversation on Live Admin
-    console.log('Step 17: Selecting conversation on Live Admin Console...');
+    // Enter password 'rdmy' and login
+    console.log('→ Unlocking Admin Console with "rdmy"...');
+    const pwInput = await page.$('#passwordInput, #adminPasswordInput, input[type="password"]');
+    if (pwInput) {
+      await pwInput.focus();
+      await wait(300);
+      await pwInput.type('rdmy', { delay: 120 });
+      await wait(500);
+      await page.evaluate(() => {
+        const btn = document.getElementById('adminLoginBtn') || 
+                    document.getElementById('unlockBtn') ||
+                    document.querySelector('button[type="submit"]') ||
+                    Array.from(document.querySelectorAll('button')).find(b => b.textContent.toLowerCase().includes('login') || b.textContent.toLowerCase().includes('unlock'));
+        if (btn) btn.click();
+      });
+      await wait(2500);
+    }
+
+    // Select raoprime.music conversation in inbox
+    console.log('→ Selecting verified client in conversation list...');
     await page.evaluate(() => {
       if (typeof selectChat === 'function') {
-        selectChat('Dharmesh', true);
+        selectChat('raoprime.music', true);
       } else {
-        const item = document.querySelector('.chat-item');
+        const item = document.querySelector('.chat-item, [data-chat-id="raoprime.music"]');
         if (item) item.click();
       }
     });
-    await wait(2200);
+    await wait(2500);
 
-    // 18. Inspect Client Intel on Live
-    console.log('Step 18: Opening Client Intel on Live Admin...');
+    // Inspect Client Intel modal
+    console.log('→ Opening Client Intel Modal...');
     await page.evaluate(() => {
       if (typeof openClientIntelModal === 'function') openClientIntelModal();
     });
-    await wait(2200);
+    await wait(2000);
     await page.evaluate(() => {
       if (typeof closeClientIntelModal === 'function') closeClientIntelModal();
     });
-    await wait(800);
+    await wait(1200);
 
-    // 19. Navigate to Live Client Portal
-    console.log('Step 19: Navigating to Live Client Portal...');
-    await page.goto('https://raoprime.onrender.com/?chat=Dharmesh', { waitUntil: 'networkidle2', timeout: 35000 });
-    await wait(2200);
+    // ══════════════════════════════════════════════════════════
+    // ACT 6: LIVE PRODUCTION RENDER (https://raoprime.onrender.com)
+    // ══════════════════════════════════════════════════════════
+    console.log('\n[ACT 6] Exploring Live Production Deployment on Render...');
+    try {
+      await page.goto('https://raoprime.onrender.com/?chat=raoprime.music', { waitUntil: 'networkidle2', timeout: 40000 });
+      await wait(3000);
+      console.log('→ Live Render Client Portal verified operational!');
+    } catch (e) {
+      console.log('Render production note:', e.message);
+    }
 
-    // 20. Open Profile Modal on Live Client
-    console.log('Step 20: Opening My Profile Modal on Live Client Portal...');
-    await page.evaluate(() => {
-      if (typeof openClientProfileModal === 'function') openClientProfileModal();
-    });
-    await wait(2200);
-    await page.evaluate(() => {
-      if (typeof closeClientProfileModal === 'function') closeClientProfileModal();
-    });
-    await wait(1500);
-
-    console.log('\n🎬 Walkthrough Exploration Sequence Completed Successfully!');
+    console.log('\n🎬 Complete Exploratory Walkthrough Video Recording Sequence Completed!');
   } catch (err) {
     console.error('❌ Error during walkthrough sequence:', err);
     throw err;
   } finally {
-    console.log('Stopping screencast and finalizing video encoding...');
+    console.log('Stopping screencast and finalizing FFmpeg encoding...');
     isRecording = false;
     clearInterval(frameInterval);
 
@@ -350,10 +265,16 @@ async function runWalkthrough() {
 
     ffmpeg.stdin.end();
 
-    await new Promise((resolve, reject) => {
+    await new Promise((resolve) => {
       ffmpeg.on('close', code => {
         if (code === 0) {
           console.log(`✅ Video file written and finalized: ${VIDEO_PATH}`);
+          try {
+            fs.copyFileSync(VIDEO_PATH, ARTIFACT_VIDEO_PATH);
+            console.log(`✅ Copied video to Artifact Directory: ${ARTIFACT_VIDEO_PATH}`);
+          } catch (copyErr) {
+            console.warn('Artifact video copy warning:', copyErr.message);
+          }
           resolve();
         } else {
           console.error(`FFmpeg exited with code ${code}`);
