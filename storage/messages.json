@@ -3072,6 +3072,89 @@
         "Client": "❤️"
       },
       "seenAt": "2026-11-03T06:08:58.299Z"
+    },
+    {
+      "id": "msg_1793819614083_5n1j",
+      "sender": "Client",
+      "type": "text",
+      "text": "Raoprime Executive Portal: Instagram & YouTube Vibe Active! 🚀",
+      "status": "seen",
+      "timestamp": "2026-11-04T19:13:34.086Z",
+      "chatId": "raoprime.music",
+      "reactions": {
+        "Client": "❤️"
+      },
+      "seenAt": "2026-11-04T19:13:52.533Z"
+    },
+    {
+      "id": "msg_1793820473308_sool",
+      "sender": "Client",
+      "type": "text",
+      "text": "Loving this Instagram & YouTube vibe! 🔥",
+      "status": "sent",
+      "timestamp": "2026-11-04T19:27:53.326Z",
+      "chatId": "raoprime.music",
+      "reactions": {
+        "Client": "❤️"
+      }
+    },
+    {
+      "id": "msg_1793820534749_1pd5",
+      "sender": "Client",
+      "type": "file",
+      "status": "delivered",
+      "file": {
+        "fileId": "upl_1793820534707_yea2",
+        "originalName": "Voice_Note_1793820534693.wav",
+        "storedName": "Voice_Note_1793820534693_7_yea2.wav",
+        "fileSize": 32044,
+        "formattedSize": "31.3 KB",
+        "fileType": "audio/wav",
+        "downloadUrl": "/api/download/Voice_Note_1793820534693_7_yea2.wav",
+        "gridFsId": null
+      },
+      "timestamp": "2026-11-04T19:28:54.749Z",
+      "chatId": "raoprime.music"
+    },
+    {
+      "id": "msg_1793820540084_c6sk",
+      "sender": "Client",
+      "type": "text",
+      "text": "Reacted 🔥 to story: Raoprime Official",
+      "status": "sent",
+      "timestamp": "2026-11-04T19:29:00.099Z",
+      "chatId": "raoprime.music",
+      "reactions": {}
+    },
+    {
+      "id": "msg_1793820704270_cp7u",
+      "sender": "Client",
+      "type": "file",
+      "status": "delivered",
+      "file": {
+        "fileId": "upl_1793820703986_4x7s",
+        "originalName": "Voice_Note_1793820703967.wav",
+        "storedName": "Voice_Note_1793820703967_6_4x7s.wav",
+        "fileSize": 32044,
+        "formattedSize": "31.3 KB",
+        "fileType": "audio/wav",
+        "downloadUrl": "/api/download/Voice_Note_1793820703967_6_4x7s.wav",
+        "gridFsId": null
+      },
+      "timestamp": "2026-11-04T19:31:44.271Z",
+      "chatId": "raoprime.music"
+    },
+    {
+      "id": "msg_1793820709677_fo4f",
+      "sender": "Client",
+      "type": "text",
+      "text": "Reacted 🔥 to story: Raoprime Official",
+      "status": "sent",
+      "timestamp": "2026-11-04T19:31:49.719Z",
+      "chatId": "raoprime.music",
+      "reactions": {
+        "Client": "❤️"
+      }
     }
   ]
 }
