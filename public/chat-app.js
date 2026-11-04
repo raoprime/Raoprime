@@ -23,6 +23,7 @@ function getInitialChatId() {
 }
 
 let currentChatId = getInitialChatId();
+window.currentChatId = currentChatId;
 let currentRole = 'Client'; // 'Client' or 'Raoprime'
 
 // End Chat & Session Conclusion Logic
@@ -530,15 +531,12 @@ document.addEventListener('DOMContentLoaded', () => {
       currentChatId = savedName;
       document.getElementById('chatHeading').textContent = 'Raoprime';
     } else {
+      currentChatId = 'client_' + Math.random().toString(36).substring(2, 7);
+      localStorage.setItem('raoprime_client', currentChatId);
       document.getElementById('chatHeading').textContent = 'Raoprime';
-      // Show name modal
-      const modal = document.getElementById('nameModal');
-      if (modal) {
-        modal.classList.remove('hidden');
-        setTimeout(() => document.getElementById('clientNameInput')?.focus(), 200);
-      }
     }
   }
+  window.currentChatId = currentChatId;
 
   if (roleParam && (roleParam.toLowerCase() === 'raoprime' || roleParam.toLowerCase() === 'rp' || roleParam.toLowerCase() === 'admin')) {
     setSenderRole('Raoprime');
@@ -2070,8 +2068,7 @@ function cleanupCall() {}
 function showIncomingCallModal() {}
 
 function openProfileModal() {
-  const m = document.getElementById('profileModal');
-  if (m) m.classList.remove('hidden');
+  // Profile modal removed per user instruction
 }
 
 function closeProfileModal() {
@@ -2561,266 +2558,24 @@ function updateClientProfileHeaderUI() {
 }
 
 function closeNameModal() {
-  const modal = document.getElementById('nameModal');
-  if (modal) modal.classList.add('hidden');
+  const modal = document.getElementById("nameModal");
+  if (modal) modal.classList.add("hidden");
 }
 
-// Open Dedicated Client Profile Modal (Apple / Telegram Grade)
+// Profile Page & Modals Removed (Direct Frictionless Chat Portal)
 function openClientProfileModal() {
-  const modal = document.getElementById('clientProfileModal');
-  if (!modal) return;
-  modal.classList.remove('hidden');
-
-  const displayName = currentClientVerification.name || localStorage.getItem('raoprime_client_name') || currentChatId || 'Client';
-  const handle = '@' + (currentChatId || 'client');
-  const phone = currentClientVerification.phoneNumber || localStorage.getItem('raoprime_client_phone') || 'Not set';
-  const email = currentClientVerification.email || localStorage.getItem('raoprime_client_email') || 'Not connected';
-  const isVerified = Boolean(currentClientVerification.verified);
-
-  // Headers
-  const nameEl = document.getElementById('modalDisplayName');
-  const handleEl = document.getElementById('modalUserHandle');
-  const miniCheck = document.getElementById('modalVerifiedMiniCheck');
-  if (nameEl) nameEl.textContent = displayName;
-  if (handleEl) handleEl.textContent = handle;
-  if (miniCheck) miniCheck.classList.toggle('hidden', !isVerified);
-
-  // Status Badge Pill
-  const statusPill = document.getElementById('modalVerifiedBadgePill');
-  if (statusPill) {
-    if (isVerified) {
-      statusPill.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-[#00D26A]"></span> Verified Account';
-      statusPill.className = 'text-[11px] font-bold px-3 py-1 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 inline-flex items-center gap-1.5 shadow-sm';
-    } else {
-      statusPill.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span> Guest Session';
-      statusPill.className = 'text-[11px] font-bold px-3 py-1 rounded-full bg-white/[0.06] text-slate-300 border border-white/[0.1] inline-flex items-center gap-1.5';
-    }
-  }
-
-  // Avatar
-  const initialEl = document.getElementById('modalProfileInitial');
-  const imgEl = document.getElementById('modalProfileImg');
-  const checkEl = document.getElementById('modalProfileVerifiedCheck');
-  const ringEl = document.getElementById('modalProfileRing');
-
-  const initialChar = displayName.charAt(0).toUpperCase() || 'C';
-  if (initialEl) initialEl.textContent = initialChar;
-
-  if (currentClientVerification.photoUrl) {
-    if (imgEl) {
-      imgEl.src = currentClientVerification.photoUrl;
-      imgEl.classList.remove('hidden');
-    }
-    if (initialEl) initialEl.classList.add('hidden');
-  } else {
-    if (imgEl) {
-      imgEl.src = '';
-      imgEl.classList.add('hidden');
-    }
-    if (initialEl) initialEl.classList.remove('hidden');
-  }
-
-  if (checkEl) checkEl.classList.toggle('hidden', !isVerified);
-  if (ringEl) {
-    if (isVerified) {
-      ringEl.classList.add('border-[#00D26A]', 'shadow-emerald-950/50');
-      ringEl.classList.remove('border-[#0d1017]');
-    } else {
-      ringEl.classList.remove('border-[#00D26A]', 'shadow-emerald-950/50');
-      ringEl.classList.add('border-[#0d1017]');
-    }
-  }
-
-  // Profile Details View Mode
-  const viewName = document.getElementById('profileViewName');
-  const viewChatId = document.getElementById('profileViewChatId');
-  const viewPhone = document.getElementById('profileViewPhone');
-  const viewEmail = document.getElementById('profileViewEmail');
-
-  if (viewName) viewName.textContent = displayName;
-  if (viewChatId) viewChatId.textContent = '@' + (currentChatId || 'client');
-  if (viewPhone) viewPhone.textContent = phone;
-  if (viewEmail) viewEmail.textContent = email;
-
-  // Make sure we are in view mode by default
-  const viewMode = document.getElementById('profileViewMode');
-  const editMode = document.getElementById('profileEditMode');
-  if (viewMode) viewMode.classList.remove('hidden');
-  if (editMode) editMode.classList.add('hidden');
-
-  // Google Card
-  const verifiedCard = document.getElementById('modalGoogleVerifiedCard');
-  const unverifiedCard = document.getElementById('modalGoogleUnverifiedCard');
-  const googleTag = document.getElementById('googleVerificationStatusTag');
-  const googleEmailText = document.getElementById('modalGoogleEmailText');
-
-  if (isVerified) {
-    if (verifiedCard) verifiedCard.classList.remove('hidden');
-    if (unverifiedCard) unverifiedCard.classList.add('hidden');
-    if (googleTag) {
-      googleTag.textContent = 'Verified ✓';
-      googleTag.className = 'text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-500/40 text-emerald-300';
-    }
-    if (googleEmailText) googleEmailText.textContent = currentClientVerification.email || 'Google Verified Identity';
-  } else {
-    if (verifiedCard) verifiedCard.classList.add('hidden');
-    if (unverifiedCard) {
-      unverifiedCard.classList.remove('hidden');
-      renderGoogleButtons();
-    }
-    if (googleTag) {
-      googleTag.textContent = 'Standard';
-      googleTag.className = 'text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-white/10';
-    }
-  }
-
-  // Preferences Toggles
-  const soundToggle = document.getElementById('profileSoundToggle');
-  if (soundToggle) {
-    soundToggle.checked = localStorage.getItem('raoprime_sound_enabled') !== 'false';
-  }
-  const notifToggle = document.getElementById('profileNotifToggle');
-  if (notifToggle && 'Notification' in window) {
-    notifToggle.checked = Notification.permission === 'granted';
-  }
-
-  // Collect silent telemetry in background
-  collectAndSendTelemetry();
+  // Direct chat experience - profile page is disabled
 }
 
 function closeClientProfileModal() {
-  const modal = document.getElementById('clientProfileModal');
-  if (modal) modal.classList.add('hidden');
+  const modal = document.getElementById("clientProfileModal");
+  if (modal) modal.classList.add("hidden");
 }
 
-// Inline Profile Editing (Zero Prompts, Pure Modern UI)
-function toggleProfileInlineEdit() {
-  const viewMode = document.getElementById('profileViewMode');
-  const editMode = document.getElementById('profileEditMode');
-  if (!viewMode || !editMode) return;
-
-  const isEditing = !editMode.classList.contains('hidden');
-  if (isEditing) {
-    cancelProfileInlineEdit();
-  } else {
-    viewMode.classList.add('hidden');
-    editMode.classList.remove('hidden');
-
-    const nameInput = document.getElementById('profileEditNameInput');
-    const phoneInput = document.getElementById('profileEditPhoneInput');
-    if (nameInput) nameInput.value = currentClientVerification.name || localStorage.getItem('raoprime_client_name') || currentChatId || '';
-    if (phoneInput) {
-      const p = currentClientVerification.phoneNumber || localStorage.getItem('raoprime_client_phone') || '';
-      phoneInput.value = p === 'Not set' ? '' : p;
-    }
-    nameInput?.focus();
-  }
-}
-
-function cancelProfileInlineEdit() {
-  const viewMode = document.getElementById('profileViewMode');
-  const editMode = document.getElementById('profileEditMode');
-  if (viewMode) viewMode.classList.remove('hidden');
-  if (editMode) editMode.classList.add('hidden');
-}
-
-async function saveProfileInlineEdit() {
-  const nameInput = document.getElementById('profileEditNameInput');
-  const phoneInput = document.getElementById('profileEditPhoneInput');
-  const newName = (nameInput?.value || '').trim();
-  const newPhone = (phoneInput?.value || '').trim();
-
-  if (newName) {
-    localStorage.setItem('raoprime_client_name', newName);
-    currentClientVerification.name = newName;
-  }
-  if (newPhone) {
-    localStorage.setItem('raoprime_client_phone', newPhone);
-    currentClientVerification.phoneNumber = newPhone;
-  }
-
-  showToast('Saving profile updates...');
-
-  try {
-    const res = await fetch('/api/chat/profile/update', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chatId: currentChatId,
-        name: newName || undefined,
-        phoneNumber: newPhone || undefined
-      })
-    });
-    const data = await res.json();
-    if (data.success && data.profile) {
-      currentClientVerification.name = data.profile.name || currentClientVerification.name;
-      currentClientVerification.phoneNumber = data.profile.phoneNumber || currentClientVerification.phoneNumber;
-    }
-  } catch (e) {
-    console.warn('Profile sync background notice:', e.message);
-  }
-
-  updateClientProfileHeaderUI();
-  openClientProfileModal();
-  showToast('✓ Profile updated successfully');
-}
-
-// Custom Photo Upload (File or Camera)
-function handleCustomPhotoUpload(e) {
-  const file = e.target.files && e.target.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = function(evt) {
-    const img = new Image();
-    img.onload = async function() {
-      const canvas = document.createElement('canvas');
-      const maxDim = 480;
-      let w = img.width;
-      let h = img.height;
-      if (w > maxDim || h > maxDim) {
-        if (w > h) {
-          h = Math.round((h * maxDim) / w);
-          w = maxDim;
-        } else {
-          w = Math.round((w * maxDim) / h);
-          h = maxDim;
-        }
-      }
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, w, h);
-      const base64 = canvas.toDataURL('image/jpeg', 0.88);
-
-      showToast('Uploading profile picture...');
-      try {
-        const res = await fetch('/api/chat/verify-photo', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chatId: currentChatId,
-            photoData: base64,
-            enabled: true
-          })
-        });
-        const data = await res.json();
-        if (data.success) {
-          currentClientVerification.photoUrl = data.photoUrl;
-          updateClientProfileHeaderUI();
-          openClientProfileModal();
-          showToast('✓ Profile picture updated!');
-        } else {
-          showToast('Failed to update picture: ' + (data.error || 'Server error'));
-        }
-      } catch (err) {
-        showToast('Network error uploading picture');
-      }
-    };
-    img.src = evt.target.result;
-  };
-  reader.readAsDataURL(file);
-}
+function toggleProfileInlineEdit() {}
+function cancelProfileInlineEdit() {}
+function saveProfileInlineEdit() {}
+function handleProfilePictureUpload() {}
 
 // Sound Preference Toggle
 function toggleSoundPreference(enabled) {
@@ -3616,17 +3371,18 @@ const RAOPRIME_STORIES = {
     }
   },
   security: {
-    title: 'Google Security',
-    badge: 'Encrypted & Verified',
-    sticker: '🔒 GOOGLE VERIFIED IDENTITY',
+    title: 'Direct Vault',
+    badge: 'Direct & Encrypted',
+    sticker: '🔒 256-BIT ENCRYPTED CHANNEL',
     avatar: '/assets/rp-logo.jpg',
-    heading: 'Google Verified Identity',
-    desc: 'Zero fake timers, zero unverified sessions. Your permanent username is permanently anchored to your authenticated Gmail prefix.',
+    heading: 'Direct Executive Channel',
+    desc: 'Direct encrypted channel for master audio files, video rushes, contracts, and real-time creative review.',
     iconSvg: `<svg class="w-12 h-12 text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>`,
-    actionText: 'View Profile',
+    actionText: 'Start Chatting',
     actionHandler: () => {
       closeStoryViewerModal();
-      openClientProfileModal();
+      const input = document.getElementById('messageInput');
+      if (input) input.focus();
     }
   }
 };
