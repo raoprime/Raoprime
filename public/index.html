@@ -74,6 +74,22 @@
     }
     .wave-bar { animation: barPulse 1.2s ease-in-out infinite; }
 
+    /* Real-Time Waveform Equalizer Animation */
+    @keyframes audioWavePulse {
+      0%, 100% { transform: scaleY(0.35); }
+      50% { transform: scaleY(1.0); }
+    }
+    .player-wave-bar {
+      width: 3px;
+      border-radius: 9999px;
+      transform-origin: bottom;
+      transition: background 0.15s ease, height 0.15s ease;
+    }
+    .player-wave-bar.playing {
+      animation: audioWavePulse var(--wave-dur, 1.2s) ease-in-out infinite;
+      animation-delay: var(--wave-delay, 0s);
+    }
+
     /* Double-Tap Heart Burst Animation */
     @keyframes igHeartBurst {
       0% { opacity: 0; transform: scale(0.3) rotate(-15deg); }
@@ -200,9 +216,9 @@
     <div class="max-w-6xl mx-auto text-center space-y-6 relative z-10">
       
       <!-- Non-profit Badge -->
-      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-rose-950/70 border border-rose-500/40 text-xs font-bold text-rose-300 shadow-md">
-        <span class="w-2 h-2 rounded-full bg-rose-400 animate-pulse"></span>
-        <span>Independent Non-Profit Music Collective • Dil Bada Hai</span>
+      <div class="inline-flex items-center gap-2 px-3 sm:px-3.5 py-1.5 rounded-full bg-rose-950/70 border border-rose-500/40 text-[11px] sm:text-xs font-bold text-rose-300 shadow-md max-w-full">
+        <span class="w-2 h-2 rounded-full bg-rose-400 animate-pulse shrink-0"></span>
+        <span class="truncate">Independent Non-Profit Music Collective • Dil Bada Hai</span>
       </div>
 
       <!-- Main Visionary Headline -->
@@ -306,19 +322,25 @@
           <!-- Controls & Animated Equalizer Waveform -->
           <div class="flex-1 max-w-xl w-full space-y-2">
             <div class="flex items-center justify-center gap-4">
-              <button onclick="prevTrack()" class="p-2 text-slate-400 hover:text-white transition-colors cursor-pointer" title="Previous Track">
+              <button onclick="prevTrack()" class="p-2 text-slate-400 hover:text-white transition-colors cursor-pointer" title="Previous Track" aria-label="Previous Track">
                 <i data-lucide="skip-back" class="w-4 h-4"></i>
               </button>
-              <button onclick="toggleMainPlayer()" id="mainPlayPauseBtn" class="w-11 h-11 rounded-full maroon-btn text-white flex items-center justify-center shadow-lg transition-transform active:scale-95 cursor-pointer" title="Play / Pause">
+              <button onclick="toggleMainPlayer()" id="mainPlayPauseBtn" class="w-11 h-11 rounded-full maroon-btn text-white flex items-center justify-center shadow-lg transition-transform active:scale-95 cursor-pointer relative" title="Play / Pause" aria-label="Play / Pause">
+                <span id="mainPlayBtn" class="sr-only">Play</span>
                 <i id="mainPlayIcon" data-lucide="play" class="w-5 h-5 fill-current ml-0.5"></i>
                 <i id="mainPauseIcon" data-lucide="pause" class="w-5 h-5 fill-current hidden"></i>
               </button>
-              <button onclick="nextTrack()" class="p-2 text-slate-400 hover:text-white transition-colors cursor-pointer" title="Next Track">
+              <button onclick="nextTrack()" class="p-2 text-slate-400 hover:text-white transition-colors cursor-pointer" title="Next Track" aria-label="Next Track">
                 <i data-lucide="skip-forward" class="w-4 h-4"></i>
               </button>
-              <button onclick="cyclePlayerSpeed()" id="playerSpeedBtn" class="px-2.5 py-1 rounded-full bg-white/[0.08] hover:bg-white/[0.15] text-[11px] font-mono font-bold text-slate-300 transition-colors">
+              <button onclick="cyclePlayerSpeed()" id="playerSpeedBtn" class="px-2.5 py-1 rounded-full bg-white/[0.08] hover:bg-white/[0.15] text-[11px] font-mono font-bold text-slate-300 transition-colors" title="Playback Speed">
                 1x
               </button>
+            </div>
+
+            <!-- Real-Time Equalizer Waveform Bars -->
+            <div id="playerWaveform" class="h-6 flex items-end justify-between gap-[3px] px-1 py-0.5 cursor-pointer select-none" onclick="seekMainPlayer(event)" title="Click anywhere to seek track">
+              <!-- Populated by JavaScript with 36 live waveform bars -->
             </div>
 
             <!-- Waveform Scrubber & Timer -->
@@ -400,6 +422,7 @@
   <!-- 4. "BADA DIL" — THE NON-PROFIT MISSION MANIFESTO         -->
   <!-- ======================================================== -->
   <section id="mission" class="py-16 px-4 sm:px-6 border-b border-white/[0.06] relative overflow-hidden">
+    <span id="manifesto" class="sr-only"></span>
     <div class="max-w-6xl mx-auto space-y-12">
       
       <!-- Section Header -->
@@ -567,6 +590,7 @@
   <!-- 6. "OPEN FOR ALL" ARTIST DEMO DROP SUBMISSION            -->
   <!-- ======================================================== -->
   <section id="submit" class="py-16 px-4 sm:px-6 border-b border-white/[0.06] relative">
+    <span id="demodrop" class="sr-only"></span>
     <div class="max-w-3xl mx-auto space-y-8">
       
       <div class="text-center space-y-2">
@@ -618,6 +642,15 @@
           <textarea id="demoStory" rows="3" placeholder="Tell us who you are, what this song means to you, and how Raoprime can help your music..." class="w-full bg-[#080a0f] border border-white/10 rounded-xl p-3.5 text-xs text-white placeholder-slate-500 focus:border-rose-500 focus:outline-none resize-none"></textarea>
         </div>
 
+        <!-- Instant Submission Feedback Alert -->
+        <div id="demoSuccessAlert" class="hidden p-4 rounded-2xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-3">
+          <i data-lucide="check-circle-2" class="w-5 h-5 shrink-0 text-emerald-400"></i>
+          <div>
+            <p class="font-bold">Demo Submission Received!</p>
+            <p class="text-[11px] text-emerald-200/80">Thank you for sharing your art. Our curation team will personally review your track within 48 hours.</p>
+          </div>
+        </div>
+
         <button type="submit" class="w-full py-3.5 rounded-xl maroon-btn text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-xl cursor-pointer">
           <i data-lucide="send" class="w-4 h-4"></i>
           <span>Submit Demo (Free Forever)</span>
@@ -635,6 +668,7 @@
   <!-- 7. INTEGRATED ARTIST & CLIENT MESSAGING PORTAL           -->
   <!-- ======================================================== -->
   <section id="portal" class="py-16 px-4 sm:px-6 bg-[#090c12] border-b border-white/[0.06]">
+    <span id="community" class="sr-only"></span>
     <div class="max-w-4xl mx-auto space-y-6">
       
       <!-- Section Header -->
@@ -834,11 +868,11 @@
   <!-- ======================================================== -->
 
   <!-- Fullscreen YouTube Video Lightbox Modal -->
-  <div id="videoLightboxModal" class="fixed inset-0 bg-black/95 backdrop-blur-md z-50 hidden flex flex-col items-center justify-center p-4">
+  <div id="videoLightboxModal" onclick="if(event.target === this) closeVideoModal()" class="fixed inset-0 bg-black/95 backdrop-blur-md z-50 hidden flex flex-col items-center justify-center p-4">
     <div class="w-full max-w-3xl space-y-3">
       <div class="flex items-center justify-between text-white">
         <h4 id="videoModalTitle" class="text-sm font-bold truncate">YouTube Video</h4>
-        <button onclick="closeVideoModal()" class="p-1 rounded-full hover:bg-white/10 text-slate-300 hover:text-white">
+        <button onclick="closeVideoModal()" class="p-1 rounded-full hover:bg-white/10 text-slate-300 hover:text-white cursor-pointer" aria-label="Close modal">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
@@ -896,7 +930,7 @@
   <div id="documentPreviewModal" class="hidden"></div>
   <div id="contextMenuBackdrop" class="hidden"></div>
   <div id="messageContextMenu" class="hidden"></div>
-  <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 bg-[#12151f] border border-white/10 text-slate-200 text-xs px-4 py-2 rounded-full shadow-2xl z-50 hidden transition-opacity pointer-events-none"></div>
+  <div id="toast" class="fixed bottom-6 sm:top-20 sm:bottom-auto left-1/2 -translate-x-1/2 bg-[#12151f] border border-white/10 text-slate-200 text-xs px-4 py-2 rounded-full shadow-2xl z-50 hidden transition-opacity pointer-events-none"></div>
 
   <!-- Music Website Interactive Audio Script -->
   <script>
@@ -938,6 +972,43 @@
     let playInterval = null;
     let currentSpeed = 1;
 
+    // Authentic 36-bar audio spectrum waveform data (%)
+    const WAVEFORM_HEIGHTS = [
+      35, 50, 75, 45, 90, 65, 80, 100, 55, 70, 85, 40,
+      95, 60, 75, 50, 90, 80, 65, 45, 85, 100, 70, 55,
+      90, 65, 45, 80, 60, 40, 75, 50, 35, 60, 45, 30
+    ];
+
+    function initWaveform() {
+      const container = document.getElementById('playerWaveform');
+      if (!container) return;
+      container.innerHTML = '';
+      WAVEFORM_HEIGHTS.forEach((h, idx) => {
+        const bar = document.createElement('div');
+        bar.className = 'player-wave-bar flex-1 bg-white/20 rounded-full';
+        bar.style.height = `${h}%`;
+        bar.style.setProperty('--wave-dur', `${0.75 + (idx % 6) * 0.12}s`);
+        bar.style.setProperty('--wave-delay', `${(idx % 8) * 0.08}s`);
+        bar.id = `waveBar_${idx}`;
+        container.appendChild(bar);
+      });
+      updateWaveformDisplay();
+    }
+
+    function updateWaveformDisplay() {
+      const totalBars = WAVEFORM_HEIGHTS.length;
+      const activeCount = Math.floor((playProgress / 222) * totalBars);
+      for (let i = 0; i < totalBars; i++) {
+        const bar = document.getElementById(`waveBar_${i}`);
+        if (!bar) continue;
+        if (i <= activeCount) {
+          bar.className = `player-wave-bar flex-1 bg-gradient-to-t from-rose-500 to-[#d4af37] rounded-full ${isPlaying ? 'playing' : ''}`;
+        } else {
+          bar.className = 'player-wave-bar flex-1 bg-white/20 rounded-full';
+        }
+      }
+    }
+
     function selectTrack(idx) {
       currentTrackIdx = idx;
       const t = RAOPRIME_TRACKS[idx];
@@ -950,6 +1021,7 @@
       playProgress = 0;
       updateProgressDisplay();
       if (!isPlaying) toggleMainPlayer();
+      else updateWaveformDisplay();
     }
 
     function toggleMainPlayer() {
@@ -967,6 +1039,7 @@
         if (pauseIcon) pauseIcon.classList.add('hidden');
         clearInterval(playInterval);
       }
+      updateWaveformDisplay();
     }
 
     function startProgressTimer() {
@@ -991,6 +1064,7 @@
         const s = playProgress % 60;
         timeEl.textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
       }
+      updateWaveformDisplay();
     }
 
     function nextTrack() {
@@ -1029,13 +1103,35 @@
       document.getElementById('videoLightboxModal').classList.add('hidden');
     }
 
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeVideoModal();
+    });
+
     // Demo Drop Form Submission
     function handleDemoSubmit(e) {
       e.preventDefault();
       const artist = document.getElementById('demoArtistName').value;
       const title = document.getElementById('demoTrackTitle').value;
-      showToast(`✓ Thank you, ${artist}! "${title}" received for review. We will contact you shortly!`);
+      
+      const alertBox = document.getElementById('demoSuccessAlert');
+      if (alertBox) {
+        alertBox.classList.remove('hidden');
+        if (window.lucide) lucide.createIcons();
+      }
+
+      if (typeof showToast === 'function') {
+        showToast(`✓ Thank you, ${artist}! "${title}" received for review.`);
+      }
+
       e.target.reset();
+    }
+
+    // Initialize waveform on load
+    document.addEventListener('DOMContentLoaded', () => {
+      initWaveform();
+    });
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      initWaveform();
     }
   </script>
 

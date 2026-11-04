@@ -30,7 +30,7 @@ const fs = require('fs');
   console.log('📸 Hero & Nav captured: raoprime_01_hero.png');
 
   // 2. Test Audio Player Interaction
-  const playBtn = await page.$('#mainPlayBtn');
+  const playBtn = await page.$('#mainPlayPauseBtn');
   if (playBtn) {
     await playBtn.click();
     await new Promise(r => setTimeout(r, 600));
