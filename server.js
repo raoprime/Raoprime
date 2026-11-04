@@ -2463,6 +2463,15 @@ app.get(['/api/download/:storedName', '/api/vault/download/:storedName'], async 
       }
     }
 
+    // Graceful fallback for missing legacy media (prevents broken image icons and 404 console errors)
+    const ext = path.extname(storedName).toLowerCase();
+    if (['.png', '.jpg', '.jpeg', '.webp', '.gif'].includes(ext)) {
+      const fallback = path.join(ASSETS_DIR, 'rp-logo.jpg');
+      if (fs.existsSync(fallback)) {
+        return res.sendFile(fallback);
+      }
+    }
+
     res.status(404).send('File not found');
   } catch (err) {
     res.status(500).send('Download error: ' + err.message);
