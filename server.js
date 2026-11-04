@@ -422,7 +422,6 @@ function getChatMessages(rawChatId) {
 // Instant Zero-Latency Chat, Typing, Presence & WebRTC Signaling
 // Eliminates 100% of HTTP polling load
 // ──────────────────────────────────────────────────────────────
-const activeCalls = {};
 const wsClients = new Map(); // ws -> { chatId, role, isAlive }
 
 // In-memory Real-time Presence & Typing Tracker
@@ -610,65 +609,7 @@ wss.on('connection', (ws) => {
         return;
       }
 
-      // WebRTC Real-Time Calling Signaling
-      if (event === 'call:initiate') {
-        const { type = 'video', caller = sender } = data;
-        const callId = 'call_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
-        const newCall = {
-          callId,
-          chatId,
-          type,
-          caller,
-          status: 'ringing',
-          startedAt: Date.now(),
-          signals: [],
-          signalSeq: 0
-        };
-        activeCalls[chatId] = newCall;
-        if (chatId !== 'default') {
-          activeCalls['default'] = newCall;
-        }
-        console.log(`📞 [WS] Call initiated by ${caller} (${type}) in room [${chatId}]`);
-        broadcastToRoom(chatId, 'call:incoming', { call: newCall }, ws);
-        return;
-      }
 
-      if (event === 'call:signal') {
-        const fromRole = data.from || data.sender || wsClients.get(ws)?.role || sender;
-        const call = resolveActiveCall(chatId);
-        if (call && data.signal) {
-          const seq = ++call.signalSeq;
-          call.signals.push({ seq, from: fromRole, signal: data.signal, timestamp: Date.now() });
-          if (call.signals.length > 50) call.signals.shift();
-        }
-        broadcastToRoom(chatId, 'call:signal', { signal: data.signal, from: fromRole }, ws);
-        return;
-      }
-
-      if (event === 'call:accept') {
-        const call = resolveActiveCall(chatId);
-        if (call) {
-          call.status = 'connected';
-          call.connectedAt = Date.now();
-        }
-        console.log(`✅ [WS] Call accepted in room [${chatId}]`);
-        broadcastToRoom(chatId, 'call:accepted', { chatId }, ws);
-        return;
-      }
-
-      if (event === 'call:end') {
-        const call = resolveActiveCall(chatId);
-        if (call) {
-          call.status = 'ended';
-          call.endedAt = Date.now();
-        }
-        console.log(`🛑 [WS] Call ended in room [${chatId}]`);
-        broadcastToRoom(chatId, 'call:ended', { chatId });
-        setTimeout(() => {
-          delete activeCalls[chatId];
-        }, 2000);
-        return;
-      }
 
     } catch (e) {
       console.warn('WS message error:', e.message);
@@ -1741,208 +1682,9 @@ app.post('/api/chat/message/react', async (req, res) => {
   }
 });
 
-// ──────────────────────────────────────────────────────────────
-// Ultra HD WebRTC Calling Signaling Engine (1080p Video + Studio 48kHz Audio)
-// Universal Room Discovery & Unified Call State
-// ──────────────────────────────────────────────────────────────
-
-// Curated high-reliability Dynamic ICE configuration (Google STUN + Cloudflare STUN + Twilio + Metered Relay)
-function getDynamicIceServers() {
-  const customTurnUrl = process.env.TURN_URL;
-  const customTurnUsername = process.env.TURN_USERNAME;
-  const customTurnCredential = process.env.TURN_CREDENTIAL;
-
-  const iceServers = [
-    // Primary Global STUN (Google global distributed infrastructure)
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun2.l.google.com:19302' },
-    { urls: 'stun:stun3.l.google.com:19302' },
-    { urls: 'stun:stun4.l.google.com:19302' },
-    // Cloudflare STUN
-    { urls: 'stun:stun.cloudflare.com:3478' },
-    // Twilio Global STUN
-    { urls: 'stun:global.stun.twilio.com:3478' },
-    // Metered Relay STUN
-    { urls: 'stun:stun.relay.metered.ca:80' }
-  ];
-
-  if (customTurnUrl && customTurnUsername && customTurnCredential) {
-    iceServers.push(
-      { urls: customTurnUrl, username: customTurnUsername, credential: customTurnCredential },
-      { urls: `${customTurnUrl}?transport=tcp`, username: customTurnUsername, credential: customTurnCredential }
-    );
-  }
-
-  return {
-    iceServers,
-    iceTransportPolicy: 'all',
-    iceCandidatePoolSize: 10
-  };
-}
-
-function resolveActiveCall(rawChatId) {
-  const chatId = rawChatId ? normalizeChatId(rawChatId) : rawChatId;
-  const now = Date.now();
-  // 1. Direct match on chatId with active (non-ended) call
-  if (chatId && activeCalls[chatId]) {
-    const c = activeCalls[chatId];
-    if (c.status !== 'ended') return c;
-    // Ended within last 2.5 seconds only
-    if (c.endedAt && now - c.endedAt < 2500) return c;
-  }
-  // 2. Active call under 'default' if querying 'default' or role is admin looking broadly
-  if (chatId === 'default' || chatId === 'all' || !chatId) {
-    if (activeCalls['default'] && activeCalls['default'].status !== 'ended') {
-      return activeCalls['default'];
-    }
-  }
-  // 3. Any ringing or connected call across any room
-  const anyActive = Object.values(activeCalls).find(c => c && (c.status === 'ringing' || c.status === 'connected') && (!chatId || chatId === 'all' || c.chatId === chatId || chatId === 'default'));
-  if (anyActive) return anyActive;
-
-  // 4. Return ended call ONLY if it strictly belongs to this chatId and is recent (< 2.5 sec)
-  if (chatId && activeCalls[chatId] && activeCalls[chatId].status === 'ended') {
-    if (activeCalls[chatId].endedAt && now - activeCalls[chatId].endedAt < 2500) {
-      return activeCalls[chatId];
-    }
-  }
-  return null;
-}
-
-app.get('/api/call/ice-servers', (req, res) => {
-  res.json({ success: true, config: getDynamicIceServers() });
-});
-
-app.post('/api/call/initiate', (req, res) => {
-  const { chatId: rawChatId = 'default', caller = 'Client', type = 'video' } = req.body;
-  const chatId = normalizeChatId(rawChatId);
-
-  // Purge any stale calls for this room
-  if (activeCalls[chatId]) delete activeCalls[chatId];
-  if (chatId === 'default' && activeCalls['default']) delete activeCalls['default'];
-
-  // Purge old ended calls across system
-  const now = Date.now();
-  for (const k of Object.keys(activeCalls)) {
-    if (activeCalls[k] && (activeCalls[k].status === 'ended' || (activeCalls[k].endedAt && now - activeCalls[k].endedAt > 2500))) {
-      delete activeCalls[k];
-    }
-  }
-
-  const newCall = {
-    callId: 'call_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-    chatId: chatId || 'default',
-    type: type || 'video',
-    caller: caller || 'Client',
-    status: 'ringing',
-    startedAt: Date.now(),
-    signals: [],
-    signalSeq: 0
-  };
-
-  // Register on the room
-  activeCalls[chatId || 'default'] = newCall;
-  if (chatId !== 'default') {
-    activeCalls['default'] = newCall;
-  }
-
-  // Real-time broadcast to room & admin in 0ms!
-  broadcastToRoom(chatId, 'call:incoming', { call: newCall });
-
-  console.log(`📞 Call initiated by ${caller} (${type}) in room [${chatId}] (ID: ${newCall.callId})`);
-  res.json({ success: true, call: newCall });
-});
-
-app.get('/api/call/status', (req, res) => {
-  const chatId = normalizeChatId(req.query.chatId);
-  const role = req.query.role; // 'admin' or 'client'
-  const call = resolveActiveCall(chatId);
-
-  if (!call || call.status === 'ended') {
-    return res.json({ success: true, active: false });
-  }
-
-  // Active call found!
-  res.json({
-    success: true,
-    active: true,
-    chatId: call.chatId || chatId || 'default',
-    call
-  });
-});
-
-app.post('/api/call/signal', (req, res) => {
-  const { chatId: rawChatId = 'default', from = 'Client', signal } = req.body;
-  const chatId = normalizeChatId(rawChatId);
-  const call = resolveActiveCall(chatId);
-  if (!call) {
-    return res.status(404).json({ success: false, error: 'No active call' });
-  }
-  const seq = ++call.signalSeq;
-  call.signals.push({
-    seq,
-    from,
-    signal,
-    timestamp: Date.now()
-  });
-
-  // Real-time broadcast signal to other party in 0ms!
-  broadcastToRoom(chatId, 'call:signal', { signal, from });
-
-  res.json({ success: true, seq });
-});
-
-app.get('/api/call/signals', (req, res) => {
-  const chatId = normalizeChatId(req.query.chatId || 'default');
-  const forRole = req.query.forRole || 'Client';
-  const since = parseInt(req.query.since || '0', 10);
-  const call = resolveActiveCall(chatId);
-  if (!call) return res.json({ success: true, signals: [], status: 'none', lastSeq: 0 });
-
-  const newSignals = call.signals.filter((s) => s.from !== forRole && (s.seq ? s.seq > since : s.timestamp > since));
-  const maxSeq = call.signalSeq || (call.signals.length ? call.signals[call.signals.length - 1].timestamp : 0);
-  res.json({
-    success: true,
-    signals: newSignals,
-    status: call.status,
-    type: call.type,
-    caller: call.caller,
-    lastSeq: maxSeq
-  });
-});
-
-app.post('/api/call/accept', (req, res) => {
-  const { chatId: rawChatId = 'default' } = req.body;
-  const chatId = normalizeChatId(rawChatId);
-  const call = resolveActiveCall(chatId);
-  if (call) {
-    call.status = 'connected';
-    call.connectedAt = Date.now();
-    console.log(`✅ Call accepted in room [${call.chatId}]`);
-    broadcastToRoom(chatId, 'call:accepted', { chatId });
-  }
-  res.json({ success: true });
-});
-
-app.post('/api/call/end', (req, res) => {
-  const { chatId: rawChatId = 'default' } = req.body;
-  const chatId = normalizeChatId(rawChatId);
-  const call = resolveActiveCall(chatId);
-  if (call) {
-    call.status = 'ended';
-    call.endedAt = Date.now();
-    console.log(`🛑 Call ended in room [${call.chatId}]`);
-    broadcastToRoom(chatId, 'call:ended', { chatId });
-    setTimeout(() => {
-      for (const k of Object.keys(activeCalls)) {
-        if (activeCalls[k] === call || (activeCalls[k]?.endedAt && Date.now() - activeCalls[k].endedAt > 2000)) {
-          delete activeCalls[k];
-        }
-      }
-    }, 2000);
-  }
-  res.json({ success: true });
+// Calling disabled per executive specification (focused messaging & file portal)
+app.all('/api/call/*', (req, res) => {
+  res.json({ success: false, error: 'Calling disabled' });
 });
 
 // ──────────────────────────────────────────────────────────────
@@ -2271,10 +2013,7 @@ app.delete('/api/admin/chat/:chatId', requireAdminAuth, async (req, res) => {
       saveAllLocalChats(store);
     }
 
-    // 3. Clear active calls or typing state
-    if (activeCalls[chatId]) {
-      delete activeCalls[chatId];
-    }
+    // 3. Clear typing and presence state
     if (presenceHeartbeats[chatId]) {
       delete presenceHeartbeats[chatId];
     }
@@ -2497,6 +2236,29 @@ if (!isVercel) {
     console.log(`🛡️ Admin Portal: http://localhost:${PORT}/admin`);
     console.log(`=====================================================`);
   });
+
+  // Graceful Process Lifecycle & Signal Handling (Node.js Best Practices)
+  const gracefulShutdown = (signal) => {
+    console.log(`\n🛑 Received ${signal}, closing server and WebSockets gracefully...`);
+    for (const [ws] of wsClients.entries()) {
+      try { ws.close(1001, 'Server shutting down'); } catch (e) {}
+    }
+    server.close(() => {
+      console.log('✅ HTTP & WebSocket engine closed.');
+      process.exit(0);
+    });
+    setTimeout(() => {
+      console.error('⚠️ Forcefully terminating after timeout');
+      process.exit(1);
+    }, 5000).unref();
+  };
+
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 }
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.warn('[Server notice] Unhandled Rejection at:', promise, 'reason:', reason);
+});
 
 module.exports = app;

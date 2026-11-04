@@ -1037,8 +1037,8 @@ function renderSingleMessageHtml(msg, index, messages) {
               <span class="text-[12.5px] font-semibold truncate text-white">${escapeHtml(f.originalName)}</span>
             </div>
 
-            <!-- Luxury Velvet Waveform Player with YouTube Ambient Glow -->
-            <div id="${audioPlayerId}" class="raoprime-waveform-player bg-black/50 border border-white/10 rounded-2xl p-2.5 space-y-2 select-none yt-ambient-glow" data-src="${f.downloadUrl}">
+            <!-- Luxury Velvet Waveform Player -->
+            <div id="${audioPlayerId}" class="raoprime-waveform-player bg-black/50 border border-white/10 rounded-2xl p-2.5 space-y-2 select-none shadow-md" data-src="${f.downloadUrl}">
               <div class="flex items-center gap-2.5">
                 <button type="button" onclick="toggleWaveformAudio('${audioPlayerId}')" class="audio-toggle-btn w-9 h-9 rounded-full bg-gradient-to-br from-[#741728] to-[#3e0a14] hover:brightness-110 active:scale-95 text-white flex items-center justify-center shrink-0 shadow-md shadow-[#741728]/30 transition-all cursor-pointer" aria-label="Play or Pause Voice Note">
                   <svg class="audio-icon-play w-4 h-4 ml-0.5 fill-current" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></svg>
@@ -1072,7 +1072,7 @@ function renderSingleMessageHtml(msg, index, messages) {
         `;
       } else if (isVideo) {
         bubbleContent = `
-          <div class="overflow-hidden rounded-2xl max-w-[280px] sm:max-w-sm min-w-[220px] yt-ambient-glow border border-white/10 shadow-2xl">
+          <div class="overflow-hidden rounded-2xl max-w-[280px] sm:max-w-sm min-w-[220px] border border-white/10 shadow-lg">
             ${quotedReplyHtml ? `<div class="p-2">${quotedReplyHtml}</div>` : ''}
             <video src="${f.downloadUrl}" controls playsinline webkit-playsinline class="w-full max-h-72 object-cover bg-black"></video>
             <div class="p-2 sm:p-2.5 flex items-center justify-between text-xs border-t border-white/10 bg-black/30 backdrop-blur-md">
@@ -1198,20 +1198,30 @@ function renderMessages(messages) {
   const container = document.getElementById('messagesList');
   if (!container) return;
 
-  if (messages.length === 0) {
+  if (!messages || messages.length === 0) {
     container.innerHTML = '';
     return;
   }
 
-  // Seamless Zero-Flash append
   const renderedRows = container.querySelectorAll('.message-row');
-  if (renderedRows.length > 0 && renderedRows.length === messages.length - 1) {
-    const lastMsg = messages[messages.length - 1];
-    if (container.querySelector(`[data-msg-id="${lastMsg.id}"]`)) return; // Already in DOM!
-    const singleHtml = renderSingleMessageHtml(lastMsg, messages.length - 1, messages);
-    container.insertAdjacentHTML('beforeend', singleHtml);
-    if (window.lucide) window.lucide.createIcons();
-    return;
+  const renderedCount = renderedRows.length;
+
+  // High-Performance Incremental Append Optimization
+  if (renderedCount > 0 && messages.length > renderedCount) {
+    const lastRenderedId = renderedRows[renderedCount - 1]?.dataset?.msgId;
+    const matchingIdx = messages.findIndex(m => m.id === lastRenderedId);
+    if (matchingIdx === renderedCount - 1) {
+      const newMessages = messages.slice(renderedCount);
+      const frag = document.createDocumentFragment();
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = newMessages.map((m, idx) => renderSingleMessageHtml(m, renderedCount + idx, messages)).join('');
+      while (tempDiv.firstChild) {
+        frag.appendChild(tempDiv.firstChild);
+      }
+      container.appendChild(frag);
+      if (window.lucide) window.lucide.createIcons();
+      return;
+    }
   }
 
   container.innerHTML = messages.map((m, i) => renderSingleMessageHtml(m, i, messages)).join('');
@@ -1936,7 +1946,9 @@ async function handleFilesUpload(fileList) {
 function scrollToBottom() {
   const stream = document.getElementById('chatStream');
   if (stream) {
-    stream.scrollTop = stream.scrollHeight;
+    requestAnimationFrame(() => {
+      stream.scrollTop = stream.scrollHeight;
+    });
   }
 }
 
@@ -2018,63 +2030,7 @@ function escapeHtml(string) {
 // ──────────────────────────────────────────────────────────────
 // Ultra HD WebRTC Calling Suite (1080p Video + Studio 48kHz Audio)
 // Dynamic Authenticated TURN • Mobile-Resilient • Zero Echo
-// ──────────────────────────────────────────────────────────────
-const RTC_CONFIG = {
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun2.l.google.com:19302' },
-    { urls: 'stun:stun.cloudflare.com:3478' }
-  ],
-  iceCandidatePoolSize: 10
-};
 
-async function getRtcConfiguration() {
-  try {
-    const res = await fetch('/api/call/ice-servers');
-    const data = await res.json();
-    if (data.success && data.config) {
-      return data.config;
-    }
-  } catch (e) {
-    console.warn('ICE server fetch notice:', e);
-  }
-  return RTC_CONFIG;
-}
-
-function playConnectChime() {
-  try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15);
-    gain.gain.setValueAtTime(0.25, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.4);
-  } catch (e) {}
-}
-
-// Calling removed per executive specification (focused ultra-fast messaging & file transfer)
-var isCallActive = false;
-function startCall() {}
-function cleanupCall() {}
-function showIncomingCallModal() {}
-
-function openProfileModal() {
-  // Profile modal removed per user instruction
-}
-
-function closeProfileModal() {
-  const m = document.getElementById('profileModal');
-  if (m) m.classList.add('hidden');
-}
 
 
 async function unsendMessageById(msgId) {
@@ -2462,7 +2418,6 @@ async function handleGoogleCredentialResponse(response) {
       };
 
       updateClientProfileHeaderUI();
-      openClientProfileModal(); // Refresh modal to show verified card
       showToast(`🎉 Google Verified as ${data.email}`);
     } else {
       showToast('Verification error: ' + (data.error || 'Server error'));
@@ -2563,19 +2518,8 @@ function closeNameModal() {
 }
 
 // Profile Page & Modals Removed (Direct Frictionless Chat Portal)
-function openClientProfileModal() {
-  // Direct chat experience - profile page is disabled
-}
-
-function closeClientProfileModal() {
-  const modal = document.getElementById("clientProfileModal");
-  if (modal) modal.classList.add("hidden");
-}
-
-function toggleProfileInlineEdit() {}
-function cancelProfileInlineEdit() {}
-function saveProfileInlineEdit() {}
-function handleProfilePictureUpload() {}
+function openClientProfileModal() {}
+function closeClientProfileModal() {}
 
 // Sound Preference Toggle
 function toggleSoundPreference(enabled) {

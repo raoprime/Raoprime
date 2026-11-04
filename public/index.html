@@ -224,20 +224,10 @@
       animation: igHeartBurst 0.85s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     }
 
-    /* YouTube Ambient Dark Glow */
+    /* Clean Minimalist Elevation (Zero blurry AI glow slop) */
     .yt-ambient-glow {
-      position: relative;
-    }
-    .yt-ambient-glow::before {
-      content: '';
-      position: absolute;
-      inset: -14px;
-      background: radial-gradient(circle at center, rgba(225, 29, 72, 0.35) 0%, rgba(116, 23, 40, 0.15) 50%, transparent 75%);
-      filter: blur(24px);
-      z-index: -1;
-      border-radius: inherit;
-      pointer-events: none;
-      transition: opacity 0.3s ease;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     /* Story Progress Bar */
@@ -668,12 +658,9 @@
   <!-- Toast Container -->
   <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 bg-[#12151f] border border-white/10 text-slate-200 text-xs px-4 py-2.5 rounded-full shadow-2xl z-50 hidden transition-opacity pointer-events-none max-w-[90vw] text-center"></div>
 
-  <!-- Login System & Profile Page Removed (Direct Frictionless Chat Portal) -->
+  <!-- Login System & Profile Page Placeholders (Safe compatibility stubs) -->
   <div id="nameModal" class="hidden"></div>
   <div id="profileModal" class="hidden"></div>
-
-  <script src="/chat-app.js?v=7.4"></script>
-
   <div id="clientProfileModal" class="hidden"></div>
 
   <!-- Photo Full Preview Lightbox Modal -->
@@ -780,9 +767,9 @@
           🔥 VIP CLIENT CHANNEL
         </div>
 
-        <!-- Glowing Central Icon/Artwork Box -->
-        <div id="storyCardBadge" class="w-24 h-24 rounded-3xl bg-gradient-to-tr from-[#741728] via-[#a8203a] to-rose-500 flex items-center justify-center text-white shadow-2xl p-5 yt-ambient-glow">
-          <svg class="w-12 h-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+        <!-- Clean Executive Central Brand Badge -->
+        <div id="storyCardBadge" class="w-20 h-20 rounded-2xl bg-[#741728] border border-white/15 flex items-center justify-center text-white shadow-xl p-4 yt-ambient-glow">
+          <svg class="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
         </div>
 
         <!-- Animated Story Sound Wave Visualizer Bars -->
@@ -835,5 +822,7 @@
     </div>
   </div>
 
+  <!-- Primary Application Controller (Deferred to bottom for optimal FCP / LCP) -->
+  <script src="/chat-app.js?v=7.5"></script>
 </body>
 </html>
