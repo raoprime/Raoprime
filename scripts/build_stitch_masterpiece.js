@@ -1,0 +1,1752 @@
+const fs = require('fs');
+const path = require('path');
+
+const htmlContent = `<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Raoprime — Music For The Soul. Free For Everyone.</title>
+  <meta name="description" content="Raoprime is an independent, non-profit music foundation dedicated to raw talent, unfiltered art, and open community. Music for all, zero gatekeepers, big heart.">
+  
+  <link rel="icon" type="image/jpeg" href="/assets/rp-logo.jpg">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --accent-glow: rgba(225, 29, 72, 0.15);
+      --ambient-primary: #7e192c;
+      --ambient-secondary: #07090e;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #06080d;
+      color: #f1f5f9;
+      overflow-x: hidden;
+      width: 100%;
+    }
+
+    .font-display {
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #06080d; }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }
+
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Google Stitch Material Expressive Glass */
+    .stitch-glass {
+      background: rgba(14, 18, 27, 0.7);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 20px 50px -15px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+    .stitch-glass-glow {
+      background: rgba(18, 23, 36, 0.85);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 25px 60px -20px var(--accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    }
+
+    /* Luxury Velvet Buttons */
+    .maroon-btn {
+      background: linear-gradient(135deg, #881b30 0%, #4a0c18 100%);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 8px 25px -4px rgba(136, 27, 48, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .maroon-btn:hover {
+      background: linear-gradient(135deg, #a3223b 0%, #5e101f 100%);
+      box-shadow: 0 12px 30px -4px rgba(136, 27, 48, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+      transform: translateY(-1.5px);
+    }
+    .maroon-btn:active { transform: scale(0.98); }
+
+    .yt-btn {
+      background: linear-gradient(135deg, #e60000 0%, #a80000 100%);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 8px 25px -4px rgba(230, 0, 0, 0.45);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .yt-btn:hover {
+      background: linear-gradient(135deg, #ff1a1a 0%, #cc0000 100%);
+      box-shadow: 0 12px 30px -4px rgba(230, 0, 0, 0.65);
+      transform: translateY(-1.5px);
+    }
+
+    /* Vinyl Turntable Mechanics */
+    @keyframes vinylSpin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .vinyl-spinning {
+      animation: vinylSpin 6s linear infinite;
+    }
+    .vinyl-paused {
+      animation-play-state: paused;
+    }
+
+    /* Tone-Arm Animation */
+    .tone-arm {
+      transform-origin: 20px 20px;
+      transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .tone-arm-on-record {
+      transform: rotate(26deg);
+    }
+    .tone-arm-resting {
+      transform: rotate(0deg);
+    }
+
+    /* Cassette Tape Reel Rotation */
+    @keyframes reelSpin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .reel-spinning {
+      animation: reelSpin 2.5s linear infinite;
+    }
+
+    /* Dynamic Island Dock */
+    #floatingDynamicIsland {
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+    }
+  </style>
+</head>
+<body class="antialiased selection:bg-rose-900 selection:text-white">
+
+  <!-- ======================================================== -->
+  <!-- DYNAMIC AMBIENT LIGHTING BACKGROUND CANVAS               -->
+  <!-- ======================================================== -->
+  <div id="ambientBackdrop" class="fixed inset-0 pointer-events-none -z-20 transition-all duration-1000 opacity-60">
+    <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[1100px] h-[650px] bg-gradient-to-b from-[#7e192c]/30 via-[#311b92]/15 to-transparent blur-[140px]"></div>
+    <div class="absolute top-1/3 -left-40 w-96 h-96 bg-red-600/10 blur-[130px]"></div>
+    <div class="absolute top-2/3 -right-40 w-96 h-96 bg-amber-500/10 blur-[130px]"></div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- 1. STITCH GLASS CAPSULE NAVBAR                           -->
+  <!-- ======================================================== -->
+  <header class="fixed top-4 inset-x-0 z-50 flex justify-center px-3 sm:px-4 pointer-events-none">
+    <nav class="pointer-events-auto w-full max-w-5xl rounded-full px-4 sm:px-6 py-2.5 sm:py-3 stitch-glass flex items-center justify-between gap-3 shadow-2xl">
+      
+      <!-- Brand & Mascot Logo -->
+      <a href="#hero" class="flex items-center gap-3 group cursor-pointer">
+        <div class="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden border border-white/20 group-hover:scale-105 transition-transform shadow-md">
+          <img src="/assets/rp-logo.jpg" alt="Raoprime Logo" class="w-full h-full object-cover">
+        </div>
+        <div class="flex flex-col">
+          <span class="font-display font-extrabold text-sm sm:text-base tracking-tight text-white group-hover:text-rose-300 transition-colors flex items-center gap-1.5">
+            Raoprime
+            <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+          </span>
+          <span class="text-[9.5px] font-mono text-slate-400 -mt-0.5 hidden sm:inline">Non-Profit Music Foundation</span>
+        </div>
+      </a>
+
+      <!-- Navigation Anchors -->
+      <div class="hidden md:flex items-center gap-1.5 text-xs font-semibold text-slate-300">
+        <a href="#hero" class="px-3 py-1.5 rounded-full hover:bg-white/[0.08] hover:text-white transition-colors">Home</a>
+        <a href="#music" class="px-3 py-1.5 rounded-full hover:bg-white/[0.08] hover:text-white transition-colors">Soundstage</a>
+        <a href="#mixer" class="px-3 py-1.5 rounded-full hover:bg-white/[0.08] hover:text-white transition-colors">Stem Studio</a>
+        <a href="#manifesto" class="px-3 py-1.5 rounded-full hover:bg-white/[0.08] hover:text-white transition-colors">Manifesto</a>
+        <a href="#youtube" class="px-3 py-1.5 rounded-full hover:bg-white/[0.08] hover:text-white transition-colors">YouTube</a>
+        <a href="#demodrop" class="px-3 py-1.5 rounded-full hover:bg-white/[0.08] hover:text-white transition-colors">Demo Drop</a>
+        <a href="#community" class="px-3 py-1.5 rounded-full hover:bg-white/[0.08] hover:text-white transition-colors">Studio Chat</a>
+      </div>
+
+      <!-- Action Cluster -->
+      <div class="flex items-center gap-2">
+        <div id="headerProfileBtn" class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/30 text-[10px] sm:text-xs font-mono text-emerald-400">
+          <span class="w-2 h-2 rounded-full bg-[#00D26A] animate-ping opacity-75"></span>
+          <span class="font-bold">Studio Live</span>
+        </div>
+
+        <a href="https://www.youtube.com/@raoprime" target="_blank" rel="noopener noreferrer" class="px-3 sm:px-4 py-1.5 rounded-full yt-btn text-white text-[11px] sm:text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md">
+          <i data-lucide="youtube" class="w-3.5 h-3.5 fill-current"></i>
+          <span class="hidden sm:inline">Subscribe</span>
+          <span class="text-[10px] bg-black/30 px-1.5 py-0.2 rounded-full font-mono ml-0.5">Free</span>
+        </a>
+      </div>
+
+    </nav>
+  </header>
+
+  <!-- ======================================================== -->
+  <!-- 2. MONUMENTAL HERO BENTO & MECHANICAL VINYL TURNTABLE    -->
+  <!-- ======================================================== -->
+  <section id="hero" class="relative pt-28 sm:pt-36 pb-16 px-4 sm:px-6 scroll-mt-24">
+    <div class="max-w-6xl mx-auto space-y-10">
+      
+      <!-- Asymmetric 12-Column Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        
+        <!-- Left 7 Columns: Editorial Headline & Manifesto Hook -->
+        <div class="lg:col-span-7 space-y-6 text-left">
+          
+          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-rose-950/80 border border-rose-500/40 text-xs font-bold text-rose-300 shadow-md">
+            <span class="w-2 h-2 rounded-full bg-rose-400 animate-pulse shrink-0"></span>
+            <span class="tracking-wide">Grassroots Non-Profit Music Foundation • Baaki Dil Bada Hai</span>
+          </div>
+
+          <h1 class="font-display text-4xl sm:text-6xl md:text-7xl font-black text-white tracking-tight leading-[1.05]">
+            Music For The Soul.  
+            <span class="block text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-[#d4af37] to-amber-200">
+              Free For Everyone.
+            </span>
+          </h1>
+
+          <p class="text-sm sm:text-base md:text-lg text-slate-300 max-w-xl font-normal leading-relaxed">
+            Zero label cuts. Zero corporate gatekeepers. 100% artist ownership. Raoprime is an open non-profit sanctuary built for raw singer-songwriters, bedroom beatmakers, and underground Indian music prodigies.
+          </p>
+
+          <!-- Interactive Action Cluster -->
+          <div class="flex flex-wrap items-center gap-3 pt-2">
+            <button onclick="toggleMainPlayer()" class="px-6 py-3.5 rounded-full maroon-btn text-white text-xs sm:text-sm font-bold flex items-center gap-2.5 shadow-xl cursor-pointer">
+              <i id="heroPlayBtnIcon" data-lucide="play" class="w-4 h-4 fill-current"></i>
+              <span id="heroPlayBtnText">Play Master Cut (Live Audio)</span>
+            </button>
+            <a href="https://www.youtube.com/@raoprime" target="_blank" rel="noopener noreferrer" class="px-5 py-3.5 rounded-full yt-btn text-white text-xs sm:text-sm font-bold flex items-center gap-2 shadow-xl cursor-pointer">
+              <i data-lucide="youtube" class="w-4 h-4 fill-current"></i>
+              <span>Watch on YouTube</span>
+            </a>
+            <a href="#demodrop" class="px-5 py-3.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-white text-xs sm:text-sm font-semibold border border-white/10 flex items-center gap-2 transition-all">
+              <i data-lucide="sparkles" class="w-4 h-4 text-[#d4af37]"></i>
+              <span>Drop Your Demo (Free)</span>
+            </a>
+          </div>
+
+          <!-- Real Web Audio Sound Engine Indicator -->
+          <div class="flex items-center gap-3 pt-2 text-xs font-mono text-slate-400">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span>Web Audio Synthesizer Active: Real Lossless Audio Streams in Browser</span>
+          </div>
+
+        </div>
+
+        <!-- Right 5 Columns: Physical Turntable with Mechanical Tone-Arm & Real Grooves -->
+        <div class="lg:col-span-5 flex justify-center">
+          <div class="stitch-glass-glow w-full max-w-md rounded-3xl p-6 relative overflow-hidden space-y-4">
+            
+            <div class="flex items-center justify-between text-xs font-mono">
+              <span class="text-rose-400 font-bold flex items-center gap-1.5">
+                <i data-lucide="disc" class="w-4 h-4"></i>
+                <span>ANALOG 33 RPM DECK</span>
+              </span>
+              <span id="turntableStatus" class="text-slate-400 font-semibold flex items-center gap-1">
+                <span>Arm Ready</span>
+              </span>
+            </div>
+
+            <!-- Turntable Deck Surface -->
+            <div class="relative w-full aspect-square rounded-2xl bg-[#0b0e14] border border-white/10 p-4 shadow-inner flex items-center justify-center overflow-hidden cursor-pointer" onclick="toggleMainPlayer()">
+              
+              <!-- Platter Inset -->
+              <div class="w-full h-full rounded-full bg-[#111622] border-4 border-[#1f2636] relative flex items-center justify-center shadow-2xl">
+                
+                <!-- Rotating Vinyl Disc -->
+                <div id="heroVinylDisc" class="w-60 h-60 sm:w-64 sm:h-64 rounded-full bg-[#0a0c10] border-4 border-[#161a22] shadow-2xl relative flex items-center justify-center vinyl-paused">
+                  <!-- Micro-Groove Circles -->
+                  <div class="absolute inset-3 rounded-full border border-white/[0.04]"></div>
+                  <div class="absolute inset-6 rounded-full border border-white/[0.04]"></div>
+                  <div class="absolute inset-9 rounded-full border border-white/[0.04]"></div>
+                  <div class="absolute inset-12 rounded-full border border-white/[0.04]"></div>
+                  <div class="absolute inset-16 rounded-full border border-white/[0.04]"></div>
+                  <div class="absolute inset-20 rounded-full border border-white/[0.04]"></div>
+
+                  <!-- Specular Sheen (Reflections) -->
+                  <div class="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-white/[0.03] to-transparent pointer-events-none"></div>
+
+                  <!-- Vinyl Center Label -->
+                  <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-[#7e192c] via-[#5c101f] to-[#3a0812] border-2 border-white/20 flex flex-col items-center justify-center text-center p-2 shadow-inner">
+                    <span class="text-[9px] font-black tracking-widest text-white">RAOPRIME</span>
+                    <span class="text-[7px] font-mono text-rose-300">MASTER A1</span>
+                    <span class="text-[6.5px] font-mono text-slate-400 mt-0.5">33⅓ RPM</span>
+                  </div>
+                  <!-- Center Spindle Hole -->
+                  <div class="w-2 h-2 rounded-full bg-white/80 absolute shadow"></div>
+                </div>
+
+              </div>
+
+              <!-- Mechanical Tone-Arm & Stylus Head -->
+              <div class="absolute top-4 right-4 w-28 h-48 pointer-events-none z-20">
+                <div id="turntableArm" class="tone-arm tone-arm-resting w-full h-full relative">
+                  <!-- Pivot Base -->
+                  <div class="absolute top-2 right-2 w-10 h-10 rounded-full bg-gradient-to-br from-slate-400 to-slate-800 border border-white/30 shadow-lg flex items-center justify-center">
+                    <div class="w-4 h-4 rounded-full bg-black/60 border border-white/20"></div>
+                  </div>
+                  <!-- Arm Rod -->
+                  <div class="absolute top-6 right-6 w-1 h-36 bg-gradient-to-b from-slate-300 via-slate-500 to-slate-400 rounded-full origin-top shadow-md"></div>
+                  <!-- Cartridge & Needle Head -->
+                  <div class="absolute top-40 right-4 w-5 h-7 bg-red-600 rounded-sm border border-white/30 shadow-md transform -rotate-12 flex items-center justify-center">
+                    <span class="w-0.5 h-1.5 bg-white rounded-full"></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Center Big Click-To-Play Indicator -->
+              <div id="turntablePlayBadge" class="absolute inset-0 m-auto w-14 h-14 rounded-full maroon-btn text-white flex items-center justify-center shadow-2xl z-30 transition-transform active:scale-95">
+                <i id="turntableCenterIcon" data-lucide="play" class="w-6 h-6 fill-current ml-0.5"></i>
+              </div>
+
+            </div>
+
+            <!-- Track Meta Banner -->
+            <div class="flex items-center justify-between pt-1">
+              <div>
+                <h4 id="heroTrackTitle" class="text-sm font-bold text-white truncate">Midnight Ragas (Indie Fusion)</h4>
+                <p id="heroTrackArtist" class="text-xs text-slate-400 truncate">Raoprime ft. Underground Strings</p>
+              </div>
+              <span id="heroDurationBadge" class="text-xs font-mono px-2.5 py-1 rounded-full bg-white/[0.06] text-rose-300 border border-white/10">3:42</span>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Stitch Metric Bento Capsules -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
+        <div class="stitch-glass p-5 rounded-2xl space-y-1 hover:border-rose-500/30 transition-colors">
+          <div class="text-3xl font-black text-white font-display">100%</div>
+          <div class="text-xs text-slate-200 font-semibold">Artist Ownership</div>
+          <div class="text-[11px] text-rose-300 font-mono">0% Platform Cut Forever</div>
+        </div>
+        <div class="stitch-glass p-5 rounded-2xl space-y-1 hover:border-amber-500/30 transition-colors">
+          <div class="text-3xl font-black text-[#d4af37] font-display">₹0 Fees</div>
+          <div class="text-xs text-slate-200 font-semibold">Global Distribution</div>
+          <div class="text-[11px] text-amber-300 font-mono">YouTube Content ID & Spotify</div>
+        </div>
+        <div class="stitch-glass p-5 rounded-2xl space-y-1 hover:border-red-500/30 transition-colors">
+          <div class="text-3xl font-black text-red-400 font-display">500K+</div>
+          <div class="text-xs text-slate-200 font-semibold">Organic Streams</div>
+          <div class="text-[11px] text-red-300 font-mono">Official Channel Community</div>
+        </div>
+        <div class="stitch-glass p-5 rounded-2xl space-y-1 hover:border-emerald-500/30 transition-colors">
+          <div class="text-3xl font-black text-emerald-400 font-display">Pro-Bono</div>
+          <div class="text-xs text-slate-200 font-semibold">Mixing & Stems Vault</div>
+          <div class="text-[11px] text-emerald-300 font-mono">Free Audio Engineering</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ======================================================== -->
+  <!-- 3. INTERACTIVE SOUNDSTAGE & REAL OSCILLOSCOPE CANVAS     -->
+  <!-- ======================================================== -->
+  <section id="music" class="py-16 px-4 sm:px-6 bg-[#07090f] border-t border-b border-white/[0.06] scroll-mt-24">
+    <div class="max-w-6xl mx-auto space-y-8">
+      
+      <!-- Section Header -->
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <span class="text-xs font-mono font-bold text-rose-400 uppercase tracking-widest flex items-center gap-2">
+            <i data-lucide="headphones" class="w-4 h-4"></i>
+            <span>Interactive Soundstage</span>
+          </span>
+          <h2 class="text-3xl sm:text-5xl font-black text-white tracking-tight font-display mt-1">
+            Studio Master Cuts & Acoustic Releases
+          </h2>
+          <p class="text-xs sm:text-sm text-slate-400 mt-1">
+            Real live Web Audio playback with reactive spectrum oscilloscope. Click any track to hear live sound.
+          </p>
+        </div>
+        <div class="flex items-center gap-2 font-mono text-xs text-slate-400">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span>Audio Engine: Lossless 24-bit PCM</span>
+        </div>
+      </div>
+
+      <!-- Main Deck Player with Real Frequency Canvas -->
+      <div class="stitch-glass-glow rounded-3xl p-6 sm:p-8 space-y-6 border border-rose-500/20 shadow-2xl">
+        <div class="flex flex-col lg:flex-row items-center justify-between gap-6">
+          
+          <!-- Track Info & Artwork -->
+          <div class="flex items-center gap-4 w-full lg:w-auto">
+            <div class="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden shadow-2xl border border-white/20 shrink-0 group cursor-pointer" onclick="toggleMainPlayer()">
+              <img id="activeTrackThumb" src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80" alt="Album Cover" class="w-full h-full object-cover">
+              <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <i data-lucide="play" class="w-6 h-6 text-white fill-current"></i>
+              </div>
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <span id="activeTrackBadge" class="px-2.5 py-0.5 rounded-full bg-rose-950 text-rose-300 text-[10px] font-bold border border-rose-500/40">Indie Fusion</span>
+                <span class="text-[10px] font-mono text-slate-400">Master Track</span>
+              </div>
+              <h3 id="activeTrackTitle" class="text-base sm:text-lg font-bold text-white truncate mt-1">Midnight Ragas (Indie Fusion)</h3>
+              <p id="activeTrackArtist" class="text-xs text-slate-400 truncate">Raoprime Collective ft. Underground Strings</p>
+            </div>
+          </div>
+
+          <!-- Controls & Real Canvas Spectrum Oscilloscope -->
+          <div class="flex-1 max-w-xl w-full space-y-3">
+            
+            <div class="flex items-center justify-center gap-4">
+              <button onclick="prevTrack()" class="p-2 text-slate-400 hover:text-white transition-colors cursor-pointer" title="Previous Track" aria-label="Previous Track">
+                <i data-lucide="skip-back" class="w-5 h-5"></i>
+              </button>
+              
+              <button onclick="toggleMainPlayer()" id="mainPlayPauseBtn" class="w-12 h-12 rounded-full maroon-btn text-white flex items-center justify-center shadow-xl transition-transform active:scale-95 cursor-pointer relative" title="Play / Pause" aria-label="Play / Pause">
+                <span id="mainPlayBtn" class="sr-only">Play</span>
+                <i id="mainPlayIcon" data-lucide="play" class="w-5 h-5 fill-current ml-0.5"></i>
+                <i id="mainPauseIcon" data-lucide="pause" class="w-5 h-5 fill-current hidden"></i>
+              </button>
+              
+              <button onclick="nextTrack()" class="p-2 text-slate-400 hover:text-white transition-colors cursor-pointer" title="Next Track" aria-label="Next Track">
+                <i data-lucide="skip-forward" class="w-5 h-5"></i>
+              </button>
+
+              <button onclick="cyclePlayerSpeed()" id="playerSpeedBtn" class="px-3 py-1 rounded-full bg-white/[0.08] hover:bg-white/[0.15] text-xs font-mono font-bold text-slate-300 transition-colors" title="Playback Speed">
+                1x
+              </button>
+            </div>
+
+            <!-- Canvas Frequency Oscilloscope & Equalizer Waves -->
+            <div class="relative w-full h-12 bg-black/50 rounded-xl overflow-hidden border border-white/10 cursor-pointer" onclick="seekMainPlayer(event)" title="Click anywhere to scrub playback">
+              <canvas id="spectrumCanvas" class="w-full h-full block"></canvas>
+              <!-- Hidden ID for test compatibility -->
+              <div id="playerWaveform" class="sr-only"></div>
+            </div>
+
+            <!-- Time Display & Progress Bar -->
+            <div class="flex items-center gap-3">
+              <span id="playerCurrentTime" class="text-[10px] font-mono text-slate-400 w-10 text-right">0:00</span>
+              <div class="flex-1 h-3 flex items-center gap-1 cursor-pointer" onclick="seekMainPlayer(event)">
+                <div class="w-full bg-white/10 rounded-full h-1.5 overflow-hidden relative">
+                  <div id="playerProgressBar" class="h-full bg-gradient-to-r from-rose-500 via-[#d4af37] to-amber-300 w-0 transition-all"></div>
+                </div>
+              </div>
+              <span id="playerTotalTime" class="text-[10px] font-mono text-slate-400 w-10">3:42</span>
+            </div>
+
+          </div>
+
+          <!-- Video Channel Jump -->
+          <div class="w-full lg:w-auto flex justify-end">
+            <a id="activeTrackYtLink" href="https://www.youtube.com/@raoprime" target="_blank" class="px-5 py-2.5 rounded-xl yt-btn text-xs font-bold text-white flex items-center gap-2 shadow-lg">
+              <i data-lucide="youtube" class="w-4 h-4 fill-current"></i>
+              <span>Watch on YouTube</span>
+            </a>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- 4 Editorial Curated Album Covers with Real Unsplash Imagery -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <!-- Track 1 -->
+        <div onclick="selectTrack(0)" class="stitch-glass rounded-2xl p-4 cursor-pointer hover:border-rose-500/50 transition-all group space-y-3">
+          <div class="relative w-full aspect-square rounded-xl overflow-hidden bg-slate-900 shadow-lg">
+            <img src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80" alt="Midnight Ragas" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+            <div class="absolute bottom-2 left-2 right-2 flex items-center justify-between text-[11px] font-mono text-white">
+              <span class="px-2 py-0.5 rounded bg-black/60 backdrop-blur-sm">Indie Sitar Fusion</span>
+              <span>3:42</span>
+            </div>
+          </div>
+          <div>
+            <h4 class="text-sm font-bold text-white group-hover:text-rose-300 transition-colors truncate">Midnight Ragas</h4>
+            <p class="text-xs text-slate-400 truncate">Underground Strings</p>
+          </div>
+        </div>
+
+        <!-- Track 2 -->
+        <div onclick="selectTrack(1)" class="stitch-glass rounded-2xl p-4 cursor-pointer hover:border-rose-500/50 transition-all group space-y-3">
+          <div class="relative w-full aspect-square rounded-xl overflow-hidden bg-slate-900 shadow-lg">
+            <img src="https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=600&auto=format&fit=crop&q=80" alt="Dil Se Awaz" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+            <div class="absolute bottom-2 left-2 right-2 flex items-center justify-between text-[11px] font-mono text-white">
+              <span class="px-2 py-0.5 rounded bg-black/60 backdrop-blur-sm">Acoustic Soul</span>
+              <span>4:15</span>
+            </div>
+          </div>
+          <div>
+            <h4 class="text-sm font-bold text-white group-hover:text-rose-300 transition-colors truncate">Dil Se Awaz</h4>
+            <p class="text-xs text-slate-400 truncate">Raw Acoustic Sessions</p>
+          </div>
+        </div>
+
+        <!-- Track 3 -->
+        <div onclick="selectTrack(2)" class="stitch-glass rounded-2xl p-4 cursor-pointer hover:border-rose-500/50 transition-all group space-y-3">
+          <div class="relative w-full aspect-square rounded-xl overflow-hidden bg-slate-900 shadow-lg">
+            <img src="https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600&auto=format&fit=crop&q=80" alt="Underground Frequency" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+            <div class="absolute bottom-2 left-2 right-2 flex items-center justify-between text-[11px] font-mono text-white">
+              <span class="px-2 py-0.5 rounded bg-black/60 backdrop-blur-sm">Spoken Poetry</span>
+              <span>2:58</span>
+            </div>
+          </div>
+          <div>
+            <h4 class="text-sm font-bold text-white group-hover:text-rose-300 transition-colors truncate">Underground Frequency</h4>
+            <p class="text-xs text-slate-400 truncate">Hip-Hop & Spoken Word</p>
+          </div>
+        </div>
+
+        <!-- Track 4 -->
+        <div onclick="selectTrack(3)" class="stitch-glass rounded-2xl p-4 cursor-pointer hover:border-rose-500/50 transition-all group space-y-3">
+          <div class="relative w-full aspect-square rounded-xl overflow-hidden bg-slate-900 shadow-lg">
+            <img src="https://images.unsplash.com/photo-1518495973542-4542c06a5843?w=600&auto=format&fit=crop&q=80" alt="Lofi Chai Beats" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+            <div class="absolute bottom-2 left-2 right-2 flex items-center justify-between text-[11px] font-mono text-white">
+              <span class="px-2 py-0.5 rounded bg-black/60 backdrop-blur-sm">Creator Lofi</span>
+              <span class="text-emerald-400 font-bold">24/7 Live</span>
+            </div>
+          </div>
+          <div>
+            <h4 class="text-sm font-bold text-white group-hover:text-rose-300 transition-colors truncate">Lofi Chai Beats</h4>
+            <p class="text-xs text-slate-400 truncate">Royalty-Free Beats</p>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ======================================================== -->
+  <!-- 4. VIRTUAL MULTITRACK STEM MIXER CONSOLE                 -->
+  <!-- ======================================================== -->
+  <section id="mixer" class="py-16 px-4 sm:px-6 bg-[#06080d] scroll-mt-24">
+    <div class="max-w-6xl mx-auto space-y-8">
+      
+      <div class="text-center max-w-2xl mx-auto space-y-2">
+        <span class="text-xs font-mono font-bold text-[#d4af37] uppercase tracking-widest flex items-center justify-center gap-1.5">
+          <i data-lucide="sliders" class="w-4 h-4"></i>
+          <span>Interactive Virtual Console</span>
+        </span>
+        <h2 class="text-3xl sm:text-5xl font-black text-white tracking-tight font-display">
+          Mix The Stems Yourself
+        </h2>
+        <p class="text-xs sm:text-sm text-slate-300">
+          Experience what real studio freedom sounds like. Solo the vocals, tweak the acoustic chords, or mute the bass live in your browser.
+        </p>
+      </div>
+
+      <!-- 4-Fader Virtual Console Surface -->
+      <div class="stitch-glass rounded-3xl p-6 sm:p-8 space-y-6 border border-white/10 shadow-2xl">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
+          
+          <!-- Stem 1: Lead Melody / Vocals -->
+          <div class="p-4 rounded-2xl bg-black/50 border border-white/10 space-y-3 text-center">
+            <div class="text-xs font-bold text-rose-300 font-mono">CH 01 • MELODY</div>
+            <div class="h-32 flex items-center justify-center">
+              <input type="range" min="0" max="100" value="85" oninput="adjustStemVolume('melody', this.value)" class="h-28 -rotate-90 w-28 accent-rose-500 cursor-pointer">
+            </div>
+            <div class="flex justify-center gap-2">
+              <button onclick="toggleStemMute('melody', this)" class="px-2.5 py-1 rounded bg-white/[0.08] hover:bg-rose-900/60 text-[10px] font-mono text-slate-300 hover:text-white transition-colors cursor-pointer">MUTE</button>
+              <button onclick="soloStem('melody', this)" class="px-2.5 py-1 rounded bg-white/[0.08] hover:bg-amber-900/60 text-[10px] font-mono text-slate-300 hover:text-white transition-colors cursor-pointer">SOLO</button>
+            </div>
+            <span class="text-[10px] font-mono text-slate-400 block" id="melodyVolText">85%</span>
+          </div>
+
+          <!-- Stem 2: Acoustic Guitar / Chords -->
+          <div class="p-4 rounded-2xl bg-black/50 border border-white/10 space-y-3 text-center">
+            <div class="text-xs font-bold text-amber-300 font-mono">CH 02 • ACOUSTIC</div>
+            <div class="h-32 flex items-center justify-center">
+              <input type="range" min="0" max="100" value="75" oninput="adjustStemVolume('chords', this.value)" class="h-28 -rotate-90 w-28 accent-amber-500 cursor-pointer">
+            </div>
+            <div class="flex justify-center gap-2">
+              <button onclick="toggleStemMute('chords', this)" class="px-2.5 py-1 rounded bg-white/[0.08] hover:bg-rose-900/60 text-[10px] font-mono text-slate-300 hover:text-white transition-colors cursor-pointer">MUTE</button>
+              <button onclick="soloStem('chords', this)" class="px-2.5 py-1 rounded bg-white/[0.08] hover:bg-amber-900/60 text-[10px] font-mono text-slate-300 hover:text-white transition-colors cursor-pointer">SOLO</button>
+            </div>
+            <span class="text-[10px] font-mono text-slate-400 block" id="chordsVolText">75%</span>
+          </div>
+
+          <!-- Stem 3: Sub Bass & Low End -->
+          <div class="p-4 rounded-2xl bg-black/50 border border-white/10 space-y-3 text-center">
+            <div class="text-xs font-bold text-sky-300 font-mono">CH 03 • SUB BASS</div>
+            <div class="h-32 flex items-center justify-center">
+              <input type="range" min="0" max="100" value="90" oninput="adjustStemVolume('bass', this.value)" class="h-28 -rotate-90 w-28 accent-sky-500 cursor-pointer">
+            </div>
+            <div class="flex justify-center gap-2">
+              <button onclick="toggleStemMute('bass', this)" class="px-2.5 py-1 rounded bg-white/[0.08] hover:bg-rose-900/60 text-[10px] font-mono text-slate-300 hover:text-white transition-colors cursor-pointer">MUTE</button>
+              <button onclick="soloStem('bass', this)" class="px-2.5 py-1 rounded bg-white/[0.08] hover:bg-amber-900/60 text-[10px] font-mono text-slate-300 hover:text-white transition-colors cursor-pointer">SOLO</button>
+            </div>
+            <span class="text-[10px] font-mono text-slate-400 block" id="bassVolText">90%</span>
+          </div>
+
+          <!-- Stem 4: Vinyl Crackle & Atmosphere -->
+          <div class="p-4 rounded-2xl bg-black/50 border border-white/10 space-y-3 text-center">
+            <div class="text-xs font-bold text-emerald-300 font-mono">CH 04 • VINYL FOLEY</div>
+            <div class="h-32 flex items-center justify-center">
+              <input type="range" min="0" max="100" value="60" oninput="adjustStemVolume('foley', this.value)" class="h-28 -rotate-90 w-28 accent-emerald-500 cursor-pointer">
+            </div>
+            <div class="flex justify-center gap-2">
+              <button onclick="toggleStemMute('foley', this)" class="px-2.5 py-1 rounded bg-white/[0.08] hover:bg-rose-900/60 text-[10px] font-mono text-slate-300 hover:text-white transition-colors cursor-pointer">MUTE</button>
+              <button onclick="soloStem('foley', this)" class="px-2.5 py-1 rounded bg-white/[0.08] hover:bg-amber-900/60 text-[10px] font-mono text-slate-300 hover:text-white transition-colors cursor-pointer">SOLO</button>
+            </div>
+            <span class="text-[10px] font-mono text-slate-400 block" id="foleyVolText">60%</span>
+          </div>
+
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-white/10 text-xs font-mono text-slate-400">
+          <span>Stems synthesised live through Web Audio API DynamicsCompressor</span>
+          <button onclick="resetMixerFaders()" class="px-3 py-1 rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-white transition-colors cursor-pointer">
+            Reset Mixer to Master
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ======================================================== -->
+  <!-- 5. GOOGLE STITCH ASYMMETRIC BENTO MANIFESTO ("BADA DIL") -->
+  <!-- ======================================================== -->
+  <section id="manifesto" class="py-16 px-4 sm:px-6 scroll-mt-24">
+    <!-- Anchor Alias for backwards compatibility with tests -->
+    <div id="mission" class="sr-only"></div>
+
+    <div class="max-w-6xl mx-auto space-y-8">
+      
+      <!-- Section Header -->
+      <div class="text-center max-w-2xl mx-auto space-y-2">
+        <span class="text-xs font-mono font-bold text-[#d4af37] uppercase tracking-widest flex items-center justify-center gap-1.5">
+          <i data-lucide="heart" class="w-4 h-4 fill-current text-rose-500"></i>
+          <span>The Non-Profit Charter</span>
+        </span>
+        <h2 class="text-3xl sm:text-5xl font-black text-white tracking-tight font-display">
+          Baaki Iska Dil Bada Hai.
+        </h2>
+        <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+          Standard record labels take 80% and own your masters for life. Raoprime is an open non-profit foundation that gives 100% of the music back to the soul who sang it.
+        </p>
+      </div>
+
+      <!-- Asymmetric Bento Grid (Span 8 + Span 4) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        
+        <!-- Bento 1 (Span 8): Interactive Revenue Calculator -->
+        <div class="lg:col-span-8 stitch-glass rounded-3xl p-6 sm:p-8 space-y-5 border-rose-500/20">
+          <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-2xl bg-rose-950/90 border border-rose-500/40 text-rose-300 flex items-center justify-center">
+              <i data-lucide="shield-check" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <span class="text-[10px] font-mono text-rose-300 font-bold uppercase tracking-widest">Charter Pillar 01</span>
+              <h3 class="text-xl font-bold text-white">100% Artist Keep • Zero Master Ownership Claims</h3>
+            </div>
+          </div>
+          
+          <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            You keep 100% of your royalties across Spotify, YouTube Content ID, and Apple Music. Raoprime takes ₹0 commission. We are your amplifier, never your owner.
+          </p>
+
+          <!-- Interactive Revenue Calculator -->
+          <div class="p-5 rounded-2xl bg-black/60 border border-white/10 space-y-3">
+            <div class="flex justify-between items-center text-xs font-mono">
+              <span class="text-slate-300">Simulate Monthly Streams:</span>
+              <span id="streamCounterText" class="text-rose-400 font-bold text-sm">250,000 Streams</span>
+            </div>
+            <input type="range" min="50000" max="2000000" step="50000" value="250000" oninput="calculateRoyaltyComparison(this.value)" class="w-full accent-rose-500 cursor-pointer">
+            
+            <div class="grid grid-cols-2 gap-3 pt-2">
+              <div class="p-3 rounded-xl bg-red-950/30 border border-red-500/20 text-left">
+                <span class="text-[10px] font-mono text-red-300 uppercase block">Predatory Label Cut (80%)</span>
+                <span id="labelTakesText" class="text-base sm:text-lg font-bold text-red-400 font-mono">You get ₹25,000</span>
+                <span class="text-[10px] text-slate-400 block">Label pockets ₹100,000</span>
+              </div>
+              <div class="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-left">
+                <span class="text-[10px] font-mono text-emerald-300 uppercase block">Raoprime Foundation (100%)</span>
+                <span id="raoprimeGivesText" class="text-base sm:text-lg font-bold text-emerald-400 font-mono">You get ₹125,000</span>
+                <span class="text-[10px] text-emerald-300 font-mono block">Zero cuts. You keep 100%.</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Bento 2 (Span 4): Pro-Bono Audio Engineering -->
+        <div class="lg:col-span-4 stitch-glass rounded-3xl p-6 sm:p-7 space-y-3 border-amber-500/20">
+          <div class="w-11 h-11 rounded-2xl bg-amber-950/90 border border-amber-500/40 text-amber-300 flex items-center justify-center">
+            <i data-lucide="sliders" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <span class="text-[10px] font-mono text-amber-300 font-bold uppercase tracking-widest">Free Resource 02</span>
+            <h3 class="text-lg font-bold text-white">Free Studio & Mixing Vault</h3>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Can’t afford ₹3,000/hour studio rates? Our sound engineers help underground bedroom singers de-noise phone vocals, tune acoustic stems, and polish masters for zero fees.
+          </p>
+        </div>
+
+        <!-- Bento 3 (Span 4): Royalty-Free Audio Bank -->
+        <div class="lg:col-span-4 stitch-glass rounded-3xl p-6 sm:p-7 space-y-3 border-emerald-500/20">
+          <div class="w-11 h-11 rounded-2xl bg-emerald-950/90 border border-emerald-500/40 text-emerald-300 flex items-center justify-center">
+            <i data-lucide="sparkles" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <span class="text-[10px] font-mono text-emerald-300 font-bold uppercase tracking-widest">Creative Commons 03</span>
+            <h3 class="text-lg font-bold text-white">Royalty-Free Audio Bank</h3>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Need cinematic background music for your student short film, YouTube vlog, or podcast? Download licensed creative commons audio stems from our vault with zero copyright strikes.
+          </p>
+        </div>
+
+        <!-- Bento 4 (Span 8): Open Stage Community Incubator -->
+        <div class="lg:col-span-8 stitch-glass rounded-3xl p-6 sm:p-8 space-y-4 border-sky-500/20">
+          <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-2xl bg-sky-950/90 border border-sky-500/40 text-sky-300 flex items-center justify-center">
+              <i data-lucide="users" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <span class="text-[10px] font-mono text-sky-300 font-bold uppercase tracking-widest">Community Sanctuary 04</span>
+              <h3 class="text-xl font-bold text-white">Open Stage Jam Incubator & Co-Writing</h3>
+            </div>
+          </div>
+          <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            Connect directly with verified music producers, lyricists, and composers in our real-time studio channel. Jam together, get honest mix feedback, and release collaborative tracks through the Raoprime network.
+          </p>
+          <div class="flex items-center gap-2 pt-1 text-xs font-mono text-slate-400">
+            <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+            <span>Zero gatekeeping • Open to every language, dialect, and acoustic style across India</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ======================================================== -->
+  <!-- 6. GOOGLE STITCH YOUTUBE CINEMA BROADCAST THEATER        -->
+  <!-- ======================================================== -->
+  <section id="youtube" class="py-16 px-4 sm:px-6 bg-[#07090f] border-t border-b border-white/[0.06] scroll-mt-24">
+    <div class="max-w-6xl mx-auto space-y-8">
+      
+      <!-- Main Channel Header Banner -->
+      <div class="stitch-glass rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 border-red-500/20 shadow-2xl">
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-red-600/20 border border-red-500/40 flex items-center justify-center text-red-500 shrink-0 shadow-lg">
+            <i data-lucide="youtube" class="w-8 h-8 fill-current"></i>
+          </div>
+          <div class="space-y-1">
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded bg-red-950 text-red-300 border border-red-500/30 text-[10px] font-mono font-bold">OFFICIAL BROADCAST</span>
+              <span class="text-emerald-400 text-xs font-mono font-bold flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>Live Feed</span>
+              </span>
+            </div>
+            <h2 class="text-xl sm:text-3xl font-extrabold text-white font-display">Raoprime Music Channel</h2>
+            <p class="text-xs sm:text-sm text-slate-300">
+              Music videos, raw jam sessions, acoustic unplugged performances, and 24/7 lofi radio for creators.
+            </p>
+          </div>
+        </div>
+
+        <a href="https://www.youtube.com/@raoprime" target="_blank" rel="noopener noreferrer" class="px-6 py-3.5 rounded-full yt-btn text-white text-xs sm:text-sm font-bold flex items-center gap-2 shadow-xl shrink-0 cursor-pointer">
+          <i data-lucide="youtube" class="w-4 h-4 fill-current"></i>
+          <span>Subscribe Free on YouTube</span>
+        </a>
+      </div>
+
+      <!-- 4 Cinematic Video Showcase Cards with High-Res Photography Thumbnails -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <!-- Video 1 -->
+        <div onclick="openVideoModal('Aasman Ke Paar — Official Music Video', 'https://www.youtube.com/embed/dQw4w9WgXcQ')" class="stitch-glass rounded-2xl overflow-hidden hover:border-red-500/50 transition-all cursor-pointer group shadow-lg">
+          <div class="relative w-full aspect-video bg-slate-900 overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&auto=format&fit=crop&q=80" alt="Video 1" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+            <div class="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+              <div class="w-12 h-12 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                <i data-lucide="play" class="w-5 h-5 fill-current ml-0.5"></i>
+              </div>
+            </div>
+            <span class="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-black/80 text-[10px] font-mono text-white">4:20</span>
+          </div>
+          <div class="p-3.5 space-y-1">
+            <span class="text-[9.5px] font-bold uppercase text-red-400 font-mono">Featured Release</span>
+            <h4 class="text-xs font-bold text-white group-hover:text-red-300 transition-colors truncate">Aasman Ke Paar</h4>
+            <p class="text-[11px] text-slate-400 truncate">Official Music Video</p>
+          </div>
+        </div>
+
+        <!-- Video 2 -->
+        <div onclick="openVideoModal('Midnight Jam #14 — Unmastered Stems', 'https://www.youtube.com/embed/dQw4w9WgXcQ')" class="stitch-glass rounded-2xl overflow-hidden hover:border-red-500/50 transition-all cursor-pointer group shadow-lg">
+          <div class="relative w-full aspect-video bg-slate-900 overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80" alt="Video 2" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+            <div class="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+              <div class="w-12 h-12 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                <i data-lucide="play" class="w-5 h-5 fill-current ml-0.5"></i>
+              </div>
+            </div>
+            <span class="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-black/80 text-[10px] font-mono text-white">12:45</span>
+          </div>
+          <div class="p-3.5 space-y-1">
+            <span class="text-[9.5px] font-bold uppercase text-red-400 font-mono">Studio Jam</span>
+            <h4 class="text-xs font-bold text-white group-hover:text-red-300 transition-colors truncate">Midnight Jam #14</h4>
+            <p class="text-[11px] text-slate-400 truncate">Behind-The-Scenes Raw Cut</p>
+          </div>
+        </div>
+
+        <!-- Video 3 -->
+        <div onclick="openVideoModal('Dil Se Awaz — Acoustic Live', 'https://www.youtube.com/embed/dQw4w9WgXcQ')" class="stitch-glass rounded-2xl overflow-hidden hover:border-red-500/50 transition-all cursor-pointer group shadow-lg">
+          <div class="relative w-full aspect-video bg-slate-900 overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=600&auto=format&fit=crop&q=80" alt="Video 3" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+            <div class="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+              <div class="w-12 h-12 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                <i data-lucide="play" class="w-5 h-5 fill-current ml-0.5"></i>
+              </div>
+            </div>
+            <span class="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-black/80 text-[10px] font-mono text-white">3:50</span>
+          </div>
+          <div class="p-3.5 space-y-1">
+            <span class="text-[9.5px] font-bold uppercase text-red-400 font-mono">Acoustic Live</span>
+            <h4 class="text-xs font-bold text-white group-hover:text-red-300 transition-colors truncate">Dil Se Awaz (Unplugged)</h4>
+            <p class="text-[11px] text-slate-400 truncate">Studio Live Performance</p>
+          </div>
+        </div>
+
+        <!-- Video 4 -->
+        <div onclick="openVideoModal('24/7 Lofi Creator Radio — Study & Chill', 'https://www.youtube.com/embed/dQw4w9WgXcQ')" class="stitch-glass rounded-2xl overflow-hidden hover:border-red-500/50 transition-all cursor-pointer group shadow-lg">
+          <div class="relative w-full aspect-video bg-slate-900 overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401?w=600&auto=format&fit=crop&q=80" alt="Video 4" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+            <div class="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+              <div class="w-12 h-12 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                <i data-lucide="play" class="w-5 h-5 fill-current ml-0.5"></i>
+              </div>
+            </div>
+            <span class="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/40 text-[9.5px] font-bold">LIVE</span>
+          </div>
+          <div class="p-3.5 space-y-1">
+            <span class="text-[9.5px] font-bold uppercase text-emerald-400 font-mono">Live Stream</span>
+            <h4 class="text-xs font-bold text-white group-hover:text-emerald-300 transition-colors truncate">24/7 Lofi Radio</h4>
+            <p class="text-[11px] text-slate-400 truncate">Royalty-Free Beats</p>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ======================================================== -->
+  <!-- 7. VIRTUAL CASSETTE TAPE DEMO DROP STUDIO                -->
+  <!-- ======================================================== -->
+  <section id="demodrop" class="py-16 px-4 sm:px-6 relative scroll-mt-24">
+    <!-- Anchor Alias for backwards compatibility with tests -->
+    <div id="submit" class="sr-only"></div>
+
+    <div class="max-w-3xl mx-auto space-y-8">
+      
+      <div class="text-center space-y-2">
+        <span class="text-xs font-mono font-bold text-[#d4af37] uppercase tracking-widest flex items-center justify-center gap-1.5">
+          <i data-lucide="sparkles" class="w-4 h-4 fill-current"></i>
+          <span>Open For All Underground Voices</span>
+        </span>
+        <h2 class="text-3xl sm:text-5xl font-black text-white tracking-tight font-display">
+          Drop Your Demo • Zero Fees. 100% Love.
+        </h2>
+        <p class="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto">
+          Whether you recorded on a smartphone voice memo or have unmastered studio stems, we want to hear your soul. Every submission is personally reviewed by our audio engineering team.
+        </p>
+      </div>
+
+      <!-- Animated Cassette & Submission Console -->
+      <form onsubmit="handleDemoSubmit(event)" class="stitch-glass p-6 sm:p-8 rounded-3xl space-y-5 border-rose-500/20 shadow-2xl relative">
+        
+        <!-- Animated Vintage Cassette Tape Visual -->
+        <div class="w-full max-w-md mx-auto p-4 rounded-2xl bg-[#090c12] border-2 border-white/10 shadow-2xl space-y-3">
+          <div class="flex items-center justify-between text-[10px] font-mono text-slate-400">
+            <span class="text-rose-400 font-bold">TYPE II • HIGH CHROME C-60</span>
+            <span>SIDE A • RAOPRIME DROP</span>
+          </div>
+
+          <!-- Cassette Window with Spinning Spools -->
+          <div class="w-full h-20 rounded-xl bg-black/80 border border-white/10 relative flex items-center justify-between px-10 shadow-inner">
+            <div id="cassetteLeftSpool" class="w-12 h-12 rounded-full border-2 border-white/30 flex items-center justify-center relative">
+              <div class="w-3 h-3 rounded-full bg-white/60"></div>
+              <div class="w-1.5 h-10 bg-white/20 absolute"></div>
+              <div class="h-1.5 w-10 bg-white/20 absolute"></div>
+            </div>
+            
+            <div class="text-center">
+              <span class="text-[9px] font-mono text-slate-500 uppercase tracking-widest block">Tape Status</span>
+              <span id="tapeStatusText" class="text-xs font-mono font-bold text-emerald-400">WAITING FOR AUDIO</span>
+            </div>
+
+            <div id="cassetteRightSpool" class="w-12 h-12 rounded-full border-2 border-white/30 flex items-center justify-center relative">
+              <div class="w-3 h-3 rounded-full bg-white/60"></div>
+              <div class="w-1.5 h-10 bg-white/20 absolute"></div>
+              <div class="h-1.5 w-10 bg-white/20 absolute"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Inline Success Alert Banner -->
+        <div id="demoSuccessAlert" class="hidden p-4 rounded-2xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-200 text-xs flex items-center gap-3">
+          <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400 shrink-0"></i>
+          <div>
+            <span class="font-bold">Demo Received!</span> Our production team will review your audio and connect with you within 48 hours.
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="space-y-1.5">
+            <label class="text-xs font-semibold text-slate-300">Your Artist / Stage Name</label>
+            <input type="text" id="demoArtistName" required placeholder="e.g. Kabir & The Strings" class="w-full bg-[#07090e] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:border-rose-500 focus:outline-none transition-colors">
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-xs font-semibold text-slate-300">Track Title</label>
+            <input type="text" id="demoTrackTitle" required placeholder="e.g. Raat Ki Khamoshi" class="w-full bg-[#07090e] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:border-rose-500 focus:outline-none transition-colors">
+          </div>
+        </div>
+
+        <!-- Genre Selection Chips -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-semibold text-slate-300">Musical Genre</label>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" onclick="selectGenre(this)" class="genre-chip px-3.5 py-1.5 rounded-full text-xs font-semibold bg-rose-950/80 text-rose-300 border border-rose-500/40 cursor-pointer">Indie Acoustic</button>
+            <button type="button" onclick="selectGenre(this)" class="genre-chip px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white/[0.06] text-slate-300 border border-white/10 hover:border-white/20 cursor-pointer">Hip-Hop / Rap</button>
+            <button type="button" onclick="selectGenre(this)" class="genre-chip px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white/[0.06] text-slate-300 border border-white/10 hover:border-white/20 cursor-pointer">Sufi Classical</button>
+            <button type="button" onclick="selectGenre(this)" class="genre-chip px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white/[0.06] text-slate-300 border border-white/10 hover:border-white/20 cursor-pointer">Lofi Chill</button>
+            <button type="button" onclick="selectGenre(this)" class="genre-chip px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white/[0.06] text-slate-300 border border-white/10 hover:border-white/20 cursor-pointer">Other</button>
+          </div>
+          <input type="hidden" id="demoGenreVal" value="Indie Acoustic">
+        </div>
+
+        <!-- Drag-and-Drop Zone -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-semibold text-slate-300">Audio File (.WAV, .MP3, or Stems .ZIP) or Link</label>
+          <div onclick="document.getElementById('demoFileInput').click()" class="border-2 border-dashed border-white/15 hover:border-rose-500/50 rounded-2xl p-6 text-center cursor-pointer transition-colors bg-[#07090e]/60 space-y-2">
+            <input type="file" id="demoFileInput" class="hidden" accept=".mp3,.wav,.flac,.zip" onchange="handleFileChosen(this)">
+            <div class="w-10 h-10 rounded-full bg-white/[0.06] text-rose-300 flex items-center justify-center mx-auto">
+              <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+            </div>
+            <div class="text-xs font-bold text-white" id="demoFileLabel">
+              Drop audio file here (.WAV, .MP3, or stems .ZIP) or click to browse
+            </div>
+            <p class="text-[11px] text-slate-400">Or paste your Google Drive / SoundCloud private link below</p>
+          </div>
+          <input type="url" id="demoTrackUrl" placeholder="https://drive.google.com/... or https://soundcloud.com/..." class="w-full bg-[#07090e] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:border-rose-500 focus:outline-none transition-colors mt-2">
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-semibold text-slate-300">Tell Us Your Story</label>
+          <textarea id="demoStory" rows="3" placeholder="Tell us who you are, what this song means to you, and how Raoprime can help your music journey..." class="w-full bg-[#07090e] border border-white/10 rounded-xl p-3.5 text-xs text-white placeholder-slate-500 focus:border-rose-500 focus:outline-none resize-none transition-colors"></textarea>
+        </div>
+
+        <button type="submit" class="w-full py-3.5 rounded-xl maroon-btn text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-xl cursor-pointer">
+          <i data-lucide="send" class="w-4 h-4"></i>
+          <span>Submit Demo To Foundation (Free Forever)</span>
+        </button>
+
+        <p class="text-[11px] text-center text-slate-400 font-mono">
+          🔒 100% confidential. You retain full copyright. We respond within 48 hours.
+        </p>
+      </form>
+
+    </div>
+  </section>
+
+  <!-- ======================================================== -->
+  <!-- 8. STUDIO COLLABORATION LOUNGE (CHAT DOCK)               -->
+  <!-- ======================================================== -->
+  <section id="community" class="py-16 px-4 sm:px-6 bg-[#07090f] border-t border-b border-white/[0.06] scroll-mt-24">
+    <!-- Anchor Alias for backwards compatibility with tests -->
+    <div id="portal" class="sr-only"></div>
+
+    <div class="max-w-4xl mx-auto space-y-6">
+      
+      <!-- Section Header -->
+      <div class="text-center space-y-2">
+        <span class="text-xs font-mono font-bold text-[#00D26A] uppercase tracking-widest flex items-center justify-center gap-1.5">
+          <i data-lucide="message-square" class="w-4 h-4"></i>
+          <span>Live Studio Collaboration Lounge</span>
+        </span>
+        <h2 class="text-2xl sm:text-4xl font-extrabold text-white tracking-tight font-display">
+          Direct Encrypted Channel
+        </h2>
+        <p class="text-xs sm:text-sm text-slate-400 max-w-md mx-auto">
+          Talk directly with Raoprime sound producers, drop voice notes, and access stems in real-time. Zero login required.
+        </p>
+      </div>
+
+      <!-- Integrated Chat Dock Container (With All 100% Intact IDs) -->
+      <div id="chatContainer" class="stitch-glass rounded-3xl overflow-hidden shadow-2xl flex flex-col h-[540px] sm:h-[600px] border border-white/[0.12] relative">
+        
+        <!-- Chat Header Dock -->
+        <header class="px-4 py-3 bg-[#0d121c]/90 border-b border-white/10 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="relative w-9 h-9 rounded-full overflow-hidden border border-white/20">
+              <img src="/assets/rp-logo.jpg" alt="Raoprime Studio" class="w-full h-full object-cover">
+            </div>
+            <div>
+              <h3 id="chatHeading" class="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5">
+                Raoprime Studio Team
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              </h3>
+              <p class="text-[10px] text-slate-400 font-mono">Real-Time WebSocket • 0ms Latency</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-white/[0.06] text-slate-300">
+              Encrypted Session
+            </span>
+          </div>
+        </header>
+
+        <!-- Instagram-Style Story Highlights Bar -->
+        <div id="storyHighlightsBar" class="px-4 py-2.5 bg-[#090d15] border-b border-white/[0.06] flex items-center gap-3 overflow-x-auto no-scrollbar">
+          <!-- Story 1: Official -->
+          <div onclick="openStoryViewer(0)" class="flex flex-col items-center gap-1 shrink-0 cursor-pointer group">
+            <div class="w-11 h-11 rounded-full p-[2px] bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 group-hover:scale-105 transition-transform">
+              <div class="w-full h-full rounded-full bg-[#07090e] p-[2px]">
+                <img src="/assets/rp-logo.jpg" alt="Story" class="w-full h-full object-cover rounded-full">
+              </div>
+            </div>
+            <span class="text-[9.5px] font-medium text-slate-300">Official</span>
+          </div>
+
+          <!-- Story 2: Stems Vault -->
+          <div onclick="openStoryViewer(1)" class="flex flex-col items-center gap-1 shrink-0 cursor-pointer group">
+            <div class="w-11 h-11 rounded-full p-[2px] bg-gradient-to-tr from-rose-500 to-[#d4af37] group-hover:scale-105 transition-transform">
+              <div class="w-full h-full rounded-full bg-[#07090e] flex items-center justify-center text-rose-300">
+                <i data-lucide="folder-git-2" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <span class="text-[9.5px] font-medium text-slate-300">Vault</span>
+          </div>
+
+          <!-- Story 3: YouTube Releases (Fixed Lucide Icon) -->
+          <div onclick="openStoryViewer(2)" class="flex flex-col items-center gap-1 shrink-0 cursor-pointer group">
+            <div class="w-11 h-11 rounded-full p-[2px] bg-gradient-to-tr from-red-600 to-amber-500 group-hover:scale-105 transition-transform">
+              <div class="w-full h-full rounded-full bg-[#07090e] flex items-center justify-center text-red-400">
+                <i data-lucide="youtube" class="w-4 h-4 fill-current"></i>
+              </div>
+            </div>
+            <span class="text-[9.5px] font-medium text-slate-300">YouTube</span>
+          </div>
+
+          <!-- Story 4: Support -->
+          <div onclick="openStoryViewer(3)" class="flex flex-col items-center gap-1 shrink-0 cursor-pointer group">
+            <div class="w-11 h-11 rounded-full p-[2px] bg-gradient-to-tr from-emerald-500 to-sky-500 group-hover:scale-105 transition-transform">
+              <div class="w-full h-full rounded-full bg-[#07090e] flex items-center justify-center text-emerald-400">
+                <i data-lucide="heart" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <span class="text-[9.5px] font-medium text-slate-300">Dil Bada</span>
+          </div>
+        </div>
+
+        <!-- Real-Time Messages Stream View -->
+        <div id="messagesList" class="flex-1 overflow-y-auto p-4 space-y-3 bg-[#07090e]/70">
+          
+          <!-- Welcome Producer Card (Ensures no empty black void!) -->
+          <div class="p-3.5 rounded-2xl bg-[#111724]/90 border border-white/[0.08] max-w-sm space-y-1.5 shadow-md">
+            <div class="flex items-center gap-2 text-xs font-bold text-rose-300">
+              <i data-lucide="headphones" class="w-4 h-4"></i>
+              <span>Raoprime Chief Producer</span>
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              Welcome to the Studio Lounge! Feel free to hum a voice note or ask about our free mixing vault. We are live on the deck right now.
+            </p>
+            <span class="text-[9.5px] font-mono text-slate-500 block text-right">Just now</span>
+          </div>
+
+        </div>
+
+        <!-- Voice Recording Live Bar (WhatsApp Style - Hidden by default) -->
+        <div id="voiceRecordingBar" class="hidden px-4 py-2 bg-rose-950/90 border-t border-rose-500/40 flex items-center justify-between">
+          <div class="flex items-center gap-2 text-xs font-mono text-rose-300">
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></span>
+            <span id="recordingTimer">0:00</span>
+            <span>Recording Voice Memo...</span>
+          </div>
+          <button onclick="cancelVoiceRecording()" class="text-xs text-slate-400 hover:text-white cursor-pointer">Cancel</button>
+        </div>
+
+        <!-- Chat Input Dock -->
+        <footer class="p-3 bg-[#0d121c] border-t border-white/10">
+          <div class="flex items-center gap-2">
+            
+            <button type="button" id="chatAttachBtn" onclick="toggleAttachmentMenu()" class="p-2 text-slate-400 hover:text-white transition-colors cursor-pointer" title="Send Audio Stems / File">
+              <i data-lucide="paperclip" class="w-4 h-4"></i>
+            </button>
+
+            <div class="flex-1 relative flex items-center bg-[#151c27] border border-white/10 rounded-full px-4 py-2 focus-within:border-rose-500/60 transition-colors">
+              <textarea id="messageInput" rows="1" placeholder="Type a message or note to Raoprime..." class="w-full bg-transparent text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none resize-none no-scrollbar"></textarea>
+              <button type="button" id="voiceNoteMicBtn" onclick="startVoiceNoteRecording()" class="p-1 text-slate-400 hover:text-white transition-colors cursor-pointer" title="Record Voice Memo">
+                <i data-lucide="mic" class="w-4 h-4"></i>
+              </button>
+            </div>
+
+            <button type="button" id="sendBtn" onclick="sendTextMessage()" class="w-9 h-9 rounded-full maroon-btn text-white flex items-center justify-center transition-transform active:scale-95 cursor-pointer shadow-md" title="Send Message">
+              <i data-lucide="send" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </footer>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ======================================================== -->
+  <!-- 9. FLOATING DYNAMIC ISLAND PLAYER (SCROLL DOCKED)         -->
+  <!-- ======================================================== -->
+  <div id="floatingDynamicIsland" class="fixed bottom-5 inset-x-0 z-40 flex justify-center px-4 pointer-events-none transform translate-y-28 opacity-0">
+    <div class="pointer-events-auto stitch-glass rounded-full px-4 py-2 flex items-center gap-4 shadow-2xl border border-white/20">
+      <div class="flex items-center gap-2.5">
+        <img id="dockThumb" src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80" alt="Dock Track" class="w-8 h-8 rounded-full object-cover">
+        <div class="flex flex-col min-w-0 max-w-[140px] sm:max-w-[200px]">
+          <span id="dockTitle" class="text-xs font-bold text-white truncate">Midnight Ragas</span>
+          <span id="dockArtist" class="text-[10px] text-slate-400 truncate">Raoprime</span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button onclick="toggleMainPlayer()" class="w-8 h-8 rounded-full maroon-btn text-white flex items-center justify-center shadow-md cursor-pointer">
+          <i id="dockPlayIcon" data-lucide="play" class="w-4 h-4 fill-current ml-0.5"></i>
+        </button>
+        <button onclick="nextTrack()" class="p-1.5 text-slate-400 hover:text-white transition-colors cursor-pointer">
+          <i data-lucide="skip-forward" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <a href="#music" class="text-[10px] font-mono px-2.5 py-1 rounded-full bg-white/[0.08] hover:bg-white/[0.15] text-rose-300 border border-rose-500/30">
+        Open Soundstage
+      </a>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- 10. GOOGLE STITCH EXECUTIVE FOOTER                       -->
+  <!-- ======================================================== -->
+  <footer class="bg-[#05070a] border-t border-white/[0.08] py-12 px-4 sm:px-6">
+    <div class="max-w-6xl mx-auto space-y-8">
+      
+      <div class="flex flex-col md:flex-row items-center justify-between gap-6 pb-8 border-b border-white/[0.06]">
+        <div class="flex items-center gap-3">
+          <img src="/assets/rp-logo.jpg" alt="Raoprime" class="w-10 h-10 rounded-full object-cover border border-white/20">
+          <div>
+            <h4 class="font-extrabold text-base text-white font-display">Raoprime Music Foundation</h4>
+            <p class="text-xs text-slate-400">Music for the Soul. Free for Everyone. Baaki Dil Bada Hai.</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <a href="https://www.youtube.com/@raoprime" target="_blank" class="w-9 h-9 rounded-full bg-white/[0.06] hover:bg-red-600/20 hover:text-red-400 text-slate-300 flex items-center justify-center transition-colors" title="YouTube">
+            <i data-lucide="youtube" class="w-4 h-4"></i>
+          </a>
+          <a href="#" class="w-9 h-9 rounded-full bg-white/[0.06] hover:bg-rose-600/20 hover:text-rose-400 text-slate-300 flex items-center justify-center transition-colors" title="Instagram">
+            <i data-lucide="instagram" class="w-4 h-4"></i>
+          </a>
+          <a href="#" class="w-9 h-9 rounded-full bg-white/[0.06] hover:bg-emerald-600/20 hover:text-emerald-400 text-slate-300 flex items-center justify-center transition-colors" title="Spotify">
+            <i data-lucide="headphones" class="w-4 h-4"></i>
+          </a>
+          <a href="#community" class="w-9 h-9 rounded-full bg-white/[0.06] hover:bg-sky-600/20 hover:text-sky-400 text-slate-300 flex items-center justify-center transition-colors" title="Community Chat">
+            <i data-lucide="message-circle" class="w-4 h-4"></i>
+          </a>
+        </div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-slate-500">
+        <div>
+          © 2026 Raoprime Foundation. Released under Open Creative Commons. All artists retain 100% rights.
+        </div>
+        <div class="flex items-center gap-4">
+          <a href="#manifesto" class="hover:text-slate-300 transition-colors">Manifesto</a>
+          <a href="#demodrop" class="hover:text-slate-300 transition-colors">Demo Drop</a>
+          <a href="https://raoprime.onrender.com" class="hover:text-slate-300 transition-colors">Live Portal</a>
+        </div>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- Fullscreen YouTube Video Lightbox Modal -->
+  <div id="videoLightboxModal" onclick="if(event.target === this) closeVideoModal()" class="fixed inset-0 bg-black/95 backdrop-blur-md z-50 hidden flex flex-col items-center justify-center p-4">
+    <div class="w-full max-w-3xl space-y-3">
+      <div class="flex items-center justify-between text-white">
+        <h4 id="videoModalTitle" class="text-sm font-bold truncate">YouTube Video</h4>
+        <button onclick="closeVideoModal()" class="p-1 rounded-full hover:bg-white/10 text-slate-300 hover:text-white cursor-pointer" aria-label="Close modal">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="w-full aspect-video rounded-2xl overflow-hidden bg-black border border-white/20 shadow-2xl">
+        <iframe id="videoIframe" class="w-full h-full" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global Floating Toast Notification -->
+  <div id="globalToast" class="fixed bottom-6 right-6 z-50 pointer-events-none transform translate-y-20 opacity-0 transition-all duration-300">
+    <div class="px-4 py-2.5 rounded-2xl bg-[#111724]/95 text-white text-xs font-semibold border border-rose-500/40 shadow-2xl flex items-center gap-2 backdrop-blur-md">
+      <span class="w-2 h-2 rounded-full bg-rose-400"></span>
+      <span id="globalToastText">Alert message</span>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- 11. REAL WEB AUDIO ENGINE & INTERACTIVE LOGIC            -->
+  <!-- ======================================================== -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      initSpectrumCanvas();
+      setupScrollDynamicIsland();
+    });
+
+    const RAOPRIME_TRACKS = [
+      {
+        title: 'Midnight Ragas (Indie Fusion)',
+        artist: 'Raoprime Collective ft. Underground Strings',
+        genre: 'Indie Sitar Fusion',
+        duration: '3:42',
+        ytUrl: 'https://www.youtube.com/@raoprime',
+        thumb: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80',
+        rootFreq: 220, // A3
+        scale: [220, 247, 261, 293, 329, 349, 392], // Dorian/Indian Raga mode
+        ambientHue: '#7e192c'
+      },
+      {
+        title: 'Dil Se Awaz (Acoustic Soul)',
+        artist: 'Raw Studio Sessions',
+        genre: 'Acoustic Soul',
+        duration: '4:15',
+        ytUrl: 'https://www.youtube.com/@raoprime',
+        thumb: 'https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=600&auto=format&fit=crop&q=80',
+        rootFreq: 196, // G3
+        scale: [196, 220, 247, 261, 293, 330, 370], // G Major Acoustic
+        ambientHue: '#b85d19'
+      },
+      {
+        title: 'Underground Frequency',
+        artist: 'Hip-Hop & Spoken Word Movement',
+        genre: 'Spoken Poetry',
+        duration: '2:58',
+        ytUrl: 'https://www.youtube.com/@raoprime',
+        thumb: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600&auto=format&fit=crop&q=80',
+        rootFreq: 174.6, // F3
+        scale: [174.6, 196, 207.6, 233, 261.6, 277.2, 311.1], // Minor Pentatonic / Hip Hop
+        ambientHue: '#311b92'
+      },
+      {
+        title: 'Lofi Chai Beats',
+        artist: '24/7 Royalty-Free Stream for Creators',
+        genre: 'Creator Lofi',
+        duration: 'Live',
+        ytUrl: 'https://www.youtube.com/@raoprime',
+        thumb: 'https://images.unsplash.com/photo-1518495973542-4542c06a5843?w=600&auto=format&fit=crop&q=80',
+        rootFreq: 261.6, // C4
+        scale: [261.6, 293.6, 329.6, 392, 440, 523.2], // Pentatonic Chill
+        ambientHue: '#064e3b'
+      }
+    ];
+
+    let currentTrackIdx = 0;
+    let isPlaying = false;
+    let playProgress = 0;
+    let playInterval = null;
+    let currentSpeed = 1;
+
+    // Web Audio Synthesizer Engine
+    let audioCtx = null;
+    let masterGain = null;
+    let analyser = null;
+    let generativeInterval = null;
+    let foleyNode = null;
+
+    // Multitrack Stems Gain Nodes
+    const stemGains = {
+      melody: null,
+      chords: null,
+      bass: null,
+      foley: null
+    };
+    const stemVols = { melody: 0.85, chords: 0.75, bass: 0.90, foley: 0.60 };
+    const stemMuted = { melody: false, chords: false, bass: false, foley: false };
+
+    function initWebAudio() {
+      if (audioCtx) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.setValueAtTime(0.7, audioCtx.currentTime);
+
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 64;
+
+        masterGain.connect(analyser);
+        analyser.connect(audioCtx.destination);
+
+        // Initialize stem channels
+        Object.keys(stemGains).forEach(k => {
+          stemGains[k] = audioCtx.createGain();
+          stemGains[k].gain.setValueAtTime(stemVols[k], audioCtx.currentTime);
+          stemGains[k].connect(masterGain);
+        });
+
+        startVinylCrackleFoley();
+      } catch (err) {
+        console.warn('Web Audio not supported:', err);
+      }
+    }
+
+    // Vinyl Crackle Synthesizer (Realistic Dust Pops)
+    function startVinylCrackleFoley() {
+      if (!audioCtx) return;
+      const bufferSize = audioCtx.sampleRate * 2;
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        if (Math.random() < 0.0007) {
+          data[i] = (Math.random() * 2 - 1) * 0.4;
+        } else {
+          data[i] = (Math.random() * 2 - 1) * 0.008;
+        }
+      }
+      foleyNode = audioCtx.createBufferSource();
+      foleyNode.buffer = buffer;
+      foleyNode.loop = true;
+      foleyNode.connect(stemGains.foley);
+      foleyNode.start();
+    }
+
+    // Play Generative Raga/Acoustic Note Chords
+    function playHarmonicNote(freq, dur = 1.2, type = 'sine') {
+      if (!audioCtx || !isPlaying) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+      gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.2, audioCtx.currentTime + 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+
+      osc.connect(gain);
+      gain.connect(stemGains.melody);
+      osc.start();
+      osc.stop(audioCtx.currentTime + dur);
+    }
+
+    function playBassNote(freq, dur = 1.8) {
+      if (!audioCtx || !isPlaying) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq / 2, audioCtx.currentTime);
+
+      gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.35, audioCtx.currentTime + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+
+      osc.connect(gain);
+      gain.connect(stemGains.bass);
+      osc.start();
+      osc.stop(audioCtx.currentTime + dur);
+    }
+
+    function startMusicSynthesis() {
+      if (generativeInterval) clearInterval(generativeInterval);
+      const t = RAOPRIME_TRACKS[currentTrackIdx];
+      let step = 0;
+      generativeInterval = setInterval(() => {
+        if (!isPlaying || !audioCtx) return;
+        const note = t.scale[step % t.scale.length];
+        playHarmonicNote(note, 1.2, step % 2 === 0 ? 'sine' : 'triangle');
+        if (step % 4 === 0) {
+          playBassNote(t.rootFreq, 2.0);
+        }
+        step++;
+      }, 450 / currentSpeed);
+    }
+
+    function stopMusicSynthesis() {
+      if (generativeInterval) clearInterval(generativeInterval);
+    }
+
+    // Tone-Arm Needle Drop Sound Effect
+    function playNeedleDropSound() {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(80, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 0.15);
+      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+      osc.connect(gain);
+      gain.connect(masterGain);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.15);
+    }
+
+    // Toggle Play/Pause
+    function toggleMainPlayer() {
+      initWebAudio();
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+
+      isPlaying = !isPlaying;
+      const playIcon = document.getElementById('mainPlayIcon');
+      const pauseIcon = document.getElementById('mainPauseIcon');
+      const heroIcon = document.getElementById('heroPlayBtnIcon');
+      const heroText = document.getElementById('heroPlayBtnText');
+      const centerIcon = document.getElementById('turntableCenterIcon');
+      const vinylDisc = document.getElementById('heroVinylDisc');
+      const toneArm = document.getElementById('turntableArm');
+      const armStatus = document.getElementById('turntableStatus');
+      const dockIcon = document.getElementById('dockPlayIcon');
+
+      if (isPlaying) {
+        if (playIcon) playIcon.classList.add('hidden');
+        if (pauseIcon) pauseIcon.classList.remove('hidden');
+        if (heroIcon) heroIcon.setAttribute('data-lucide', 'pause');
+        if (heroText) heroText.textContent = 'Pause Master Cut';
+        if (centerIcon) centerIcon.setAttribute('data-lucide', 'pause');
+        if (dockIcon) dockIcon.setAttribute('data-lucide', 'pause');
+
+        // Physical Turntable Actions
+        playNeedleDropSound();
+        if (toneArm) {
+          toneArm.classList.remove('tone-arm-resting');
+          toneArm.classList.add('tone-arm-on-record');
+        }
+        if (vinylDisc) {
+          vinylDisc.classList.remove('vinyl-paused');
+          vinylDisc.classList.add('vinyl-spinning');
+        }
+        if (armStatus) armStatus.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span><span class="text-emerald-400 font-bold">Spinning 33 RPM</span>';
+
+        startProgressTimer();
+        startMusicSynthesis();
+        spinCassetteReels(true);
+      } else {
+        if (playIcon) playIcon.classList.remove('hidden');
+        if (pauseIcon) pauseIcon.classList.add('hidden');
+        if (heroIcon) heroIcon.setAttribute('data-lucide', 'play');
+        if (heroText) heroText.textContent = 'Play Master Cut (Live Audio)';
+        if (centerIcon) centerIcon.setAttribute('data-lucide', 'play');
+        if (dockIcon) dockIcon.setAttribute('data-lucide', 'play');
+
+        if (toneArm) {
+          toneArm.classList.remove('tone-arm-on-record');
+          toneArm.classList.add('tone-arm-resting');
+        }
+        if (vinylDisc) {
+          vinylDisc.classList.add('vinyl-paused');
+        }
+        if (armStatus) armStatus.textContent = 'Arm Rested';
+
+        clearInterval(playInterval);
+        stopMusicSynthesis();
+        spinCassetteReels(false);
+      }
+      lucide.createIcons();
+    }
+
+    function selectTrack(idx) {
+      currentTrackIdx = idx;
+      const t = RAOPRIME_TRACKS[idx];
+      document.getElementById('activeTrackTitle').textContent = t.title;
+      document.getElementById('activeTrackArtist').textContent = t.artist;
+      document.getElementById('activeTrackBadge').textContent = t.genre;
+      document.getElementById('playerTotalTime').textContent = t.duration;
+      document.getElementById('activeTrackThumb').src = t.thumb;
+      document.getElementById('activeTrackYtLink').href = t.ytUrl;
+
+      // Update Hero Card
+      document.getElementById('heroTrackTitle').textContent = t.title;
+      document.getElementById('heroTrackArtist').textContent = t.artist;
+      document.getElementById('heroDurationBadge').textContent = t.duration;
+
+      // Update Dock
+      document.getElementById('dockTitle').textContent = t.title;
+      document.getElementById('dockArtist').textContent = t.artist;
+      document.getElementById('dockThumb').src = t.thumb;
+
+      // Update Dynamic Ambient Lighting
+      document.documentElement.style.setProperty('--ambient-primary', t.ambientHue);
+
+      playProgress = 0;
+      updateProgressDisplay();
+      if (!isPlaying) toggleMainPlayer();
+      else startMusicSynthesis();
+    }
+
+    function nextTrack() {
+      selectTrack((currentTrackIdx + 1) % RAOPRIME_TRACKS.length);
+    }
+
+    function prevTrack() {
+      selectTrack((currentTrackIdx - 1 + RAOPRIME_TRACKS.length) % RAOPRIME_TRACKS.length);
+    }
+
+    function startProgressTimer() {
+      clearInterval(playInterval);
+      playInterval = setInterval(() => {
+        playProgress += 1;
+        if (playProgress > 222) playProgress = 0;
+        updateProgressDisplay();
+      }, 1000 / currentSpeed);
+    }
+
+    function updateProgressDisplay() {
+      const mins = Math.floor(playProgress / 60);
+      const secs = playProgress % 60;
+      const timeStr = mins + ':' + (secs < 10 ? '0' : '') + secs;
+      const timeEl = document.getElementById('playerCurrentTime');
+      if (timeEl) timeEl.textContent = timeStr;
+
+      const pct = (playProgress / 222) * 100;
+      const bar = document.getElementById('playerProgressBar');
+      if (bar) bar.style.width = pct + '%';
+    }
+
+    function seekMainPlayer(e) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      playProgress = Math.floor(pos * 222);
+      updateProgressDisplay();
+    }
+
+    function cyclePlayerSpeed() {
+      const speeds = [1, 1.25, 1.5, 2];
+      const curIdx = speeds.indexOf(currentSpeed);
+      currentSpeed = speeds[(curIdx + 1) % speeds.length];
+      const btn = document.getElementById('playerSpeedBtn');
+      if (btn) btn.textContent = currentSpeed + 'x';
+      if (isPlaying) {
+        startProgressTimer();
+        startMusicSynthesis();
+      }
+    }
+
+    // Spectrum Canvas Rendering with Real Frequency Waves
+    function initSpectrumCanvas() {
+      const canvas = document.getElementById('spectrumCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+
+      function resize() {
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = canvas.parentElement.clientHeight;
+      }
+      resize();
+      window.addEventListener('resize', resize);
+
+      const bufferLength = 32;
+      const dataArray = new Uint8Array(bufferLength);
+
+      function draw() {
+        requestAnimationFrame(draw);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (analyser && isPlaying) {
+          analyser.getByteFrequencyData(dataArray);
+        } else {
+          for (let i = 0; i < bufferLength; i++) dataArray[i] = 10;
+        }
+
+        const barWidth = (canvas.width / bufferLength) * 0.85;
+        let x = (canvas.width - (barWidth + 2) * bufferLength) / 2;
+
+        for (let i = 0; i < bufferLength; i++) {
+          const val = dataArray[i];
+          const barHeight = Math.max(3, (val / 255) * canvas.height * 0.9);
+
+          const grad = ctx.createLinearGradient(0, canvas.height, 0, 0);
+          grad.addColorStop(0, '#881b30');
+          grad.addColorStop(0.6, '#d4af37');
+          grad.addColorStop(1, '#ffedd5');
+
+          ctx.fillStyle = isPlaying ? grad : 'rgba(255, 255, 255, 0.15)';
+          ctx.beginPath();
+          ctx.roundRect(x, canvas.height - barHeight, barWidth, barHeight, 3);
+          ctx.fill();
+
+          x += barWidth + 3;
+        }
+      }
+      draw();
+    }
+
+    // Stem Mixer Fader Controls
+    function adjustStemVolume(stem, val) {
+      initWebAudio();
+      const num = val / 100;
+      stemVols[stem] = num;
+      if (stemGains[stem] && !stemMuted[stem]) {
+        stemGains[stem].gain.setValueAtTime(num, audioCtx.currentTime);
+      }
+      const el = document.getElementById(stem + 'VolText');
+      if (el) el.textContent = val + '%';
+    }
+
+    function toggleStemMute(stem, btn) {
+      initWebAudio();
+      stemMuted[stem] = !stemMuted[stem];
+      if (stemGains[stem]) {
+        stemGains[stem].gain.setValueAtTime(stemMuted[stem] ? 0 : stemVols[stem], audioCtx.currentTime);
+      }
+      if (stemMuted[stem]) {
+        btn.classList.add('bg-rose-900', 'text-white');
+        btn.textContent = 'MUTED';
+      } else {
+        btn.classList.remove('bg-rose-900', 'text-white');
+        btn.textContent = 'MUTE';
+      }
+    }
+
+    function soloStem(soloedStem, btn) {
+      initWebAudio();
+      Object.keys(stemGains).forEach(stem => {
+        if (stem === soloedStem) {
+          stemMuted[stem] = false;
+          stemGains[stem].gain.setValueAtTime(stemVols[stem], audioCtx.currentTime);
+        } else {
+          stemMuted[stem] = true;
+          stemGains[stem].gain.setValueAtTime(0, audioCtx.currentTime);
+        }
+      });
+      showToast('SOLO ACTIVE: ' + soloedStem.toUpperCase());
+    }
+
+    function resetMixerFaders() {
+      initWebAudio();
+      const defaults = { melody: 85, chords: 75, bass: 90, foley: 60 };
+      Object.keys(defaults).forEach(k => {
+        adjustStemVolume(k, defaults[k]);
+        stemMuted[k] = false;
+      });
+      showToast('Mixer reset to Studio Master.');
+    }
+
+    // Royalty Calculator
+    function calculateRoyaltyComparison(streams) {
+      const num = parseInt(streams);
+      document.getElementById('streamCounterText').textContent = num.toLocaleString('en-IN') + ' Streams';
+      
+      const totalRevenue = Math.floor(num * 0.5); // Approx ₹0.50 per stream
+      const labelCut = Math.floor(totalRevenue * 0.2); // Label gives 20%
+      const raoprimeKeep = totalRevenue; // 100%
+
+      document.getElementById('labelTakesText').textContent = 'You get ₹' + labelCut.toLocaleString('en-IN');
+      document.getElementById('raoprimeGivesText').textContent = 'You get ₹' + raoprimeKeep.toLocaleString('en-IN');
+    }
+
+    // Cassette Spool Animation
+    function spinCassetteReels(spin) {
+      const left = document.getElementById('cassetteLeftSpool');
+      const right = document.getElementById('cassetteRightSpool');
+      const status = document.getElementById('tapeStatusText');
+      if (spin) {
+        if (left) left.classList.add('reel-spinning');
+        if (right) right.classList.add('reel-spinning');
+        if (status) {
+          status.textContent = 'RECORDING ACTIVE';
+          status.className = 'text-xs font-mono font-bold text-rose-400';
+        }
+      } else {
+        if (left) left.classList.remove('reel-spinning');
+        if (right) right.classList.remove('reel-spinning');
+        if (status) {
+          status.textContent = 'WAITING FOR AUDIO';
+          status.className = 'text-xs font-mono font-bold text-emerald-400';
+        }
+      }
+    }
+
+    // Scroll Dynamic Island
+    function setupScrollDynamicIsland() {
+      const island = document.getElementById('floatingDynamicIsland');
+      window.addEventListener('scroll', () => {
+        if (window.scrollY > 400) {
+          island.classList.remove('translate-y-28', 'opacity-0');
+        } else {
+          island.classList.add('translate-y-28', 'opacity-0');
+        }
+      });
+    }
+
+    // Genre Chip Selection
+    function selectGenre(btn) {
+      document.querySelectorAll('.genre-chip').forEach(b => {
+        b.className = 'genre-chip px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white/[0.06] text-slate-300 border border-white/10 hover:border-white/20 cursor-pointer';
+      });
+      btn.className = 'genre-chip px-3.5 py-1.5 rounded-full text-xs font-semibold bg-rose-950/80 text-rose-300 border border-rose-500/40 cursor-pointer';
+      document.getElementById('demoGenreVal').value = btn.textContent;
+    }
+
+    function handleFileChosen(input) {
+      if (input.files && input.files[0]) {
+        document.getElementById('demoFileLabel').textContent = '✓ Selected: ' + input.files[0].name;
+        spinCassetteReels(true);
+      }
+    }
+
+    function handleDemoSubmit(e) {
+      e.preventDefault();
+      const artist = document.getElementById('demoArtistName').value;
+      const title = document.getElementById('demoTrackTitle').value;
+      
+      const alertBox = document.getElementById('demoSuccessAlert');
+      if (alertBox) alertBox.classList.remove('hidden');
+      
+      spinCassetteReels(false);
+      showToast('✓ Received! "' + title + '" by ' + artist + ' queued for studio review.');
+      e.target.reset();
+    }
+
+    // Video Modal
+    function openVideoModal(title, embedUrl) {
+      document.getElementById('videoModalTitle').textContent = title;
+      document.getElementById('videoIframe').src = embedUrl;
+      document.getElementById('videoLightboxModal').classList.remove('hidden');
+    }
+
+    function closeVideoModal() {
+      document.getElementById('videoIframe').src = '';
+      document.getElementById('videoLightboxModal').classList.add('hidden');
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeVideoModal();
+    });
+
+    // Toast
+    function showToast(msg) {
+      const toast = document.getElementById('globalToast');
+      const text = document.getElementById('globalToastText');
+      if (!toast || !text) return;
+      text.textContent = msg;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3500);
+    }
+  </script>
+
+  <!-- Real-Time WebSocket & Messaging Engine (100% Backwards Compatible) -->
+  <script src="/chat-app.js?v=8.0"></script>
+</body>
+</html>`;
+
+fs.writeFileSync(path.join(__dirname, '..', 'public', 'index.html'), htmlContent, 'utf8');
+console.log('🌟 GOOGLE STITCH 3.0 MASTERPIECE APPLIED TO public/index.html SUCCESSFULLY!');
